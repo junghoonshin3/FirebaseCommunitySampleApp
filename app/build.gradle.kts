@@ -38,12 +38,6 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.3"
-    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -52,40 +46,11 @@ android {
 }
 
 dependencies {
-    implementation(project(":feature:list"))
-    implementation(project(":feature:setting"))
-    implementation(project(":feature:chat"))
-    implementation(project(":domain:chat"))
-    implementation(project(":domain:setting"))
-    implementation(project(":domain:list"))
-    implementation(project(":data:repository"))
-    implementation(Deps.core)
-    implementation(CoroutinesLifeCycleScope.lifeCycleRuntime)
-    implementation(JetPackCompose.composeActivity)
-    implementation(JetPackCompose.composeUi)
-    implementation(JetPackCompose.uiGraphics)
-    implementation(JetPackCompose.composeBom)
-    implementation(JetPackCompose.composeUiToolingPreview)
-    testImplementation(TestImplementation.junit)
-    androidTestImplementation(AndroidTestImplementation.junit)
-    androidTestImplementation(AndroidTestImplementation.espressoCore)
-    androidTestImplementation(AndroidTestImplementation.composeBom)
-    androidTestImplementation(AndroidTestImplementation.junit4)
-    debugImplementation(DebugImplementation.uiTooling)
-    debugImplementation(DebugImplementation.testManifest)
-
-    //material3
-    implementation(JetPackCompose.material3)
-    implementation(JetPackCompose.material3WindowSizeClass)
-
-    //navigation
-    implementation(Navigation.composeNavigation)
-
-    // Splash API
-    implementation(SplashScreen.coreSplash)
+    api(project(":presentation"))
+    implementation(project(":domain"))
+    implementation(project(":data"))
 
     //Dagger-Hilt
     implementation(DaggerHilt.daggerHilt)
     kapt(DaggerHilt.daggerHiltCompiler)
-
 }

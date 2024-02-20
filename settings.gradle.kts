@@ -1,3 +1,5 @@
+import java.net.URI
+
 pluginManagement {
     repositories {
         google()
@@ -10,15 +12,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = URI("https://devrepo.kakao.com/nexus/content/groups/public/") }
     }
 }
 
 rootProject.name = "PickUp"
 include(":app")
-include(":domain:list")
-include(":domain:setting")
-include(":domain:chat")
-include(":feature:chat")
-include(":feature:list")
-include(":feature:setting")
-include(":data:repository")
+include(":presentation")
+include(":data")
+include(":domain")

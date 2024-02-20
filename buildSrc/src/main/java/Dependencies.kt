@@ -1,4 +1,5 @@
 object Versions {
+    const val hilt_navigation = "1.1.0-alpha01"
     const val composeViewModel = "2.6.1"
     const val composeNavigation = "2.7.6"
     const val material3WindowSizeClass = "1.1.2"
@@ -10,6 +11,7 @@ object Versions {
     const val toolingPreview = "1.5.4"
     const val composeMaterial = "1.1.2"
     const val juint = "4.13.2"
+    const val jUnit4 = "1.6.0"
     const val extJunit = "1.1.5"
     const val composeBom = "2023.03.00"
     const val material3 = "1.1.2"
@@ -17,12 +19,13 @@ object Versions {
     const val testManifest = "1.5.4"
     const val splash = "1.0.1"
     const val hilt_version = "2.44"
+    const val kakao_login = "2.19.0"
+
 }
 
 object CoroutinesLifeCycleScope {
     const val lifeCycleRuntime = "androidx.lifecycle:lifecycle-runtime-ktx:${Versions.lifeCycle}"
 }
-
 
 object JetPackCompose {
     const val composeActivity = "androidx.activity:activity-compose:${Versions.composeActivity}"
@@ -48,7 +51,7 @@ object AndroidTestImplementation {
     const val junit = "androidx.test.ext:junit:${Versions.extJunit}"
     const val espressoCore = "androidx.test.espresso:espresso-core:${Versions.espressoCore}"
     const val composeBom = "androidx.compose:compose-bom:${Versions.composeBom}"
-    const val junit4 = "androidx.compose.ui:ui-test-junit4"
+    const val junit4 = "androidx.compose.ui:ui-test-junit4:${Versions.jUnit4}"
 }
 
 object DebugImplementation {
@@ -70,7 +73,12 @@ object SplashScreen {
 }
 
 object DaggerHilt {
+    const val hiltNavigation = "androidx.hilt:hilt-navigation-compose:${Versions.hilt_navigation}"
     const val daggerHilt = "com.google.dagger:hilt-android:${Versions.hilt_version}"
     const val daggerHiltCompiler =
         "com.google.dagger:hilt-android-compiler:${Versions.hilt_version}"
+}
+
+object KaKao {
+    const val kakao_login = "com.kakao.sdk:v2-user:${Versions.kakao_login}"
 }
