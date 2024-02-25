@@ -20,9 +20,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navigation
+import kr.sjh.presentation.ui.board.BoardScreen
 import kr.sjh.presentation.ui.chat.ChatScreen
-import kr.sjh.presentation.ui.list.ListScreen
 import kr.sjh.presentation.ui.login.LoginScreen
 import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.main.MainScreen
@@ -31,12 +30,12 @@ import kr.sjh.presentation.ui.setting.SettingScreen
 @Composable
 fun RootNavGraph(
     navHostController: NavHostController,
-    startScreen: RootScreen = RootScreen.Login,
+    startScreen: RootScreen?,
     loginViewModel: LoginViewModel
 ) {
     NavHost(
         navController = navHostController, route = RootScreen.Root.route,
-        startDestination = startScreen.route,
+        startDestination = startScreen!!.route,
         enterTransition = { EnterTransition.None },
         exitTransition = { ExitTransition.None },
         popEnterTransition = { EnterTransition.None },
@@ -47,13 +46,12 @@ fun RootNavGraph(
     }
 }
 
-//
 @Composable
 fun MainNavGraph(navController: NavHostController) {
     NavHost(
         modifier = Modifier.padding(10.dp),
         navController = navController,
-        startDestination = BottomNavigationScreen.List.route,
+        startDestination = BottomNavigationScreen.Board.route,
         route = RootScreen.Main.route,
         enterTransition = {
             EnterTransition.Companion.None
@@ -63,7 +61,7 @@ fun MainNavGraph(navController: NavHostController) {
         popExitTransition = { ExitTransition.Companion.None }
 
     ) {
-        showList(navController)
+        showBoard(navController)
         showChat(navController)
         showSetting(navController)
     }
@@ -71,16 +69,28 @@ fun MainNavGraph(navController: NavHostController) {
 
 //----------------------------------------Composable Screen----------------------------------------------------------------
 
-private fun NavGraphBuilder.showList(
+private fun NavGraphBuilder.showBoard(
     navController: NavController,
 ) {
     composable(
-        route = BottomNavigationScreen.List.route, enterTransition = null,
+        route = BottomNavigationScreen.Board.route, enterTransition = null,
         exitTransition = null,
         popExitTransition = null,
         popEnterTransition = null
     ) {
-        ListScreen(
+        BoardScreen(
+            navController,
+            Modifier
+                .fillMaxSize()
+        )
+    }
+    composable(
+        route = BottomNavigationScreen.Board.route, enterTransition = null,
+        exitTransition = null,
+        popExitTransition = null,
+        popEnterTransition = null
+    ) {
+        BoardScreen(
             navController,
             Modifier
                 .fillMaxSize()
@@ -102,7 +112,8 @@ private fun NavGraphBuilder.showLogin(
             navController,
             Modifier
                 .fillMaxSize()
-                .background(Color.Black), loginViewModel
+                .background(Color.Black),
+            loginViewModel
         )
     }
 }
@@ -155,12 +166,12 @@ private fun NavGraphBuilder.showChat(
 @Composable
 fun NavController.currentScreenAsState(): State<BottomNavigationScreen> {
     val selectedItem =
-        remember { mutableStateOf<BottomNavigationScreen>(BottomNavigationScreen.List) }
+        remember { mutableStateOf<BottomNavigationScreen>(BottomNavigationScreen.Board) }
     DisposableEffect(key1 = this) {
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
             when {
-                destination.hierarchy.any { it.route == BottomNavigationScreen.List.route } -> {
-                    selectedItem.value = BottomNavigationScreen.List
+                destination.hierarchy.any { it.route == BottomNavigationScreen.Board.route } -> {
+                    selectedItem.value = BottomNavigationScreen.Board
                 }
 
                 destination.hierarchy.any { it.route == BottomNavigationScreen.Chat.route } -> {

@@ -1,5 +1,6 @@
 import java.net.URI
 
+
 pluginManagement {
     repositories {
         google()
@@ -19,5 +20,5 @@ dependencyResolutionManagement {
 rootProject.name = "PickUp"
 include(":app")
 include(":presentation")
-include(":data")
 include(":domain")
+include(":data")

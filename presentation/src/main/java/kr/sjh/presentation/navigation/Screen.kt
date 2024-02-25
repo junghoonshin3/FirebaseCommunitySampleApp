@@ -1,7 +1,5 @@
 package kr.sjh.presentation.navigation
 
-import androidx.compose.runtime.Stable
-
 sealed class RootScreen(val route: String) {
     object Root : RootScreen(route = "root")
     object Main : RootScreen(route = "main_root")
@@ -14,5 +12,5 @@ sealed class BottomNavigationScreen(
 ) {
     object Chat : BottomNavigationScreen("chat")
     object Setting : BottomNavigationScreen("setting")
-    object List : BottomNavigationScreen("list")
+    object Board : BottomNavigationScreen("board")
 }

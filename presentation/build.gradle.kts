@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+
     implementation(project(":domain"))
     implementation(Deps.core)
     implementation(CoroutinesLifeCycleScope.lifeCycleRuntime)
@@ -71,6 +72,4 @@ dependencies {
     //splash api
     implementation(SplashScreen.coreSplash)
 
-    //kakao login
-    api(KaKao.kakao_login)
 }

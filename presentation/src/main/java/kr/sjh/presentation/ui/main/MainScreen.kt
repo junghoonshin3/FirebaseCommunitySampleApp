@@ -1,21 +1,24 @@
 package kr.sjh.presentation.ui.main
 
-import android.util.Log
-import androidx.compose.animation.EnterTransition
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
@@ -23,20 +26,37 @@ import kr.sjh.presentation.navigation.BottomNavItem
 import kr.sjh.presentation.navigation.BottomNavigationScreen
 import kr.sjh.presentation.navigation.MainNavGraph
 import kr.sjh.presentation.navigation.currentScreenAsState
-import okhttp3.internal.immutableListOf
 
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
-    val bottomNavList =
-        listOf(BottomNavItem.List, BottomNavItem.Chat, BottomNavItem.Setting)
+
     val currentSelectedScreen by navController.currentScreenAsState()
+
     Scaffold(
         bottomBar = {
-            BottomNavigation(bottomNavList, currentSelectedScreen) {
+            BottomNavigation {
                 navController.navigateToRootScreen(it)
+            }
+        },
+        floatingActionButton = {
+            if (currentSelectedScreen.route == BottomNavigationScreen.Board.route) {
+                ExtendedFloatingActionButton(
+                    shape = RoundedCornerShape(30.dp),
+                    containerColor = Color.Black,
+                    text = { Text(text = "글쓰기", color = Color.White) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Create,
+                            contentDescription = "create",
+                            tint = Color.White
+                        )
+                    },
+                    onClick = {
+//                        navController.navigate()
+                    })
             }
         }
     ) {
@@ -48,19 +68,27 @@ fun MainScreen(
 
 @Composable
 fun BottomNavigation(
-    navItems: List<BottomNavItem>,
-    currentSelectedScreen: BottomNavigationScreen,
     onClick: (BottomNavigationScreen) -> Unit
 ) {
+    val navItem =
+        listOf(BottomNavItem.List, BottomNavItem.Chat, BottomNavItem.Setting)
+
+    var selectedScreen by remember {
+        mutableStateOf<BottomNavigationScreen>(BottomNavigationScreen.Board)
+    }
+
     NavigationBar {
-        navItems.forEach {
+        navItem.forEach {
             NavigationBarItem(
                 alwaysShowLabel = true,
                 label = {
                     Text(text = it.title)
                 },
-                selected = it.screenRoute == currentSelectedScreen,
-                onClick = { onClick(it.screenRoute) },
+                selected = it.screenRoute == selectedScreen,
+                onClick = {
+                    selectedScreen = it.screenRoute
+                    onClick(it.screenRoute)
+                },
                 icon = { Icon(imageVector = it.icon, contentDescription = "") })
         }
     }

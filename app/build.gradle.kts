@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -46,11 +47,12 @@ android {
 }
 
 dependencies {
-    api(project(":presentation"))
+    implementation(project(":presentation"))
     implementation(project(":domain"))
     implementation(project(":data"))
-
     //Dagger-Hilt
     implementation(DaggerHilt.daggerHilt)
     kapt(DaggerHilt.daggerHiltCompiler)
+    implementation(DaggerHilt.hiltNavigation)
+
 }

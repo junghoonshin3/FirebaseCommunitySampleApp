@@ -3,11 +3,12 @@ plugins {
     id("org.jetbrains.kotlin.android")
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "kr.sjh.data"
-    compileSdk = 33
+    namespace = "kr.sjh.auth"
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 24
@@ -35,26 +36,15 @@ android {
 }
 
 dependencies {
-    implementation(project(":domain"))
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
     //Dagger-Hilt
     implementation(DaggerHilt.daggerHilt)
     kapt(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
 
-
     implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
-    //Firebase DB
     implementation("com.google.firebase:firebase-database-ktx")
-    //Firebase Storage
-    implementation("com.google.firebase:firebase-storage-ktx")
 
-
-
+    //kakao login
+    api(KaKao.kakao_login)
 }
