@@ -17,8 +17,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import kr.sjh.presentation.R
 import kr.sjh.presentation.navigation.RootScreen
@@ -27,7 +30,7 @@ import kr.sjh.presentation.navigation.RootScreen
 fun LoginScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    loginViewModel: LoginViewModel,
+    loginViewModel: LoginViewModel = hiltViewModel(),
 ) {
     val isLogin by loginViewModel.isLogin.collectAsState()
 
@@ -67,6 +70,7 @@ fun LoginScreen(
 
     }
 }
+
 @Composable
 fun Logo(modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {

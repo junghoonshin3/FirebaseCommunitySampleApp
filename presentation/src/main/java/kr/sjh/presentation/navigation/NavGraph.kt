@@ -7,179 +7,196 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.splashscreen.SplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
+import kr.sjh.presentation.ui.MainViewModel
+import kr.sjh.presentation.ui.board.BoardDetailScreen
 import kr.sjh.presentation.ui.board.BoardScreen
 import kr.sjh.presentation.ui.chat.ChatScreen
 import kr.sjh.presentation.ui.login.LoginScreen
 import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.main.MainScreen
-import kr.sjh.presentation.ui.setting.SettingScreen
+import kr.sjh.presentation.ui.main.navigateToRootScreen
+import kr.sjh.presentation.ui.mypage.MyPageScreen
 
 @Composable
 fun RootNavGraph(
-    navHostController: NavHostController,
-    startScreen: RootScreen?,
-    loginViewModel: LoginViewModel
+    navController: NavHostController,
+    mainViewModel: MainViewModel = hiltViewModel(),
+    onKeepOnScreenCondition: () -> Unit
 ) {
+
+    val startScreen by mainViewModel.startScreenName.collectAsState()
+
+    LaunchedEffect(key1 = startScreen, block = {
+        if (startScreen != null) {
+            onKeepOnScreenCondition()
+        }
+    })
+
     NavHost(
-        navController = navHostController, route = RootScreen.Root.route,
-        startDestination = startScreen!!.route,
+        navController = navController,
+        startDestination = startScreen?.route ?: RootScreen.Login.route,
         enterTransition = { EnterTransition.None },
         exitTransition = { ExitTransition.None },
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None }
     ) {
-        showLogin(navHostController, loginViewModel)
-        showMain()
+        showLogin(navController)
+        showMain(logOut = {
+            navController.navigateToRootScreen(RootScreen.Login)
+        })
     }
 }
 
 @Composable
-fun MainNavGraph(navController: NavHostController) {
+fun MainNavGraph(navController: NavHostController = rememberNavController(), logOut: () -> Unit) {
     NavHost(
         modifier = Modifier.padding(10.dp),
         navController = navController,
-        startDestination = BottomNavigationScreen.Board.route,
-        route = RootScreen.Main.route,
-        enterTransition = {
-            EnterTransition.Companion.None
-        },
-        exitTransition = { ExitTransition.Companion.None },
-        popEnterTransition = { EnterTransition.Companion.None },
-        popExitTransition = { ExitTransition.Companion.None }
-
+        startDestination = RootScreen.Board.route,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
     ) {
-        showBoard(navController)
-        showChat(navController)
-        showSetting(navController)
-    }
-}
-
-//----------------------------------------Composable Screen----------------------------------------------------------------
-
-private fun NavGraphBuilder.showBoard(
-    navController: NavController,
-) {
-    composable(
-        route = BottomNavigationScreen.Board.route, enterTransition = null,
-        exitTransition = null,
-        popExitTransition = null,
-        popEnterTransition = null
-    ) {
-        BoardScreen(
-            navController,
-            Modifier
-                .fillMaxSize()
-        )
-    }
-    composable(
-        route = BottomNavigationScreen.Board.route, enterTransition = null,
-        exitTransition = null,
-        popExitTransition = null,
-        popEnterTransition = null
-    ) {
-        BoardScreen(
-            navController,
-            Modifier
-                .fillMaxSize()
-        )
+        addBoard(navController)
+        addChat(navController)
+        addMyPage(navController, logOut)
     }
 }
 
 private fun NavGraphBuilder.showLogin(
     navController: NavHostController,
-    loginViewModel: LoginViewModel
 ) {
     composable(
-        route = RootScreen.Login.route, enterTransition = null,
-        exitTransition = null,
-        popExitTransition = null,
-        popEnterTransition = null
+        route = RootScreen.Login.route
     ) {
         LoginScreen(
             navController,
             Modifier
                 .fillMaxSize()
-                .background(Color.Black),
-            loginViewModel
+                .background(Color.Black)
         )
     }
 }
 
-private fun NavGraphBuilder.showMain(
-) {
-    composable(
-        route = RootScreen.Main.route, enterTransition = null,
-        exitTransition = null,
-        popExitTransition = null,
-        popEnterTransition = null
-    ) {
-        MainScreen(
-            Modifier.fillMaxSize()
-        )
+private fun NavGraphBuilder.showMain(logOut: () -> Unit) {
+    composable(route = RootScreen.Main.route) {
+        MainScreen(Modifier.fillMaxSize(), logOut)
     }
 }
 
-private fun NavGraphBuilder.showSetting(
-    navController: NavController
-) {
-    composable(
-        route = BottomNavigationScreen.Setting.route, enterTransition = null,
-        exitTransition = null,
-        popExitTransition = null,
-        popEnterTransition = null
+//board navigation
+private fun NavGraphBuilder.addBoard(navController: NavController) {
+    navigation(
+        route = RootScreen.Board.route,
+        startDestination = LeafScreen.Board.route
     ) {
-        SettingScreen(
-            navController, Modifier.fillMaxSize()
-        )
+        showBoard(navController)
+        showBoarDetail(navController)
     }
 }
 
-private fun NavGraphBuilder.showChat(
-    navController: NavController,
-) {
-    composable(
-        route = BottomNavigationScreen.Chat.route, enterTransition = null,
-        exitTransition = null,
-        popExitTransition = null,
-        popEnterTransition = null
+private fun NavGraphBuilder.showBoard(navController: NavController) {
+    composable(route = LeafScreen.Board.route) {
+        BoardScreen(navController)
+    }
+}
+
+private fun NavGraphBuilder.showBoarDetail(navController: NavController) {
+    dialog(
+        route = LeafScreen.BoardDetail.route,
+        dialogProperties = DialogProperties(
+            usePlatformDefaultWidth = false
+        )
     ) {
-        ChatScreen(
-            navController, Modifier.fillMaxSize()
+
+        BoardDetailScreen(
+            navController,
+            Modifier
+                .fillMaxSize()
+                .background(Color.Red)
         )
     }
 }
+//end of board navigation
+
+//chat navigation
+private fun NavGraphBuilder.addChat(navController: NavController) {
+    navigation(
+        route = RootScreen.Chat.route,
+        startDestination = LeafScreen.Chat.route
+    ) {
+        showChat(navController)
+    }
+}
+
+private fun NavGraphBuilder.showChat(navController: NavController) {
+    composable(route = LeafScreen.Chat.route) {
+        ChatScreen(navController)
+    }
+}
+//end of chat navigation
+
+//mypage navigation
+private fun NavGraphBuilder.addMyPage(navController: NavController, logOut: () -> Unit) {
+    navigation(
+        route = RootScreen.MyPage.route,
+        startDestination = LeafScreen.MyPage.route
+    ) {
+        showMyPage(navController, logOut)
+    }
+}
+
+private fun NavGraphBuilder.showMyPage(navController: NavController, logOut: () -> Unit) {
+    composable(route = LeafScreen.MyPage.route) {
+        MyPageScreen(navController, logOut = logOut)
+    }
+}
+//end of mypage navigation
+
 
 @Stable
 @Composable
-fun NavController.currentScreenAsState(): State<BottomNavigationScreen> {
+fun NavController.currentScreenAsState(): State<RootScreen> {
     val selectedItem =
-        remember { mutableStateOf<BottomNavigationScreen>(BottomNavigationScreen.Board) }
+        remember { mutableStateOf<RootScreen>(RootScreen.Board) }
     DisposableEffect(key1 = this) {
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
             when {
-                destination.hierarchy.any { it.route == BottomNavigationScreen.Board.route } -> {
-                    selectedItem.value = BottomNavigationScreen.Board
+                destination.hierarchy.any { it.route == RootScreen.Board.route } -> {
+                    selectedItem.value = RootScreen.Board
                 }
 
-                destination.hierarchy.any { it.route == BottomNavigationScreen.Chat.route } -> {
-                    selectedItem.value = BottomNavigationScreen.Chat
+                destination.hierarchy.any { it.route == RootScreen.Chat.route } -> {
+                    selectedItem.value = RootScreen.Chat
                 }
 
-                destination.hierarchy.any { it.route == BottomNavigationScreen.Setting.route } -> {
-                    selectedItem.value = BottomNavigationScreen.Setting
+                destination.hierarchy.any { it.route == RootScreen.MyPage.route } -> {
+                    selectedItem.value = RootScreen.MyPage
                 }
             }
         }

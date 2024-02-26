@@ -33,42 +33,9 @@ class LoginViewModel @Inject constructor(
     private val _isLogin = MutableStateFlow(false)
     val isLogin = _isLogin.asStateFlow()
 
-    private val _startScreenName = MutableStateFlow<RootScreen?>(null)
-    val startScreenName = _startScreenName.asStateFlow()
 
-    private val _userInfo = MutableStateFlow<UserInfo?>(null)
-    val userInfo = _userInfo.asStateFlow()
 
-    init {
-        validateToken()
-    }
 
-    private fun validateToken() {
-        viewModelScope.launch(Dispatchers.IO) {
-            validateKakaoAccessTokenUseCase()
-                .onSuccess {
-                    kakaoUserInfoUseCase()
-                        .onSuccess { user ->
-                            readUserUseCase(user.id.toString())
-                                .onSuccess {
-                                    _userInfo.value = it
-                                    _startScreenName.value = RootScreen.Main
-                                }.onFailure {
-                                    _userInfo.value = null
-                                    _startScreenName.value = RootScreen.Login
-                                }
-                        }
-                        .onFailure {
-                            _userInfo.value = null
-                            _startScreenName.value = RootScreen.Login
-                        }
-                }
-                .onFailure {
-                    _userInfo.value = null
-                    _startScreenName.value = RootScreen.Login
-                }
-        }
-    }
 
     fun loginForKakao() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -78,7 +45,7 @@ class LoginViewModel @Inject constructor(
                         .onSuccess { user ->
                             readUserUseCase(user.id.toString())
                                 .onSuccess {
-                                    _userInfo.value = it
+//                                    _userInfo.value = it
                                     _isLogin.value = true
                                 }
                                 .onFailure {
@@ -99,12 +66,12 @@ class LoginViewModel @Inject constructor(
                                 }
                         }
                         .onFailure {
-                            _userInfo.value = null
+//                            _userInfo.value = null
                             _isLogin.value = false
                         }
                 }
                 .onFailure {
-                    _userInfo.value = null
+//                    _userInfo.value = null
                     _isLogin.value = false
                 }
         }

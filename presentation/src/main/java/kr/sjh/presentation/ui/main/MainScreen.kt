@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.main
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,24 +13,28 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import kr.sjh.presentation.navigation.BottomNavItem
-import kr.sjh.presentation.navigation.BottomNavigationScreen
 import kr.sjh.presentation.navigation.MainNavGraph
+import kr.sjh.presentation.navigation.RootScreen
 import kr.sjh.presentation.navigation.currentScreenAsState
 
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
+    logOut: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -42,7 +47,7 @@ fun MainScreen(
             }
         },
         floatingActionButton = {
-            if (currentSelectedScreen.route == BottomNavigationScreen.Board.route) {
+            if (currentSelectedScreen.route == RootScreen.Board.route) {
                 ExtendedFloatingActionButton(
                     shape = RoundedCornerShape(30.dp),
                     containerColor = Color.Black,
@@ -61,20 +66,20 @@ fun MainScreen(
         }
     ) {
         Column(modifier = modifier.padding(it)) {
-            MainNavGraph(navController = navController)
+            MainNavGraph(navController, logOut)
         }
     }
 }
 
 @Composable
 fun BottomNavigation(
-    onClick: (BottomNavigationScreen) -> Unit
+    onClick: (RootScreen) -> Unit
 ) {
     val navItem =
-        listOf(BottomNavItem.List, BottomNavItem.Chat, BottomNavItem.Setting)
+        listOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
 
     var selectedScreen by remember {
-        mutableStateOf<BottomNavigationScreen>(BottomNavigationScreen.Board)
+        mutableStateOf<RootScreen>(RootScreen.Board)
     }
 
     NavigationBar {
@@ -94,10 +99,11 @@ fun BottomNavigation(
     }
 }
 
-private fun NavController.navigateToRootScreen(rootScreen: BottomNavigationScreen) {
+fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
     navigate(rootScreen.route) {
         launchSingleTop = true
         restoreState = true
+        Log.d("sjh", "graph.findStartDestination().id : $${graph.findStartDestination().id}")
         popUpTo(graph.findStartDestination().id) {
             saveState = true
         }
