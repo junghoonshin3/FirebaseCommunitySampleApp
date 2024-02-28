@@ -20,16 +20,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import kr.sjh.presentation.navigation.BottomNavItem
+import kr.sjh.presentation.navigation.LeafScreen
 import kr.sjh.presentation.navigation.MainNavGraph
 import kr.sjh.presentation.navigation.RootScreen
+import kr.sjh.presentation.navigation.currentRouteAsState
 import kr.sjh.presentation.navigation.currentScreenAsState
+import kr.sjh.presentation.navigation.navigateToRootScreen
 
 @Composable
 fun MainScreen(
@@ -38,16 +37,21 @@ fun MainScreen(
 ) {
     val navController = rememberNavController()
 
+    //current RootScreen
     val currentSelectedScreen by navController.currentScreenAsState()
+    //current LeafScreen
+    val currentRoute by navController.currentRouteAsState()
 
     Scaffold(
         bottomBar = {
-            BottomNavigation {
-                navController.navigateToRootScreen(it)
+            if (currentRoute != LeafScreen.BoardDetail.route) {
+                BottomNavigation {
+                    navController.navigateToRootScreen(it)
+                }
             }
         },
         floatingActionButton = {
-            if (currentSelectedScreen.route == RootScreen.Board.route) {
+            if (currentRoute == LeafScreen.Board.route) {
                 ExtendedFloatingActionButton(
                     shape = RoundedCornerShape(30.dp),
                     containerColor = Color.Black,
@@ -60,7 +64,7 @@ fun MainScreen(
                         )
                     },
                     onClick = {
-//                        navController.navigate()
+                        navController.navigate(LeafScreen.BoardWrite.route)
                     })
             }
         }
@@ -95,17 +99,6 @@ fun BottomNavigation(
                     onClick(it.screenRoute)
                 },
                 icon = { Icon(imageVector = it.icon, contentDescription = "") })
-        }
-    }
-}
-
-fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
-    navigate(rootScreen.route) {
-        launchSingleTop = true
-        restoreState = true
-        Log.d("sjh", "graph.findStartDestination().id : $${graph.findStartDestination().id}")
-        popUpTo(graph.findStartDestination().id) {
-            saveState = true
         }
     }
 }

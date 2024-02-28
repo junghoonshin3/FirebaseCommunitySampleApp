@@ -38,7 +38,7 @@ fun BoardScreen(
 
     val posts by boardViewModel.posts.collectAsState()
 
-    LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    LazyColumn(modifier = modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         itemsIndexed(posts) { index, item ->
             Post(
                 modifier = Modifier

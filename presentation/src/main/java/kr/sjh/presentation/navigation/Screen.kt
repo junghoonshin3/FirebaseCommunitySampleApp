@@ -15,7 +15,7 @@ sealed class RootScreen(val route: String) {
 sealed class LeafScreen(
     val route: String,
 ) {
-    //    object Main : LeafScreen("main")
+    object BoardWrite : LeafScreen("write")
     object Chat : LeafScreen("chat")
     object MyPage : LeafScreen("my_page")
     object Board : LeafScreen("board")

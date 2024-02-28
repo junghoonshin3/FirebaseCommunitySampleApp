@@ -1,5 +1,6 @@
 package kr.sjh.presentation.navigation
 
+import android.util.Log
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
@@ -16,29 +17,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.core.splashscreen.SplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import kr.sjh.presentation.ui.MainViewModel
 import kr.sjh.presentation.ui.board.BoardDetailScreen
 import kr.sjh.presentation.ui.board.BoardScreen
+import kr.sjh.presentation.ui.board.BoardWriteScreen
 import kr.sjh.presentation.ui.chat.ChatScreen
 import kr.sjh.presentation.ui.login.LoginScreen
-import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.main.MainScreen
-import kr.sjh.presentation.ui.main.navigateToRootScreen
 import kr.sjh.presentation.ui.mypage.MyPageScreen
 
 @Composable
@@ -74,7 +70,7 @@ fun RootNavGraph(
 @Composable
 fun MainNavGraph(navController: NavHostController = rememberNavController(), logOut: () -> Unit) {
     NavHost(
-        modifier = Modifier.padding(10.dp),
+        modifier = Modifier,
         navController = navController,
         startDestination = RootScreen.Board.route,
         enterTransition = { EnterTransition.None },
@@ -117,6 +113,7 @@ private fun NavGraphBuilder.addBoard(navController: NavController) {
     ) {
         showBoard(navController)
         showBoarDetail(navController)
+        showBoardWrite(navController, Modifier.fillMaxSize())
     }
 }
 
@@ -127,19 +124,29 @@ private fun NavGraphBuilder.showBoard(navController: NavController) {
 }
 
 private fun NavGraphBuilder.showBoarDetail(navController: NavController) {
-    dialog(
-        route = LeafScreen.BoardDetail.route,
-        dialogProperties = DialogProperties(
-            usePlatformDefaultWidth = false
-        )
+    composable(
+        route = LeafScreen.BoardDetail.route
     ) {
-
         BoardDetailScreen(
             navController,
             Modifier
                 .fillMaxSize()
-                .background(Color.Red)
-        )
+        ) {
+            navController.navigateUp()
+        }
+    }
+}
+
+private fun NavGraphBuilder.showBoardWrite(navController: NavController, modifier: Modifier) {
+    composable(
+        route = LeafScreen.BoardWrite.route
+    ) {
+        BoardWriteScreen(
+            navController,
+            modifier
+        ) {
+            navController.navigateUp()
+        }
     }
 }
 //end of board navigation
@@ -206,4 +213,33 @@ fun NavController.currentScreenAsState(): State<RootScreen> {
         }
     }
     return selectedItem
+}
+
+@Stable
+@Composable
+fun NavController.currentRouteAsState(): State<String?> {
+    val selectedItem = remember { mutableStateOf<String?>(null) }
+    DisposableEffect(this) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+            selectedItem.value = destination.route
+        }
+        addOnDestinationChangedListener(listener)
+
+        onDispose {
+            removeOnDestinationChangedListener(listener)
+        }
+    }
+    return selectedItem
+}
+
+
+fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
+    navigate(rootScreen.route) {
+        launchSingleTop = true
+        restoreState = true
+        Log.d("sjh", "graph.findStartDestination().id : $${graph.findStartDestination().id}")
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+    }
 }
