@@ -1,8 +1,10 @@
 package kr.sjh.presentation.ui.main
 
-import android.util.Log
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
@@ -13,7 +15,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
+import kr.sjh.domain.usecase.login.model.UserInfo
 import kr.sjh.presentation.navigation.BottomNavItem
 import kr.sjh.presentation.navigation.LeafScreen
 import kr.sjh.presentation.navigation.MainNavGraph
@@ -29,10 +32,12 @@ import kr.sjh.presentation.navigation.RootScreen
 import kr.sjh.presentation.navigation.currentRouteAsState
 import kr.sjh.presentation.navigation.currentScreenAsState
 import kr.sjh.presentation.navigation.navigateToRootScreen
+import kr.sjh.presentation.ui.MainViewModel
 
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
+    mainViewModel: MainViewModel,
     logOut: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -43,15 +48,14 @@ fun MainScreen(
     val currentRoute by navController.currentRouteAsState()
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (currentRoute != LeafScreen.BoardDetail.route) {
-                BottomNavigation {
-                    navController.navigateToRootScreen(it)
-                }
+            BottomNavigation {
+                navController.navigateToRootScreen(it)
             }
         },
         floatingActionButton = {
-            if (currentRoute == LeafScreen.Board.route) {
+            if (currentSelectedScreen == RootScreen.Board) {
                 ExtendedFloatingActionButton(
                     shape = RoundedCornerShape(30.dp),
                     containerColor = Color.Black,
@@ -69,9 +73,16 @@ fun MainScreen(
             }
         }
     ) {
-        Column(modifier = modifier.padding(it)) {
-            MainNavGraph(navController, logOut)
-        }
+        MainNavGraph(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(it)
+                .consumeWindowInsets(it)
+                .systemBarsPadding(),
+            navController = navController,
+            mainViewModel = mainViewModel,
+            logOut = logOut
+        )
     }
 }
 

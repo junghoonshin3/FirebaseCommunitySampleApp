@@ -1,11 +1,9 @@
 package kr.sjh.presentation.navigation
 
-import android.util.Log
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -15,10 +13,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -26,23 +26,33 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import kotlinx.coroutines.flow.map
+import kr.sjh.domain.usecase.login.model.Post
+import kr.sjh.domain.usecase.login.model.UserInfo
 import kr.sjh.presentation.ui.MainViewModel
-import kr.sjh.presentation.ui.board.BoardDetailScreen
 import kr.sjh.presentation.ui.board.BoardScreen
-import kr.sjh.presentation.ui.board.BoardWriteScreen
+import kr.sjh.presentation.ui.board.BoardViewModel
+import kr.sjh.presentation.ui.board.detail.BoardDetailScreen
+import kr.sjh.presentation.ui.board.detail.BoardDetailViewModel
+import kr.sjh.presentation.ui.board.write.BoardWriteScreen
+import kr.sjh.presentation.ui.board.write.BoardWriteViewModel
 import kr.sjh.presentation.ui.chat.ChatScreen
 import kr.sjh.presentation.ui.login.LoginScreen
 import kr.sjh.presentation.ui.main.MainScreen
 import kr.sjh.presentation.ui.mypage.MyPageScreen
+import kr.sjh.presentation.ui.theme.backgroundColor
+import kr.sjh.presentation.utill.getActivity
 
 @Composable
 fun RootNavGraph(
     navController: NavHostController,
-    mainViewModel: MainViewModel = hiltViewModel(),
     onKeepOnScreenCondition: () -> Unit
 ) {
+    val mainViewModel: MainViewModel = hiltViewModel(getActivity())
 
     val startScreen by mainViewModel.startScreenName.collectAsState()
 
@@ -60,17 +70,26 @@ fun RootNavGraph(
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None }
     ) {
-        showLogin(navController)
-        showMain(logOut = {
-            navController.navigateToRootScreen(RootScreen.Login)
-        })
+
+        showLogin(navController, mainViewModel)
+        showMain(navController, mainViewModel, logOut = {
+            mainViewModel.logOut {
+                navController.navigateToRootScreen(RootScreen.Login)
+            }
+        }
+        )
     }
 }
 
 @Composable
-fun MainNavGraph(navController: NavHostController = rememberNavController(), logOut: () -> Unit) {
+fun MainNavGraph(
+    modifier: Modifier,
+    navController: NavHostController,
+    mainViewModel: MainViewModel,
+    logOut: () -> Unit
+) {
     NavHost(
-        modifier = Modifier,
+        modifier = modifier,
         navController = navController,
         startDestination = RootScreen.Board.route,
         enterTransition = { EnterTransition.None },
@@ -78,7 +97,8 @@ fun MainNavGraph(navController: NavHostController = rememberNavController(), log
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None }
     ) {
-        addBoard(navController)
+
+        addBoard(navController, mainViewModel)
         addChat(navController)
         addMyPage(navController, logOut)
     }
@@ -86,6 +106,7 @@ fun MainNavGraph(navController: NavHostController = rememberNavController(), log
 
 private fun NavGraphBuilder.showLogin(
     navController: NavHostController,
+    mainViewModel: MainViewModel
 ) {
     composable(
         route = RootScreen.Login.route
@@ -94,59 +115,114 @@ private fun NavGraphBuilder.showLogin(
             navController,
             Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(Color.Black),
+            mainViewModel
         )
     }
 }
 
-private fun NavGraphBuilder.showMain(logOut: () -> Unit) {
-    composable(route = RootScreen.Main.route) {
-        MainScreen(Modifier.fillMaxSize(), logOut)
+private fun NavGraphBuilder.showMain(
+    navController: NavHostController,
+    mainViewModel: MainViewModel,
+    logOut: () -> Unit
+) {
+    composable(route = RootScreen.Main.route) { entry ->
+        MainScreen(Modifier.fillMaxSize(), mainViewModel, logOut)
     }
 }
 
 //board navigation
-private fun NavGraphBuilder.addBoard(navController: NavController) {
+private fun NavGraphBuilder.addBoard(
+    navController: NavController,
+    mainViewModel: MainViewModel,
+) {
     navigation(
         route = RootScreen.Board.route,
         startDestination = LeafScreen.Board.route
     ) {
         showBoard(navController)
-        showBoarDetail(navController)
-        showBoardWrite(navController, Modifier.fillMaxSize())
+        showBoarDetail(navController, mainViewModel)
+        showBoardWrite(
+            navController = navController,
+            mainViewModel = mainViewModel,
+            onBack = {
+                navController.navigateUp()
+            }
+        )
     }
 }
 
-private fun NavGraphBuilder.showBoard(navController: NavController) {
+private fun NavGraphBuilder.showBoard(
+    navController: NavController,
+//    boardViewModel: BoardViewModel
+) {
     composable(route = LeafScreen.Board.route) {
         BoardScreen(navController)
     }
 }
 
-private fun NavGraphBuilder.showBoarDetail(navController: NavController) {
-    composable(
-        route = LeafScreen.BoardDetail.route
+private fun NavGraphBuilder.showBoarDetail(
+    navController: NavController,
+    mainViewModel: MainViewModel
+) {
+    dialog(
+        route = "${LeafScreen.BoardDetail.route}/{post}",
+        arguments = listOf(navArgument("post") { type = PostType() }),
+        dialogProperties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
+        val post = it.arguments?.getParcelable("post") ?: Post()
+
+        val userInfo by mainViewModel.userInfo.collectAsState()
+
         BoardDetailScreen(
             navController,
             Modifier
-                .fillMaxSize()
+                .fillMaxSize(),
+            post,
+            userInfo = userInfo,
+            mainViewModel = mainViewModel
         ) {
             navController.navigateUp()
         }
     }
 }
 
-private fun NavGraphBuilder.showBoardWrite(navController: NavController, modifier: Modifier) {
-    composable(
-        route = LeafScreen.BoardWrite.route
+private fun NavGraphBuilder.showBoardWrite(
+    navController: NavController,
+    mainViewModel: MainViewModel,
+    onBack: () -> Unit
+) {
+    dialog(
+        route = LeafScreen.BoardWrite.route,
+        dialogProperties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
+        val boardWriteViewModel: BoardWriteViewModel = hiltViewModel()
+        val userInfo by mainViewModel.userInfo.collectAsState()
         BoardWriteScreen(
-            navController,
-            modifier
-        ) {
-            navController.navigateUp()
-        }
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundColor),
+//            navController = navController,
+            boardWriteViewModel = boardWriteViewModel,
+            onPost = {
+                userInfo?.let {
+                    boardWriteViewModel.createPost(it)
+                    mainViewModel.updateUserInfo(
+                        it.copy(
+                            postCount = it.postCount.plus(1)
+                        )
+                    )
+                }
+                navController.navigateUp()
+            },
+            onBack = onBack
+        )
     }
 }
 //end of board navigation
@@ -237,9 +313,9 @@ fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
     navigate(rootScreen.route) {
         launchSingleTop = true
         restoreState = true
-        Log.d("sjh", "graph.findStartDestination().id : $${graph.findStartDestination().id}")
         popUpTo(graph.findStartDestination().id) {
             saveState = true
         }
     }
 }
+

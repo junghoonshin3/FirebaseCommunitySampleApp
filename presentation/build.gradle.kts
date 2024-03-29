@@ -49,6 +49,7 @@ dependencies {
     implementation(JetPackCompose.uiGraphics)
     implementation(JetPackCompose.composeBom)
     implementation(JetPackCompose.composeUiToolingPreview)
+    implementation(JetPackCompose.composeLifeCycle)
     testImplementation(TestImplementation.junit)
     androidTestImplementation(AndroidTestImplementation.junit)
     androidTestImplementation(AndroidTestImplementation.espressoCore)
@@ -71,5 +72,9 @@ dependencies {
 
     //splash api
     implementation(SplashScreen.coreSplash)
+
+    //gilde
+    implementation("com.github.skydoves:landscapist-glide:2.3.2")
+
 
 }

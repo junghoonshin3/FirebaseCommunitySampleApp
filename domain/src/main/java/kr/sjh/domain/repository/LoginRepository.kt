@@ -17,4 +17,8 @@ interface LoginRepository {
     suspend fun readUser(id: String?): Result<UserInfo>
 
     suspend fun deleteUser(id: String?): Result<Boolean>
+
+    suspend fun updateUser(user: UserInfo): Result<Boolean>
+
+    suspend fun logOutUser(): Result<Boolean>
 }

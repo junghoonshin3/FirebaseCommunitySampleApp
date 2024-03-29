@@ -80,6 +80,28 @@ class LoginRepositoryImpl @Inject constructor(
         throw it
     }
 
+    override suspend fun updateUser(user: UserInfo): Result<Boolean> =
+        runCatching {
+            putUser(user)
+        }.recoverCatching {
+            throw it
+        }
+
+    override suspend fun logOutUser(): Result<Boolean> =
+        runCatching {
+            logOut()
+        }.recoverCatching {
+            throw it
+        }
+
+
+    private suspend fun putUser(user: UserInfo) = suspendCoroutine { continuation ->
+        db.reference.child("users").child(user.id!!).setValue(user).addOnSuccessListener {
+            continuation.resume(true)
+        }
+            .addOnFailureListener { continuation.resumeWithException(it) }
+    }
+
     private suspend fun create(
         user: UserInfo
     ) = suspendCoroutine { continuation ->
@@ -162,6 +184,17 @@ class LoginRepositoryImpl @Inject constructor(
         // 카카오톡으로 로그인
         userApiClient.loginWithKakaoAccount(context) { token, error ->
             continuation.resumeTokenOrException(token, error)
+        }
+    }
+
+    private suspend fun logOut(): Boolean = suspendCoroutine { continuation ->
+        // 카카오톡 로그아웃
+        userApiClient.logout {
+            if (it != null) {
+                continuation.resumeWithException(it)
+            } else {
+                continuation.resume(true)
+            }
         }
     }
 

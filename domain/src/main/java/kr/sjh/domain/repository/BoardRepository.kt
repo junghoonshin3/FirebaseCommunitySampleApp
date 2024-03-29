@@ -8,6 +8,6 @@ interface BoardRepository {
 
     suspend fun createPost(post: Post): Result<Boolean>
 
-//    suspend fun deletePost(post: Post): Flow<Result<Post>>
-//    suspend fun updatePost():Flow<Result<Post>>
+    //    suspend fun deletePost(post: Post): Flow<Result<Post>>
+    suspend fun updatePost(post: Map<String, Any>): Result<Boolean>
 }

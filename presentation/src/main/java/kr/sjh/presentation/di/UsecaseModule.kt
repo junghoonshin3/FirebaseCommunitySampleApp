@@ -11,6 +11,7 @@ import kr.sjh.domain.usecase.board.ReadPostsUseCase
 import kr.sjh.domain.usecase.login.firebase.CreateUserUseCase
 import kr.sjh.domain.usecase.login.firebase.DeleteUserUseCase
 import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
+import kr.sjh.domain.usecase.login.firebase.UpdateUserUseCase
 import kr.sjh.domain.usecase.login.kakao.GetKakaoUserInfoUseCase
 import kr.sjh.domain.usecase.login.kakao.LoginForKakaoUseCase
 import kr.sjh.domain.usecase.login.kakao.LogoutKakaoUseCase
@@ -63,5 +64,10 @@ object PresentationModule {
     @Provides
     fun provideCreatePostsUseCase(board: BoardRepository): CreatePostUseCase {
         return CreatePostUseCase(board)
+    }
+
+    @Provides
+    fun provideUpdateUserUseCase(login: LoginRepository): UpdateUserUseCase {
+        return UpdateUserUseCase(login)
     }
 }

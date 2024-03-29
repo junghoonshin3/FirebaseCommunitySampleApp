@@ -11,3 +11,4 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
 val backgroundColor = Color(0xFF34373D)
+val carrot = Color(0xFFFF8035)

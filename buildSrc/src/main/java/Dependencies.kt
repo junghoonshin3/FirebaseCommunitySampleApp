@@ -20,6 +20,7 @@ object Versions {
     const val splash = "1.0.1"
     const val hilt_version = "2.44"
     const val kakao_login = "2.19.0"
+    const val compose_lifecycle = "2.6.0-alpha01"
 
 }
 
@@ -40,7 +41,8 @@ object JetPackCompose {
     const val material3 = "androidx.compose.material3:material3:${Versions.material3}"
     const val material3WindowSizeClass =
         "androidx.compose.material3:material3-window-size-class:${Versions.material3WindowSizeClass}"
-
+    const val composeLifeCycle =
+        "androidx.lifecycle:lifecycle-runtime-compose:${Versions.compose_lifecycle}"
 }
 
 object TestImplementation {

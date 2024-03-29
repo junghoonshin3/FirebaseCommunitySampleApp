@@ -22,21 +22,29 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.navOptions
 import kr.sjh.presentation.R
 import kr.sjh.presentation.navigation.RootScreen
+import kr.sjh.presentation.navigation.navigateToRootScreen
+import kr.sjh.presentation.ui.MainViewModel
 
 @Composable
 fun LoginScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    loginViewModel: LoginViewModel = hiltViewModel(),
+    mainViewModel: MainViewModel
 ) {
-    val isLogin by loginViewModel.isLogin.collectAsState()
+    val isLogin by mainViewModel.isLogin.collectAsStateWithLifecycle()
 
     LaunchedEffect(key1 = isLogin, block = {
         if (isLogin) {
-            navController.navigate(RootScreen.Main.route)
+            navController.navigate(RootScreen.Main.route, navOptions = navOptions {
+                popUpTo(RootScreen.Login.route) {
+                    inclusive = true
+                }
+            })
         }
     })
 
@@ -62,7 +70,7 @@ fun LoginScreen(
                 .height(90.dp)
                 .padding(10.dp)
                 .clickable {
-                    loginViewModel.loginForKakao()
+                    mainViewModel.loginForKakao()
                 },
             painter = painterResource(id = R.drawable.kakao_login_large_narrow),
             contentDescription = "login"

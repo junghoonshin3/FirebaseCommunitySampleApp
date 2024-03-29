@@ -23,7 +23,7 @@ class BoardRepositoryImpl @Inject constructor(
         ref.snapshots.map { snapshot ->
             snapshot.children.mapNotNull { post ->
                 post.getValue(Post::class.java)
-            }
+            }.sortedByDescending { it.createdAt }
         }
 
     override suspend fun createPost(post: Post): Result<Boolean> =
@@ -32,6 +32,21 @@ class BoardRepositoryImpl @Inject constructor(
         }.recoverCatching {
             throw it
         }
+
+    override suspend fun updatePost(post: Map<String, Any>): Result<Boolean> =
+        runCatching {
+            putPost(post)
+        }.recoverCatching {
+            throw it
+        }
+
+
+    private suspend fun putPost(post: Map<String, Any>) = suspendCoroutine { continuation ->
+        ref.updateChildren(
+            post
+        ).addOnSuccessListener { continuation.resume(true) }
+            .addOnFailureListener { continuation.resumeWithException(it) }
+    }
 
     private suspend fun insertPost(post: Post) = suspendCoroutine { continuation ->
         val key = ref.push().key.toString()
@@ -43,5 +58,6 @@ class BoardRepositoryImpl @Inject constructor(
                 continuation.resumeWithException(it)
             }
     }
+
 
 }
