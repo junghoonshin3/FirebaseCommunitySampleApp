@@ -20,18 +20,19 @@ class MainActivity : ComponentActivity() {
 
     private var condition = true
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         installSplashScreen().setKeepOnScreenCondition {
             condition
         }
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(backgroundColor.toArgb()),
             navigationBarStyle = SystemBarStyle.dark(backgroundColor.toArgb())
         )
+        super.onCreate(savedInstanceState)
+
         setContent {
             PickUpTheme {
                 val navController = rememberNavController()
-
                 RootNavGraph(
                     navController,
                     onKeepOnScreenCondition = {

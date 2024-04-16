@@ -76,9 +76,7 @@ fun MainScreen(
         MainNavGraph(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(it)
-                .consumeWindowInsets(it)
-                .systemBarsPadding(),
+                .padding(it),
             navController = navController,
             mainViewModel = mainViewModel,
             logOut = logOut

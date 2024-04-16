@@ -18,7 +18,7 @@ object Versions {
     const val uiTooling = "1.5.4"
     const val testManifest = "1.5.4"
     const val splash = "1.0.1"
-    const val hilt_version = "2.44"
+    const val hilt_version = "2.48"
     const val kakao_login = "2.19.0"
     const val compose_lifecycle = "2.6.0-alpha01"
 
@@ -77,8 +77,10 @@ object SplashScreen {
 object DaggerHilt {
     const val hiltNavigation = "androidx.hilt:hilt-navigation-compose:${Versions.hilt_navigation}"
     const val daggerHilt = "com.google.dagger:hilt-android:${Versions.hilt_version}"
+    const val daggerCompiler =
+        "com.google.dagger:dagger-compiler:${Versions.hilt_version}"
     const val daggerHiltCompiler =
-        "com.google.dagger:hilt-android-compiler:${Versions.hilt_version}"
+        "com.google.dagger:hilt-compiler:${Versions.hilt_version}"
 }
 
 object KaKao {

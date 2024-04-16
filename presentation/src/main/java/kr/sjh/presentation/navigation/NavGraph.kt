@@ -4,6 +4,8 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,12 +15,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -27,17 +27,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import kotlinx.coroutines.flow.map
 import kr.sjh.domain.usecase.login.model.Post
-import kr.sjh.domain.usecase.login.model.UserInfo
 import kr.sjh.presentation.ui.MainViewModel
 import kr.sjh.presentation.ui.board.BoardScreen
-import kr.sjh.presentation.ui.board.BoardViewModel
 import kr.sjh.presentation.ui.board.detail.BoardDetailScreen
-import kr.sjh.presentation.ui.board.detail.BoardDetailViewModel
 import kr.sjh.presentation.ui.board.write.BoardWriteScreen
 import kr.sjh.presentation.ui.board.write.BoardWriteViewModel
 import kr.sjh.presentation.ui.chat.ChatScreen
@@ -207,7 +202,8 @@ private fun NavGraphBuilder.showBoardWrite(
         BoardWriteScreen(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundColor),
+                .background(backgroundColor)
+                .verticalScroll(rememberScrollState()),
 //            navController = navController,
             boardWriteViewModel = boardWriteViewModel,
             onPost = {
