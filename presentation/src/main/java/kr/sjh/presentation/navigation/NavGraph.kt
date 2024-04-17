@@ -201,10 +201,7 @@ private fun NavGraphBuilder.showBoardWrite(
         val userInfo by mainViewModel.userInfo.collectAsState()
         BoardWriteScreen(
             modifier = Modifier
-                .fillMaxSize()
-                .background(backgroundColor)
-                .verticalScroll(rememberScrollState()),
-//            navController = navController,
+                .fillMaxSize(),
             boardWriteViewModel = boardWriteViewModel,
             onPost = {
                 userInfo?.let {
