@@ -3,6 +3,7 @@ package kr.sjh.presentation.ui.main
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -76,7 +77,8 @@ fun MainScreen(
         MainNavGraph(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(it),
+                .padding(it)
+                .consumeWindowInsets(it),
             navController = navController,
             mainViewModel = mainViewModel,
             logOut = logOut

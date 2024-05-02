@@ -1,9 +1,21 @@
 package kr.sjh.presentation.navigation
 
+import android.util.Log
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clipScrollableContainer
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imeNestedScroll
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -15,8 +27,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.onPreInterceptKeyBeforeSoftKeyboard
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -39,7 +58,6 @@ import kr.sjh.presentation.ui.chat.ChatScreen
 import kr.sjh.presentation.ui.login.LoginScreen
 import kr.sjh.presentation.ui.main.MainScreen
 import kr.sjh.presentation.ui.mypage.MyPageScreen
-import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.utill.getActivity
 
 @Composable
@@ -94,7 +112,7 @@ fun MainNavGraph(
     ) {
 
         addBoard(navController, mainViewModel)
-        addChat(navController)
+        addChat(navController, mainViewModel)
         addMyPage(navController, logOut)
     }
 }
@@ -199,9 +217,11 @@ private fun NavGraphBuilder.showBoardWrite(
     ) {
         val boardWriteViewModel: BoardWriteViewModel = hiltViewModel()
         val userInfo by mainViewModel.userInfo.collectAsState()
+        val scrollState= rememberScrollState()
         BoardWriteScreen(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(scrollState),
             boardWriteViewModel = boardWriteViewModel,
             onPost = {
                 userInfo?.let {
@@ -221,18 +241,23 @@ private fun NavGraphBuilder.showBoardWrite(
 //end of board navigation
 
 //chat navigation
-private fun NavGraphBuilder.addChat(navController: NavController) {
+private fun NavGraphBuilder.addChat(navController: NavController, mainViewModel: MainViewModel) {
     navigation(
         route = RootScreen.Chat.route,
         startDestination = LeafScreen.Chat.route
     ) {
-        showChat(navController)
+        showChat(navController, mainViewModel)
     }
 }
 
-private fun NavGraphBuilder.showChat(navController: NavController) {
+private fun NavGraphBuilder.showChat(navController: NavController, mainViewModel: MainViewModel) {
     composable(route = LeafScreen.Chat.route) {
-        ChatScreen(navController)
+        val userInfo by mainViewModel.userInfo.collectAsState()
+        ChatScreen(
+            modifier = Modifier.fillMaxSize(),
+            userInfo = userInfo,
+            navController = navController
+        )
     }
 }
 //end of chat navigation
