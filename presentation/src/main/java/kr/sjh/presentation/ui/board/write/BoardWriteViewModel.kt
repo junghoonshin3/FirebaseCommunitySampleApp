@@ -1,60 +1,100 @@
 package kr.sjh.presentation.ui.board.write
 
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kr.sjh.domain.usecase.board.CreatePostUseCase
-import kr.sjh.domain.usecase.board.ReadPostsUseCase
-import kr.sjh.domain.usecase.login.firebase.UpdateUserUseCase
+import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
 import kr.sjh.domain.usecase.login.model.Post
 import kr.sjh.domain.usecase.login.model.UserInfo
-import java.time.LocalDateTime
 import java.util.Date
 import javax.inject.Inject
 
+sealed interface BoardWriteUiState {
+    data object Success : BoardWriteUiState
+
+    data class Error(val throwable: Throwable) : BoardWriteUiState
+
+    data object Loading : BoardWriteUiState
+}
+
 @HiltViewModel
 class BoardWriteViewModel @Inject constructor(
-    private val readPostsUseCase: ReadPostsUseCase,
     private val createPostsUseCase: CreatePostUseCase,
-    private val updateUserUseCase: UpdateUserUseCase
+    private val savedStateHandle: SavedStateHandle,
+    private val readUserUseCase: ReadUserUseCase
 ) : ViewModel() {
 
-    var title by mutableStateOf("")
-    var content by mutableStateOf("")
+    var title = savedStateHandle.getStateFlow("title", "")
+
+    var content = savedStateHandle.getStateFlow("content", "")
+
+    val userInfo = savedStateHandle.get<UserInfo>("userInfo")
+
+    private val _writeUiState: MutableSharedFlow<BoardWriteUiState> = MutableSharedFlow()
+
+    val writeUiState: SharedFlow<BoardWriteUiState> = _writeUiState.asSharedFlow()
 
     fun updateTitle(title: String) {
-        this.title = title
+        savedStateHandle["title"] = title
     }
 
     fun updateContent(content: String) {
-        this.content = content
+        savedStateHandle["content"] = content
     }
 
-    fun createPost(userInfo: UserInfo) {
-        viewModelScope.launch(Dispatchers.IO) {
-            createPostsUseCase(
-                Post(
-                    id = userInfo.id,
-                    title = title,
-                    content = content,
-                    nickName = userInfo.nickName,
-                    createdAt = Date().time
-                )
-            )
-                .onSuccess {
+    fun createPost() =
+        viewModelScope.launch {
+            _writeUiState.emit(BoardWriteUiState.Loading)
+            userInfo?.let {
+                createPostsUseCase(
+                    Post(
+                        writerId = it.id!!,
+                        title = title.value,
+                        content = content.value,
+                        nickName = it.nickName,
+                        createdAt = Date().time
+                    )
+                ).onSuccess {
+                    _writeUiState.emit(BoardWriteUiState.Success)
                 }
-                .onFailure {
-                    it.printStackTrace()
-                }
+                    .onFailure {
+                        _writeUiState.emit(BoardWriteUiState.Error(it))
+                    }
+            }
         }
-    }
+//            _writeUiState.emit(BoardWriteUiState.Loading)
+////                Log.d("sjh", "userInfo : ${userInfo.id}")
+//            createPostsUseCase(
+//                Post(
+//                    writerId = userInfo.id!!,
+//                    title = title.value,
+//                    content = content.value,
+//                    nickName = userInfo.nickName,
+//                    createdAt = Date().time
+//                )
+//            ).getOrThrow()
+//        }.catch {
+//            it.printStackTrace()
+//            _writeUiState.emit(BoardWriteUiState.Error(it))
+//        }.collect {
+//            _writeUiState.emit(BoardWriteUiState.Success)
+//        }
 }

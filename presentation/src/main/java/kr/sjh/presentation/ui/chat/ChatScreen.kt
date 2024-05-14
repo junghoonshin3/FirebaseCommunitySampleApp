@@ -36,6 +36,12 @@ import com.skydoves.landscapist.components.ImageComponent
 import com.skydoves.landscapist.glide.GlideImage
 import kr.sjh.domain.usecase.login.model.UserInfo
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.theme.backgroundColor
+
+@Composable
+fun ChatRoute() {
+
+}
 
 @Composable
 fun ChatScreen(navController: NavController, userInfo: UserInfo?, modifier: Modifier = Modifier) {
@@ -80,7 +86,7 @@ fun ChatList(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Red)
+                .background(backgroundColor)
                 .clickable {
                     onClick()
                 },

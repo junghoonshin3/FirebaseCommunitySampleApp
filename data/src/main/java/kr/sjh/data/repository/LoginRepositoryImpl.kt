@@ -2,11 +2,11 @@ package kr.sjh.data.repository
 
 import android.content.Context
 import android.content.res.Resources.NotFoundException
-import android.util.Log
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.snapshots
 import com.kakao.sdk.auth.AuthApiClient
 import com.kakao.sdk.auth.model.OAuthToken
 import com.kakao.sdk.common.model.ClientError
@@ -15,6 +15,9 @@ import com.kakao.sdk.common.model.KakaoSdkError
 import com.kakao.sdk.user.UserApiClient
 import com.kakao.sdk.user.model.AccessTokenInfo
 import com.kakao.sdk.user.model.User
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.map
+import kr.sjh.domain.error.NotFoundUser
 import kr.sjh.domain.repository.LoginRepository
 import kr.sjh.domain.usecase.login.model.UserInfo
 import javax.inject.Inject
@@ -31,7 +34,7 @@ class LoginRepositoryImpl @Inject constructor(
     private val userApiClient: UserApiClient
 ) : LoginRepository {
 
-    override suspend fun signInForKakao() = runCatching {
+    override suspend fun loginForKakao() = runCatching {
         if (userApiClient.isKakaoTalkLoginAvailable(context)) {
             loginWithKakaoTalk()
         } else {
@@ -68,11 +71,30 @@ class LoginRepositoryImpl @Inject constructor(
         throw it
     }
 
-    override suspend fun readUser(id: String?) = runCatching {
-        read(id)
+    override suspend fun readUser(userId: String) = runCatching {
+        suspendCoroutine { continuation ->
+            db.reference.child("users").child(userId).addListenerForSingleValueEvent(
+                object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        val user = snapshot.getValue(UserInfo::class.java)
+                        if (user != null) {
+                            continuation.resume(user)
+                        } else {
+                            continuation.resumeWithException(NotFoundUser(("Not Found UserInfo")))
+                        }
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                        continuation.resumeWithException(error.toException())
+                    }
+                }
+            )
+        }
     }.recoverCatching {
+        it.printStackTrace()
         throw it
     }
+
 
     override suspend fun deleteUser(id: String?) = runCatching {
         delete(id)
@@ -108,40 +130,39 @@ class LoginRepositoryImpl @Inject constructor(
         db.reference.child("users").child(user.id.toString()).setValue(
             user
         ).addOnSuccessListener {
-            continuation.resume(true)
+            continuation.resume(user)
         }.addOnFailureListener {
             continuation.resumeWithException(it)
         }
 
     }
 
-    private suspend fun read(
-        id: String?,
-    ) = suspendCoroutine { continuation ->
-        if (!id.isNullOrBlank()) {
-            db.reference.child("users").child(id)
-                .addListenerForSingleValueEvent(
-                    object : ValueEventListener {
-                        override fun onDataChange(snapshot: DataSnapshot) {
-                            val user = snapshot.getValue(UserInfo::class.java)
-                            if (user != null) {
-                                continuation.resume(user)
-                            } else {
-                                continuation.resumeWithException(NotFoundException(("Not Register User")))
-                            }
-                        }
-
-                        override fun onCancelled(error: DatabaseError) {
-                            continuation.resumeWithException(error.toException())
-                        }
-
-                    }
-                )
-        } else {
-            continuation.resumeWithException(NullPointerException("ID is NullOrBlank"))
-        }
-
-    }
+//    private suspend fun read(
+//        id: String?,
+//    ) = suspendCoroutine { continuation ->
+//        if (!id.isNullOrBlank()) {
+//            db.reference.child("users").child(id)
+//                .addListenerForSingleValueEvent(
+//                    object : ValueEventListener {
+//                        override fun onDataChange(snapshot: DataSnapshot) {
+//                            val user = snapshot.getValue(UserInfo::class.java)
+//                            if (user != null) {
+//                                continuation.resume(user)
+//                            } else {
+//                                continuation.resumeWithException(NotFoundException(("Not Register User")))
+//                            }
+//                        }
+//
+//                        override fun onCancelled(error: DatabaseError) {
+//                            continuation.resumeWithException(error.toException())
+//                        }
+//
+//                    }
+//                )
+//        } else {
+//            continuation.resumeWithException(NullPointerException("ID is NullOrBlank"))
+//        }
+//    }
 
     private suspend fun delete(
         id: String?,
@@ -155,7 +176,7 @@ class LoginRepositoryImpl @Inject constructor(
                 }
             }
         } else {
-            continuation.resumeWithException(Exception(RuntimeException("ID is NullOrBlank")))
+            continuation.resumeWithException(RuntimeException("ID is NullOrBlank"))
         }
     }
 

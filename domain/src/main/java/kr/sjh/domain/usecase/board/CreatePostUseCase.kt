@@ -8,4 +8,5 @@ class CreatePostUseCase @Inject constructor(
     private val boardRepository: BoardRepository
 ) {
     suspend operator fun invoke(post: Post) = boardRepository.createPost(post)
+
 }

@@ -10,7 +10,7 @@ import kotlinx.android.parcel.Parcelize
 @Parcelize
 @Stable
 data class Post(
-    val id: String? = "",
+    val writerId: String = "",
     var key: String = "",
     var title: String? = null,
     var content: String? = null,

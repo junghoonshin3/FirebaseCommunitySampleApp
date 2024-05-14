@@ -4,9 +4,11 @@ import kotlinx.coroutines.flow.Flow
 import kr.sjh.domain.usecase.login.model.Post
 
 interface BoardRepository {
-    fun readPosts(): Flow<List<Post>>
+    suspend fun readPosts(): Flow<List<Post>>
 
-    suspend fun createPost(post: Post): Result<Boolean>
+    fun readPost(postKey: String): Flow<Post>
+
+    suspend fun createPost(post: Post): Result<Unit>
 
     //    suspend fun deletePost(post: Post): Flow<Result<Post>>
     suspend fun updatePost(post: Map<String, Any>): Result<Boolean>

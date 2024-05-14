@@ -9,7 +9,6 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -17,28 +16,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.onConsumedWindowInsetsChanged
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.onFocusedBoundsChanged
-import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -48,14 +35,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -63,17 +49,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -83,15 +65,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.request.RequestOptions
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.skydoves.landscapist.glide.GlideImage
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.backgroundColor
@@ -99,21 +81,81 @@ import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.clearFocusOnKeyboardDismiss
 
 @Composable
-fun BoardWriteScreen(
+fun BoardWriteRoute(
     modifier: Modifier = Modifier,
-    boardWriteViewModel: BoardWriteViewModel,
-    onPost: () -> Unit,
+    boardWriteViewModel: BoardWriteViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
     var selectedPhotos by remember {
         mutableStateOf<List<Uri>>(emptyList())
     }
 
+    val scrollState = rememberScrollState()
+
+    val title by boardWriteViewModel.title.collectAsState()
+
+    val content by boardWriteViewModel.content.collectAsState()
+
+    val writeUiState by boardWriteViewModel.writeUiState.collectAsStateWithLifecycle(
+        initialValue = BoardWriteUiState.Loading,
+    )
+
+    when (writeUiState) {
+        is BoardWriteUiState.Error -> {
+        }
+
+        BoardWriteUiState.Loading -> {
+
+        }
+
+        BoardWriteUiState.Success -> {
+            onBack()
+        }
+    }
+
+    BoardWriteScreen(
+        modifier = modifier,
+        onPost = {
+            boardWriteViewModel.createPost()
+        },
+        onBack = onBack,
+        selectedPhotos = selectedPhotos,
+        onSelectedPhotos = {
+            Log.d("sjh", "picture : ${it.size}")
+            selectedPhotos = it
+        },
+        scrollState = scrollState,
+        title = title,
+        content = content,
+        updateContent = {
+            boardWriteViewModel.updateContent(it)
+        },
+        updateTitle = {
+            boardWriteViewModel.updateTitle(it)
+        }
+    )
+}
+
+@Composable
+fun BoardWriteScreen(
+    modifier: Modifier = Modifier,
+    selectedPhotos: List<Uri>,
+    title: String,
+    content: String,
+    scrollState: ScrollState,
+    onSelectedPhotos: (List<Uri>) -> Unit,
+    updateContent: (String) -> Unit,
+    updateTitle: (String) -> Unit,
+    onPost: () -> Unit,
+    onBack: () -> Unit,
+) {
+
     Surface(
         modifier = modifier,
         contentColor = backgroundColor,
         color = backgroundColor
     ) {
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -127,22 +169,22 @@ fun BoardWriteScreen(
                 onBack = onBack,
                 onPost = onPost
             )
-
             BoardWriteBody(
                 modifier = Modifier
                     .weight(1f),
                 selectedPhotos = selectedPhotos,
-                boardWriteViewModel = boardWriteViewModel
+                title = title,
+                content = content,
+                updateContent = updateContent,
+                updateTitle = updateTitle,
+                scrollState = scrollState
             )
             BoardWritePicture(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(10.dp)
                     .imePadding(),
-                onPhoto = {
-                    // 선택한 사진들
-                    selectedPhotos = it
-                }
+                onPhoto = onSelectedPhotos
             )
         }
     }
@@ -211,9 +253,13 @@ fun BoardWriteTopBar(
 fun BoardWriteBody(
     modifier: Modifier = Modifier,
     selectedPhotos: List<Uri> = emptyList(),
-    boardWriteViewModel: BoardWriteViewModel
+    title: String,
+    updateTitle: (String) -> Unit,
+    content: String,
+    updateContent: (String) -> Unit,
+    scrollState: ScrollState
+
 ) {
-    val scrollState = rememberScrollState()
 
     val focusManager = LocalFocusManager.current
 
@@ -288,8 +334,8 @@ fun BoardWriteBody(
             }),
             modifier = Modifier
                 .fillMaxWidth(),
-            text = boardWriteViewModel.title,
-            onTextChanged = { boardWriteViewModel.updateTitle(it) },
+            text = title,
+            onTextChanged = { updateTitle(it) },
             placeholder = {
                 Text(text = "제목을 입력하세요.")
             }
@@ -298,8 +344,8 @@ fun BoardWriteBody(
             scrollState = scrollState,
             modifier = Modifier
                 .fillMaxWidth(),
-            text = boardWriteViewModel.content,
-            onTextChanged = { boardWriteViewModel.updateContent(it) },
+            text = content,
+            onTextChanged = { updateContent(it) },
             placeholder = {
                 Text(
                     text = "방문한 음식점에 대한 정보를 공유해 주세요!추천하는 메뉴나 매장 이용 팁 등을 공유해 주세요!",
@@ -314,8 +360,8 @@ fun BoardWriteBody(
                 disabledIndicatorColor = Color.Transparent,
                 unfocusedPlaceholderColor = Color.Gray,
                 focusedPlaceholderColor = Color.Gray,
-                focusedContainerColor = Color.Red,
-                unfocusedContainerColor = Color.Red
+                focusedContainerColor = backgroundColor,
+                unfocusedContainerColor = backgroundColor
             ),
             keyboardActions =
             KeyboardActions(onDone = {
