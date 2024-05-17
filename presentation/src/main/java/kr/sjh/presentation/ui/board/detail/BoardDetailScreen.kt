@@ -33,6 +33,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,7 +53,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.skydoves.landscapist.glide.GlideImage
+import kr.sjh.domain.usecase.login.model.Post
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.bottomsheet.BottomSheetUiState
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kotlin.math.absoluteValue
@@ -65,6 +68,7 @@ val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
+    onMoreMenu: (Post) -> Unit,
     detailViewModel: BoardDetailViewModel = hiltViewModel(),
 ) {
     val listState = rememberLazyListState()
@@ -92,11 +96,10 @@ fun BoardDetailRoute(
 
     val writeUiState by detailViewModel.writeUiState.collectAsStateWithLifecycle()
 
-    val isLike by remember {
+    var isLike by remember {
         mutableStateOf(false)
     }
-
-
+    
     BoardDetailScreen(
         modifier = modifier,
         isCollapsed = isCollapsed,
@@ -104,9 +107,10 @@ fun BoardDetailRoute(
         writeUiState = writeUiState,
         listState = listState,
         onBack = onBack,
+        onMoreMenu = onMoreMenu,
         color = color,
         onLikeChange = {
-
+            isLike = !isLike
         }
     )
 
@@ -121,14 +125,14 @@ fun BoardDetailScreen(
     isLike: Boolean,
     listState: LazyListState,
     onBack: () -> Unit,
-    onLikeChange: (Boolean) -> Unit,
+    onMoreMenu: (Post) -> Unit,
+    onLikeChange: () -> Unit,
 ) {
 
     Box(modifier = modifier) {
         //접힌 상태 탑바
         when (writeUiState) {
             is WriteUiState.Error -> {
-
             }
 
             WriteUiState.Loading -> {
@@ -139,6 +143,7 @@ fun BoardDetailScreen(
             }
 
             is WriteUiState.Success -> {
+                //접힌 상태 탑바
                 DetailCollapsedTopBar(
                     modifier = Modifier
                         .zIndex(1f)
@@ -147,8 +152,9 @@ fun BoardDetailScreen(
                     isCollapsed = isCollapsed,
                     isLike = isLike,
                     color = color,
-                    onLikeChange = { like ->
-                        onLikeChange(like)
+                    onLikeChange = onLikeChange,
+                    onMoreMenu = {
+                        onMoreMenu(writeUiState.post)
                     },
                     onBack = onBack
                 )
@@ -227,9 +233,21 @@ fun DetailCollapsedTopBar(
     isCollapsed: Boolean,
     isLike: Boolean,
     color: Color,
-    onLikeChange: (Boolean) -> Unit,
+    onLikeChange: () -> Unit,
+    onMoreMenu: () -> Unit,
     onBack: () -> Unit,
 ) {
+    val colorFilter by remember(isCollapsed) {
+        derivedStateOf {
+            ColorFilter.tint(
+                if (isCollapsed) {
+                    Color.White
+                } else {
+                    Color.Black
+                }
+            )
+        }
+    }
 
     Row(
         modifier = modifier
@@ -243,13 +261,7 @@ fun DetailCollapsedTopBar(
                 .clickable {
                     onBack()
                 },
-            colorFilter = ColorFilter.tint(
-                if (isCollapsed) {
-                    Color.White
-                } else {
-                    Color.Black
-                }
-            ),
+            colorFilter = colorFilter,
             imageVector = Icons.Default.ArrowBack,
             contentDescription = "Back"
         )
@@ -258,18 +270,9 @@ fun DetailCollapsedTopBar(
             modifier = Modifier
                 .padding(10.dp)
                 .clickable {
-//                    isLike = !isLike
-                    onLikeChange(isLike)
+                    onLikeChange()
                 },
-            colorFilter = ColorFilter.tint(
-                if (isLike) {
-                    carrot
-                } else if (isCollapsed) {
-                    Color.White
-                } else {
-                    Color.Black
-                }
-            ),
+            colorFilter = colorFilter,
             imageVector = ImageVector.vectorResource(
                 id = if (isLike) {
                     R.drawable.baseline_favorite_24
@@ -278,6 +281,16 @@ fun DetailCollapsedTopBar(
                 }
             ),
             contentDescription = "Like"
+        )
+        Image(
+            colorFilter = colorFilter,
+            modifier = Modifier
+                .padding(10.dp)
+                .clickable {
+                    onMoreMenu()
+                },
+            imageVector = ImageVector.vectorResource(id = R.drawable.baseline_more_vert_24),
+            contentDescription = ""
         )
     }
 }

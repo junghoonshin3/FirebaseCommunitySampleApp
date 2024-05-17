@@ -1,36 +1,22 @@
 package kr.sjh.presentation.ui.board.detail
 
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kr.sjh.domain.usecase.board.ReadPostUseCase
 import kr.sjh.domain.usecase.board.UpdatePostUseCase
 import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
-import kr.sjh.domain.usecase.login.firebase.UpdateUserUseCase
 import kr.sjh.domain.usecase.login.model.Post
 import kr.sjh.domain.usecase.login.model.UserInfo
-import kr.sjh.presentation.ui.board.BoardUiState
-import java.lang.Exception
-import java.util.Date
 import javax.inject.Inject
 
 sealed interface WriteUiState {
@@ -47,14 +33,12 @@ class BoardDetailViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val post = savedStateHandle.getStateFlow<Post?>("post", null)
+    private val post = savedStateHandle.get<Post>("post")
 
     val writeUiState: StateFlow<WriteUiState> = flow {
         emit(WriteUiState.Loading)
-        post.filterNotNull().map { post ->
-            Pair(readUserUseCase(post.writerId).getOrThrow(), post)
-        }.collect {
-            val (userInfo, post) = it
+        post?.let {
+            val userInfo = readUserUseCase(post.writerId).getOrThrow()
             emit(WriteUiState.Success(userInfo, post))
         }
     }.catch {
@@ -71,5 +55,8 @@ class BoardDetailViewModel @Inject constructor(
         }
     }
 
+    fun deletePost() {
+        Log.d("sjh", "delete Post")
+    }
 
 }

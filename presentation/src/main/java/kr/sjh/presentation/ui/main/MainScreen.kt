@@ -1,28 +1,34 @@
 package kr.sjh.presentation.ui.main
 
-import android.util.Log
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import kr.sjh.domain.usecase.login.model.UserInfo
 import kr.sjh.presentation.navigation.BoardRouteScreen
@@ -39,36 +45,24 @@ fun MainRoute(
     userInfo: UserInfo,
     mainViewModel: MainViewModel = hiltViewModel()
 ) {
-
     Scaffold(
         modifier = modifier,
         bottomBar = {
             BottomNavigation {
                 mainNavController.navigateMainRoute(it)
             }
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                shape = RoundedCornerShape(30.dp),
-                containerColor = Color.Black,
-                text = { Text(text = "글쓰기", color = Color.White) },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Create,
-                        contentDescription = "create",
-                        tint = Color.White
-                    )
-                },
-                onClick = {
-                    rootNavController.navigate("${BoardRouteScreen.Write.route}/${userInfo}")
-                })
         }
     ) {
         MainNavGraph(
             modifier = Modifier.fillMaxSize(),
-            rootNavController = rootNavController,
             mainNavController = mainNavController,
             paddingValues = it,
+            moveBoardDetail = { post ->
+                rootNavController.navigate("${BoardRouteScreen.Detail.route}/${post}")
+            },
+            moveBoardWrite = {
+                rootNavController.navigate("${BoardRouteScreen.Write.route}/${userInfo}/{}")
+            }
         )
 
     }
@@ -101,6 +95,4 @@ fun BottomNavigation(
                 icon = { Icon(imageVector = it.icon, contentDescription = "") })
         }
     }
-
-
 }

@@ -1,16 +1,22 @@
 package kr.sjh.presentation.utill
 
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -20,6 +26,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
@@ -62,10 +69,15 @@ fun getActivity() = LocalContext.current as ComponentActivity
 fun rememberPickUpAppState(
     rootNavHostController: NavHostController = rememberNavController(),
     mainNavHostController: NavHostController = rememberNavController(),
-    userInfo: UserInfo? = null
 ): PickUpAppState {
-    return remember(rootNavHostController, mainNavHostController, userInfo) {
-        PickUpAppState(rootNavHostController, mainNavHostController, userInfo)
+    return remember(
+        rootNavHostController,
+        mainNavHostController,
+    ) {
+        PickUpAppState(
+            rootNavHostController,
+            mainNavHostController,
+        )
     }
 }
 
@@ -73,26 +85,7 @@ fun rememberPickUpAppState(
 class PickUpAppState(
     val rootNavHostController: NavHostController,
     val mainNavHostController: NavHostController,
-    var userInfo: UserInfo?
 ) {
-//    fun navigateTopLevelScreen(destination: Graph) {
-//        when (destination) {
-//            Graph.LoginGraph -> rootNavHostController.navigateToLoginGraph()
-//            Graph.MainGraph -> TODO()
-//        }
-//    }
-//
-//    fun navigate(screen: Screen) {
-//        navController.navigate(screen.route)
-//    }
-//
-//    fun navigateWithOptions(screen: Screen, builder: (NavOptionsBuilder.() -> Unit)) {
-//        navController.navigate(screen.route, builder)
-//    }
-//
-//    fun popBackStack() {
-//        navController.popBackStack()
-//    }
 }
 
 fun NavHostController.navigateMainRoute(screen: MainRouteScreen) {

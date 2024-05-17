@@ -65,7 +65,6 @@ class LoginViewModel @Inject constructor(
                                 }
                             }
                         }
-
                 }.mapCatching {
                     when (it) {
                         is UserInfo -> {

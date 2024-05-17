@@ -4,7 +4,7 @@ import android.net.Uri
 import android.os.Parcelable
 import androidx.compose.runtime.Stable
 import com.google.gson.Gson
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 
 
 @Parcelize

@@ -31,7 +31,7 @@ class BoardRepositoryImpl @Inject constructor(
 ) : BoardRepository {
 
     private val ref = db.reference.child("posts")
-    override suspend fun readPosts(): Flow<List<Post>> = ref.snapshots.map {
+    override fun readPosts(): Flow<List<Post>> = ref.snapshots.map {
         if (it.childrenCount > 0) {
             it.children.mapNotNull {
                 it.getValue(Post::class.java)

@@ -7,7 +7,7 @@ import kr.sjh.domain.usecase.login.model.Post
 import kr.sjh.domain.usecase.login.model.UserInfo
 
 
-class PostType : NavType<Post>(isNullableAllowed = false) {
+class PostType : NavType<Post>(isNullableAllowed = true) {
     override fun get(bundle: Bundle, key: String): Post? {
         return bundle.getParcelable(key)
     }

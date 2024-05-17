@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,29 +45,40 @@ import kr.sjh.presentation.utill.calculationTime
 fun BoardRoute(
     modifier: Modifier = Modifier,
     moveBoardDetail: (Post) -> Unit,
+    moveBoardWrite: () -> Unit,
     boardViewModel: BoardViewModel = hiltViewModel()
 ) {
     val boardUiState by boardViewModel.posts.collectAsStateWithLifecycle(BoardUiState.Loading)
 
-    BoardScreen(modifier = modifier, boardUiState = boardUiState, moveBoardDetail = moveBoardDetail)
+    BoardScreen(
+        modifier = modifier,
+        boardUiState = boardUiState,
+        moveBoardDetail = moveBoardDetail,
+        moveBoardWrite = moveBoardWrite
+    )
 }
 
 @Composable
 fun BoardScreen(
     modifier: Modifier = Modifier,
     boardUiState: BoardUiState,
-    moveBoardDetail: (Post) -> Unit
+    moveBoardDetail: (Post) -> Unit,
+    moveBoardWrite: () -> Unit
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         when (boardUiState) {
             BoardUiState.Loading -> {
+                Log.d("sjh", "loading")
                 CircularProgressIndicator(color = carrot)
 
             }
 
             is BoardUiState.Success -> {
+                Log.d("sjh", "Success")
                 LazyColumn(
-                    modifier = modifier.padding(10.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     itemsIndexed(boardUiState.list) { index, post ->
@@ -92,11 +105,32 @@ fun BoardScreen(
                             )
                     }
                 }
+                ExtendedFloatingActionButton(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(10.dp),
+                    shape = RoundedCornerShape(30.dp),
+                    containerColor = Color.Black,
+                    text = { Text(text = "글쓰기", color = Color.White) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Create,
+                            contentDescription = "create",
+                            tint = Color.White
+                        )
+                    },
+                    onClick = moveBoardWrite
+                )
 
             }
 
             BoardUiState.Empty -> {
-                Log.d("sjh", "empty")
+                Log.d("sjh", "Empty")
+                Text(
+                    text = "No Item",
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
 
             is BoardUiState.Error -> {
@@ -104,11 +138,6 @@ fun BoardScreen(
             }
         }
     }
-}
-
-@Composable
-fun NoItem() {
-
 }
 
 @Composable

@@ -39,14 +39,16 @@ sealed interface BoardWriteUiState {
 class BoardWriteViewModel @Inject constructor(
     private val createPostsUseCase: CreatePostUseCase,
     private val savedStateHandle: SavedStateHandle,
-    private val readUserUseCase: ReadUserUseCase
 ) : ViewModel() {
 
-    var title = savedStateHandle.getStateFlow("title", "")
+    private val post = savedStateHandle.get<Post>("post")
 
-    var content = savedStateHandle.getStateFlow("content", "")
+    var title = savedStateHandle.getStateFlow("title", post?.title ?: "")
+
+    var content = savedStateHandle.getStateFlow("content", post?.content ?: "")
 
     val userInfo = savedStateHandle.get<UserInfo>("userInfo")
+
 
     private val _writeUiState: MutableSharedFlow<BoardWriteUiState> = MutableSharedFlow()
 
@@ -80,21 +82,4 @@ class BoardWriteViewModel @Inject constructor(
                     }
             }
         }
-//            _writeUiState.emit(BoardWriteUiState.Loading)
-////                Log.d("sjh", "userInfo : ${userInfo.id}")
-//            createPostsUseCase(
-//                Post(
-//                    writerId = userInfo.id!!,
-//                    title = title.value,
-//                    content = content.value,
-//                    nickName = userInfo.nickName,
-//                    createdAt = Date().time
-//                )
-//            ).getOrThrow()
-//        }.catch {
-//            it.printStackTrace()
-//            _writeUiState.emit(BoardWriteUiState.Error(it))
-//        }.collect {
-//            _writeUiState.emit(BoardWriteUiState.Success)
-//        }
 }

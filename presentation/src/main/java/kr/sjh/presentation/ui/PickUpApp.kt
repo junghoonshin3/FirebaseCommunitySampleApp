@@ -34,10 +34,9 @@ fun PickUpApp(
             }
 
             is MainUiState.Success -> {
-                val userInfo = mainUiState.userInfo
-                appState.userInfo = userInfo
                 PickUpNavHost(
                     appState = appState,
+                    userInfo = userInfo,
                     startScreen = Graph.MainGraph,
                     onKeepOnScreenCondition = onKeepOnScreenCondition,
                 )

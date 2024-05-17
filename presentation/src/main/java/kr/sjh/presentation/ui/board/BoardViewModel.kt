@@ -8,6 +8,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kr.sjh.domain.usecase.board.ReadPostsUseCase
@@ -31,39 +36,18 @@ class BoardViewModel @Inject constructor(
 ) : ViewModel() {
 
     val posts: StateFlow<BoardUiState> =
-        flow {
-            emit(BoardUiState.Loading)
-            readPostsUseCase()
-                .collect { posts ->
-                    if (posts.isEmpty()) {
-                        emit(BoardUiState.Empty)
-                    } else {
-                        emit(BoardUiState.Success(posts))
-                    }
-                }
-        }.catch {
-            emit(BoardUiState.Error(it))
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = BoardUiState.Loading
-        )
-
-
-//    fun getPosts() = flow<BoardUiState> {
-//        Log.i("sjh", "??")
-//        _posts.emit(BoardUiState.Loading)
-//        readPostsUseCase()
-//            .collect {
-//                if (it.isNotEmpty()) {
-//                    _posts.emit(BoardUiState.Success(it))
-//                } else {
-//                    _posts.emit(BoardUiState.Empty)
-//                }
-//            }
-//    }.catch {
-//        _posts.emit(BoardUiState.Error(it))
-//    }
+        readPostsUseCase().map<List<Post>, BoardUiState>(BoardUiState::Success)
+            .onStart {
+                emit(BoardUiState.Loading)
+            }
+            .catch {
+                emit(BoardUiState.Error(it))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = BoardUiState.Loading
+            )
 
     fun postUpdate(post: Map<String, Any>) {
         viewModelScope.launch(Dispatchers.IO) {

@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kr.sjh.domain.usecase.login.model.Post
 
 interface BoardRepository {
-    suspend fun readPosts(): Flow<List<Post>>
+    fun readPosts(): Flow<List<Post>>
 
     fun readPost(postKey: String): Flow<Post>
 

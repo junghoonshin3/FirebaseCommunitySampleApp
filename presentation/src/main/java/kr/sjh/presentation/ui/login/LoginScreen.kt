@@ -30,7 +30,7 @@ import kr.sjh.presentation.navigation.Graph
 @Composable
 fun LoginRoute(
     modifier: Modifier = Modifier,
-    onMoveScreen: (Graph, UserInfo) -> Unit,
+    onMoveScreen: (UserInfo) -> Unit,
     loginViewModel: LoginViewModel = hiltViewModel()
 ) {
     LaunchedEffect(key1 = Unit, block = {
@@ -47,7 +47,7 @@ fun LoginRoute(
                 is LoginUiState.Success -> {
                     Log.d("sjh", "Login Success")
                     val userInfo = loginState.userInfo
-                    onMoveScreen(Graph.MainGraph, userInfo)
+                    onMoveScreen(userInfo)
                 }
             }
         }

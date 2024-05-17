@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -37,7 +38,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -51,14 +51,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -317,58 +320,45 @@ fun BoardWriteBody(
                 autoCorrect = false,
                 imeAction = ImeAction.Next
             ),
-            colors = TextFieldDefaults.colors(
-                cursorColor = Color.White,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                unfocusedPlaceholderColor = Color.Gray,
-                focusedPlaceholderColor = Color.Gray,
-                focusedContainerColor = backgroundColor,
-                unfocusedContainerColor = backgroundColor
-            ),
             keyboardActions = KeyboardActions(onDone = {
                 focusManager.moveFocus(FocusDirection.Next)
             }),
+            textStyle = TextStyle.Default.copy(
+                color = Color.White,
+                fontSize = 20.sp,
+            ),
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(10.dp),
             text = title,
             onTextChanged = { updateTitle(it) },
             placeholder = {
-                Text(text = "제목을 입력하세요.")
+                Text(text = "제목을 입력하세요.", color = Color.LightGray)
             }
         )
         ContentTextField(
-            scrollState = scrollState,
+            parentScrollState = scrollState,
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(10.dp),
             text = content,
             onTextChanged = { updateContent(it) },
             placeholder = {
                 Text(
                     text = "방문한 음식점에 대한 정보를 공유해 주세요!추천하는 메뉴나 매장 이용 팁 등을 공유해 주세요!",
+                    color = Color.LightGray
                 )
             },
-            colors = TextFieldDefaults.colors(
-                cursorColor = Color.White,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                unfocusedPlaceholderColor = Color.Gray,
-                focusedPlaceholderColor = Color.Gray,
-                focusedContainerColor = backgroundColor,
-                unfocusedContainerColor = backgroundColor
-            ),
+
             keyboardActions =
             KeyboardActions(onDone = {
                 focusManager.clearFocus()
             }),
-            keyboardOptions =
-            KeyboardOptions(
+            textStyle = TextStyle.Default.copy(
+                color = Color.White,
+                fontSize = 17.sp,
+            ),
+            keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
                 autoCorrect = false,
                 imeAction = ImeAction.Default
@@ -385,23 +375,19 @@ fun ContentTextField(
     onTextChanged: (text: String) -> Unit,
     singleLine: Boolean = false,
     placeholder: @Composable () -> Unit,
-    colors: TextFieldColors = TextFieldDefaults.colors(),
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    scrollState: ScrollState? = null
+    textStyle: TextStyle = TextStyle.Default,
+    parentScrollState: ScrollState? = null
 ) {
     val coroutineScope = rememberCoroutineScope()
     var prevHeight by remember { mutableIntStateOf(0) }
 
-    TextField(
-        textStyle = TextStyle.Default.copy(),
-        colors = colors,
+    BasicTextField(
         singleLine = singleLine,
-        keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
         modifier = modifier
             .onSizeChanged { size ->
-                scrollState?.let {
+                parentScrollState?.let {
                     //변경된 텍스트 필드의 높이 - 변경되기 전 높이
                     val diff = size.height - prevHeight
                     prevHeight = size.height
@@ -420,9 +406,17 @@ fun ContentTextField(
         onValueChange = { text ->
             onTextChanged(text)
         },
-        placeholder = {
-            placeholder()
-        })
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        textStyle = textStyle,
+        cursorBrush = SolidColor(Color.White),
+        decorationBox = { innerTextField ->
+            if (text.isEmpty()) {
+                placeholder()
+            }
+            innerTextField()
+        }
+    )
 }
 
 @OptIn(ExperimentalPermissionsApi::class)

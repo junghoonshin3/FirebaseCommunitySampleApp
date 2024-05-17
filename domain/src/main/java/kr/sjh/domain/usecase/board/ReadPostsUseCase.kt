@@ -9,5 +9,5 @@ import javax.inject.Inject
 class ReadPostsUseCase @Inject constructor(
     private val boardRepository: BoardRepository
 ) {
-    suspend operator fun invoke() = boardRepository.readPosts()
+    operator fun invoke() = boardRepository.readPosts()
 }
