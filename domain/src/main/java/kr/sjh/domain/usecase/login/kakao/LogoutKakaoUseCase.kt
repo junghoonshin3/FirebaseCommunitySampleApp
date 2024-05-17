@@ -6,5 +6,5 @@ import javax.inject.Inject
 class LogoutKakaoUseCase @Inject constructor(
     private val loginRepository: LoginRepository,
 ) {
-//    suspend operator fun invoke() = loginRepository.validateTokenForKakao()
+    suspend operator fun invoke() = loginRepository.logOutUser()
 }

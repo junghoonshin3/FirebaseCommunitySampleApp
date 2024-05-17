@@ -4,44 +4,58 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kr.sjh.domain.usecase.board.CreatePostUseCase
 import kr.sjh.domain.usecase.board.ReadPostsUseCase
+import kr.sjh.domain.usecase.board.UpdatePostUseCase
 import kr.sjh.domain.usecase.login.model.Post
 import javax.inject.Inject
+
+sealed interface BoardUiState {
+    data class Success(val list: List<Post>) : BoardUiState
+    data object Loading : BoardUiState
+
+    data object Empty : BoardUiState
+
+    data class Error(val throwable: Throwable) : BoardUiState
+}
 
 @HiltViewModel
 class BoardViewModel @Inject constructor(
     private val readPostsUseCase: ReadPostsUseCase,
-    private val createPostsUseCase: CreatePostUseCase
+    private val updatePostUseCase: UpdatePostUseCase
 ) : ViewModel() {
 
-    init {
-        getPosts()
-    }
+    val posts: StateFlow<BoardUiState> =
+        readPostsUseCase().map<List<Post>, BoardUiState>(BoardUiState::Success)
+            .onStart {
+                emit(BoardUiState.Loading)
+            }
+            .catch {
+                emit(BoardUiState.Error(it))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = BoardUiState.Loading
+            )
 
-    private val _posts = MutableStateFlow<List<Post>>(emptyList())
-    val posts = _posts.asStateFlow()
-    fun getPosts() {
+    fun postUpdate(post: Map<String, Any>) {
         viewModelScope.launch(Dispatchers.IO) {
-            readPostsUseCase()
-                .collect {
-                    _posts.value = it
-                }
-        }
-    }
-
-    fun createPost(post: Post) {
-        viewModelScope.launch(Dispatchers.IO) {
-            createPostsUseCase(post)
+            updatePostUseCase(post)
                 .onSuccess {
-
                 }
                 .onFailure {
-
+                    it.printStackTrace()
                 }
         }
     }

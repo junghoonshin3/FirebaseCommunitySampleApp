@@ -1,87 +1,83 @@
 package kr.sjh.presentation.ui.main
 
-import android.util.Log
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import kr.sjh.domain.usecase.login.model.UserInfo
+import kr.sjh.presentation.navigation.BoardRouteScreen
 import kr.sjh.presentation.navigation.BottomNavItem
 import kr.sjh.presentation.navigation.MainNavGraph
-import kr.sjh.presentation.navigation.RootScreen
-import kr.sjh.presentation.navigation.currentScreenAsState
+import kr.sjh.presentation.navigation.MainRouteScreen
+import kr.sjh.presentation.utill.navigateMainRoute
 
 @Composable
-fun MainScreen(
+fun MainRoute(
     modifier: Modifier = Modifier,
-    logOut: () -> Unit
+    rootNavController: NavHostController,
+    mainNavController: NavHostController,
+    userInfo: UserInfo,
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
-    val navController = rememberNavController()
-
-    val currentSelectedScreen by navController.currentScreenAsState()
-
     Scaffold(
+        modifier = modifier,
         bottomBar = {
             BottomNavigation {
-                navController.navigateToRootScreen(it)
-            }
-        },
-        floatingActionButton = {
-            if (currentSelectedScreen.route == RootScreen.Board.route) {
-                ExtendedFloatingActionButton(
-                    shape = RoundedCornerShape(30.dp),
-                    containerColor = Color.Black,
-                    text = { Text(text = "글쓰기", color = Color.White) },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Create,
-                            contentDescription = "create",
-                            tint = Color.White
-                        )
-                    },
-                    onClick = {
-//                        navController.navigate()
-                    })
+                mainNavController.navigateMainRoute(it)
             }
         }
     ) {
-        Column(modifier = modifier.padding(it)) {
-            MainNavGraph(navController, logOut)
-        }
+        MainNavGraph(
+            modifier = Modifier.fillMaxSize(),
+            mainNavController = mainNavController,
+            paddingValues = it,
+            moveBoardDetail = { post ->
+                rootNavController.navigate("${BoardRouteScreen.Detail.route}/${post}")
+            },
+            moveBoardWrite = {
+                rootNavController.navigate("${BoardRouteScreen.Write.route}/${userInfo}/{}")
+            }
+        )
+
     }
 }
 
 @Composable
 fun BottomNavigation(
-    onClick: (RootScreen) -> Unit
+    onClick: (MainRouteScreen) -> Unit,
 ) {
     val navItem =
         listOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
 
     var selectedScreen by remember {
-        mutableStateOf<RootScreen>(RootScreen.Board)
+        mutableStateOf<MainRouteScreen>(MainRouteScreen.Board)
     }
-
     NavigationBar {
         navItem.forEach {
             NavigationBarItem(
@@ -89,23 +85,14 @@ fun BottomNavigation(
                 label = {
                     Text(text = it.title)
                 },
-                selected = it.screenRoute == selectedScreen,
+                selected = selectedScreen == it.mainScreenRoute,
                 onClick = {
-                    selectedScreen = it.screenRoute
-                    onClick(it.screenRoute)
+                    if (selectedScreen != it.mainScreenRoute) {
+                        selectedScreen = it.mainScreenRoute
+                    }
+                    onClick(it.mainScreenRoute)
                 },
                 icon = { Icon(imageVector = it.icon, contentDescription = "") })
-        }
-    }
-}
-
-fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
-    navigate(rootScreen.route) {
-        launchSingleTop = true
-        restoreState = true
-        Log.d("sjh", "graph.findStartDestination().id : $${graph.findStartDestination().id}")
-        popUpTo(graph.findStartDestination().id) {
-            saveState = true
         }
     }
 }

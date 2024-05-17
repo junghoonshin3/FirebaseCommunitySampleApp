@@ -7,7 +7,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
-import kr.sjh.presentation.navigation.RootScreen
+
+@Composable
+fun MyPageRoute() {
+}
 
 @Composable
 fun MyPageScreen(navController: NavController, modifier: Modifier = Modifier, logOut: () -> Unit) {

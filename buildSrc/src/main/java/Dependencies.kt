@@ -7,19 +7,20 @@ object Versions {
     const val core = "1.9.0"
     const val lifeCycle = "2.6.2"
     const val composeActivity = "1.8.2"
-    const val composeUi = "1.5.4"
+    const val composeUi = "1.6.6"
     const val toolingPreview = "1.5.4"
     const val composeMaterial = "1.1.2"
     const val juint = "4.13.2"
     const val jUnit4 = "1.6.0"
     const val extJunit = "1.1.5"
     const val composeBom = "2023.03.00"
-    const val material3 = "1.1.2"
+    const val material3 = "1.2.1"
     const val uiTooling = "1.5.4"
     const val testManifest = "1.5.4"
     const val splash = "1.0.1"
-    const val hilt_version = "2.44"
+    const val hilt_version = "2.48"
     const val kakao_login = "2.19.0"
+    const val compose_lifecycle = "2.6.0-alpha01"
 
 }
 
@@ -40,7 +41,8 @@ object JetPackCompose {
     const val material3 = "androidx.compose.material3:material3:${Versions.material3}"
     const val material3WindowSizeClass =
         "androidx.compose.material3:material3-window-size-class:${Versions.material3WindowSizeClass}"
-
+    const val composeLifeCycle =
+        "androidx.lifecycle:lifecycle-runtime-compose:${Versions.compose_lifecycle}"
 }
 
 object TestImplementation {
@@ -75,8 +77,10 @@ object SplashScreen {
 object DaggerHilt {
     const val hiltNavigation = "androidx.hilt:hilt-navigation-compose:${Versions.hilt_navigation}"
     const val daggerHilt = "com.google.dagger:hilt-android:${Versions.hilt_version}"
+    const val daggerCompiler =
+        "com.google.dagger:dagger-compiler:${Versions.hilt_version}"
     const val daggerHiltCompiler =
-        "com.google.dagger:hilt-android-compiler:${Versions.hilt_version}"
+        "com.google.dagger:hilt-compiler:${Versions.hilt_version}"
 }
 
 object KaKao {

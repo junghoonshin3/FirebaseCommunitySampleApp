@@ -1,9 +1,11 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    kotlin("kapt")
+//    ksp("kapt")
+    id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -38,8 +40,8 @@ android {
 dependencies {
 
     //Dagger-Hilt
-    implementation(DaggerHilt.daggerHilt)
-    kapt(DaggerHilt.daggerHiltCompiler)
+    ksp(DaggerHilt.daggerHilt)
+    ksp(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
 
     //kakao login

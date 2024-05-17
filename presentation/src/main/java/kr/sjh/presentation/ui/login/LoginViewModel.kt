@@ -1,78 +1,80 @@
 package kr.sjh.presentation.ui.login
 
-import android.content.res.Resources.NotFoundException
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kr.sjh.domain.error.NotFoundUser
 import kr.sjh.domain.usecase.login.firebase.CreateUserUseCase
 import kr.sjh.domain.usecase.login.firebase.DeleteUserUseCase
 import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
+import kr.sjh.domain.usecase.login.firebase.UpdateUserUseCase
 import kr.sjh.domain.usecase.login.kakao.GetKakaoUserInfoUseCase
 import kr.sjh.domain.usecase.login.kakao.LoginForKakaoUseCase
 import kr.sjh.domain.usecase.login.kakao.LogoutKakaoUseCase
 import kr.sjh.domain.usecase.login.kakao.ValidateKakaoAccessTokenUseCase
 import kr.sjh.domain.usecase.login.model.UserInfo
-import kr.sjh.presentation.navigation.RootScreen
 import javax.inject.Inject
+
+
+sealed interface LoginUiState {
+    data object Loading : LoginUiState
+    data class Success(val userInfo: UserInfo) : LoginUiState
+    data class Error(val throwable: Throwable) : LoginUiState
+}
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val kakaoUserInfoUseCase: GetKakaoUserInfoUseCase,
-    private val loginForKakaoUseCase: LoginForKakaoUseCase,
-    private val logoutKakaoUseCase: LogoutKakaoUseCase,
-    private val validateKakaoAccessTokenUseCase: ValidateKakaoAccessTokenUseCase,
     private val readUserUseCase: ReadUserUseCase,
+    private val loginForKakaoUseCase: LoginForKakaoUseCase,
+    private val validateKakaoAccessTokenUseCase: ValidateKakaoAccessTokenUseCase,
+    private val logoutKakaoUseCase: LogoutKakaoUseCase,
     private val deleteUserUseCase: DeleteUserUseCase,
-    private val createUserUseCase: CreateUserUseCase
+    private val createUserUseCase: CreateUserUseCase,
+    private val updateUserUseCase: UpdateUserUseCase,
 ) : ViewModel() {
 
-    private val _isLogin = MutableStateFlow(false)
-    val isLogin = _isLogin.asStateFlow()
-
-
-
-
-
+    private val _loginUiState = MutableSharedFlow<LoginUiState>()
+    val loginUiState = _loginUiState.asSharedFlow()
     fun loginForKakao() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
+            _loginUiState.emit(LoginUiState.Loading)
             loginForKakaoUseCase()
-                .onSuccess {
-                    kakaoUserInfoUseCase()
-                        .onSuccess { user ->
-                            readUserUseCase(user.id.toString())
-                                .onSuccess {
-//                                    _userInfo.value = it
-                                    _isLogin.value = true
+                .mapCatching {
+                    kakaoUserInfoUseCase().getOrThrow()
+                }.map { user ->
+                    readUserUseCase(user.id.toString())
+                        .getOrElse {
+                            when (it) {
+                                is NotFoundUser -> {
+                                    val newUser = UserInfo(
+                                        user.kakaoAccount?.email,
+                                        user.kakaoAccount?.profile?.nickname,
+                                        user.id.toString(),
+                                        user.kakaoAccount?.profile?.profileImageUrl
+                                    )
+                                    createUserUseCase(newUser).getOrThrow()
                                 }
-                                .onFailure {
-                                    if (it is NotFoundException) {
-                                        createUserUseCase(
-                                            UserInfo(
-                                                user.kakaoAccount?.email,
-                                                user.kakaoAccount?.profile?.nickname,
-                                                user.id.toString(),
-                                                user.kakaoAccount?.profile?.profileImageUrl
-                                            )
-                                        ).onSuccess {
-                                            _isLogin.value = it
-                                        }.onFailure {
-                                            _isLogin.value = false
-                                        }
-                                    }
+
+                                else -> {
+                                    it
                                 }
+                            }
                         }
-                        .onFailure {
-//                            _userInfo.value = null
-                            _isLogin.value = false
+                }.mapCatching {
+                    when (it) {
+                        is UserInfo -> {
+                            Log.d("sjh", "user :${it.nickName}")
+                            _loginUiState.emit(LoginUiState.Success(it))
                         }
+                    }
                 }
                 .onFailure {
-//                    _userInfo.value = null
-                    _isLogin.value = false
+                    _loginUiState.emit(LoginUiState.Error(it))
                 }
         }
     }
