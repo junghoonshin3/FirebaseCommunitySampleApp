@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kr.sjh.domain.usecase.login.model.Post
+import kr.sjh.model.Post
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.calculationTime
@@ -68,13 +68,11 @@ fun BoardScreen(
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         when (boardUiState) {
             BoardUiState.Loading -> {
-                Log.d("sjh", "loading")
                 CircularProgressIndicator(color = carrot)
 
             }
 
             is BoardUiState.Success -> {
-                Log.d("sjh", "Success")
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -82,7 +80,7 @@ fun BoardScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     itemsIndexed(boardUiState.list) { index, post ->
-                        Post(
+                        PostItem(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(150.dp)
@@ -125,7 +123,6 @@ fun BoardScreen(
             }
 
             BoardUiState.Empty -> {
-                Log.d("sjh", "Empty")
                 Text(
                     text = "No Item",
                     color = Color.White,
@@ -134,14 +131,13 @@ fun BoardScreen(
             }
 
             is BoardUiState.Error -> {
-                Log.d("sjh", "error")
             }
         }
     }
 }
 
 @Composable
-fun Post(
+fun PostItem(
     modifier: Modifier = Modifier,
     title: String,
     nickname: String,

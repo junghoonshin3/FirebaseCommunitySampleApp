@@ -79,6 +79,7 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.skydoves.landscapist.glide.GlideImage
 import kotlinx.coroutines.launch
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.clearFocusOnKeyboardDismiss
@@ -87,6 +88,7 @@ import kr.sjh.presentation.utill.clearFocusOnKeyboardDismiss
 fun BoardWriteRoute(
     modifier: Modifier = Modifier,
     boardWriteViewModel: BoardWriteViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
     var selectedPhotos by remember {
@@ -103,23 +105,15 @@ fun BoardWriteRoute(
         initialValue = BoardWriteUiState.Loading,
     )
 
-    when (writeUiState) {
-        is BoardWriteUiState.Error -> {
-        }
-
-        BoardWriteUiState.Loading -> {
-
-        }
-
-        BoardWriteUiState.Success -> {
-            onBack()
-        }
-    }
+    val userInfo by loginViewModel.userInfo.collectAsStateWithLifecycle()
 
     BoardWriteScreen(
         modifier = modifier,
         onPost = {
-            boardWriteViewModel.createPost()
+            userInfo?.let {
+                boardWriteViewModel.createPost(it)
+            }
+
         },
         onBack = onBack,
         selectedPhotos = selectedPhotos,
@@ -169,6 +163,7 @@ fun BoardWriteScreen(
                     .height(70.dp)
                     .background(backgroundColor),
                 title = "음식점 후기글 쓰기",
+                buttonTitle = "등록",
                 onBack = onBack,
                 onPost = onPost
             )
@@ -213,7 +208,11 @@ fun BoardWriteWarning(
 
 @Composable
 fun BoardWriteTopBar(
-    modifier: Modifier = Modifier, title: String, onBack: () -> Unit, onPost: () -> Unit
+    modifier: Modifier = Modifier,
+    title: String,
+    buttonTitle: String,
+    onBack: () -> Unit,
+    onPost: () -> Unit
 ) {
     Column(modifier = modifier) {
         Row(
@@ -238,7 +237,7 @@ fun BoardWriteTopBar(
                     .clickable {
                         onPost()
                     },
-                text = "등록",
+                text = buttonTitle,
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Normal

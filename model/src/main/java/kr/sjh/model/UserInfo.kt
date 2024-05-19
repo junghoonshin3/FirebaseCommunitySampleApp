@@ -1,13 +1,11 @@
-package kr.sjh.domain.usecase.login.model
+package kr.sjh.model
 
 import android.net.Uri
 import android.os.Parcelable
-import androidx.compose.runtime.Stable
 import com.google.gson.Gson
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-@Stable
 data class UserInfo(
     val email: String? = null,
     val nickName: String? = null,

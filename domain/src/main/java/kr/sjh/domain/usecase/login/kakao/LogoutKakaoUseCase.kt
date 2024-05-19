@@ -1,6 +1,6 @@
 package kr.sjh.domain.usecase.login.kakao
 
-import kr.sjh.domain.repository.LoginRepository
+import kr.sjh.data.repository.LoginRepository
 import javax.inject.Inject
 
 class LogoutKakaoUseCase @Inject constructor(

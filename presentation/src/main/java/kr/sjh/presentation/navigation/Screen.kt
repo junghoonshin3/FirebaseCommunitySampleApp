@@ -1,19 +1,7 @@
 package kr.sjh.presentation.navigation
 
-import kr.sjh.domain.usecase.login.model.UserInfo
-
-//하단 Navigation Screen
-//sealed class LeafScreen(
-//    val route: String,
-//) {
-//    data object BoardWrite : LeafScreen("write")
-//    data object Chat : LeafScreen("chat")
-//    data object MyPage : LeafScreen("my_page")
-//    data object Board : LeafScreen("board")
-//    data object BoardDetail : LeafScreen("board_detail")
-//}
-
 sealed class Graph(val route: String) {
+    data object SplashGraph : Graph("splashGraph")
     data object LoginGraph : Graph("loginGraph")
     data object MainGraph : Graph("mainGraph")
 

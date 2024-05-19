@@ -5,9 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kr.sjh.domain.error.NotFoundUser
 import kr.sjh.domain.usecase.login.firebase.CreateUserUseCase
 import kr.sjh.domain.usecase.login.firebase.DeleteUserUseCase
 import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
@@ -16,13 +17,14 @@ import kr.sjh.domain.usecase.login.kakao.GetKakaoUserInfoUseCase
 import kr.sjh.domain.usecase.login.kakao.LoginForKakaoUseCase
 import kr.sjh.domain.usecase.login.kakao.LogoutKakaoUseCase
 import kr.sjh.domain.usecase.login.kakao.ValidateKakaoAccessTokenUseCase
-import kr.sjh.domain.usecase.login.model.UserInfo
+import kr.sjh.error.NotFoundUser
+import kr.sjh.model.UserInfo
 import javax.inject.Inject
 
 
 sealed interface LoginUiState {
     data object Loading : LoginUiState
-    data class Success(val userInfo: UserInfo) : LoginUiState
+    data object Success : LoginUiState
     data class Error(val throwable: Throwable) : LoginUiState
 }
 
@@ -38,8 +40,13 @@ class LoginViewModel @Inject constructor(
     private val updateUserUseCase: UpdateUserUseCase,
 ) : ViewModel() {
 
-    private val _loginUiState = MutableSharedFlow<LoginUiState>()
-    val loginUiState = _loginUiState.asSharedFlow()
+
+    private val _loginUiState = MutableStateFlow<LoginUiState>(LoginUiState.Loading)
+    val loginUiState = _loginUiState.asStateFlow()
+
+    private val _userInfo = MutableStateFlow<UserInfo?>(null)
+    val userInfo = _userInfo.asStateFlow()
+
     fun loginForKakao() {
         viewModelScope.launch {
             _loginUiState.emit(LoginUiState.Loading)
@@ -68,13 +75,38 @@ class LoginViewModel @Inject constructor(
                 }.mapCatching {
                     when (it) {
                         is UserInfo -> {
-                            Log.d("sjh", "user :${it.nickName}")
-                            _loginUiState.emit(LoginUiState.Success(it))
+                            _loginUiState.emit(LoginUiState.Success)
+                            _userInfo.value = it
                         }
                     }
                 }
                 .onFailure {
                     _loginUiState.emit(LoginUiState.Error(it))
+                }
+        }
+    }
+
+    fun onAutoLoginCheck() {
+        viewModelScope.launch {
+            _loginUiState.emit(LoginUiState.Loading)
+            validateKakaoAccessTokenUseCase()
+                .mapCatching {
+                    kakaoUserInfoUseCase().getOrThrow()
+                }.mapCatching { user ->
+                    readUserUseCase(user.id.toString()).getOrThrow()
+                }.onSuccess { userInfo ->
+                    _loginUiState.emit(
+                        LoginUiState.Success
+                    )
+                    _userInfo.value = userInfo
+                }
+                .onFailure {
+                    it.printStackTrace()
+                    _loginUiState.emit(
+                        LoginUiState.Error(
+                            throwable = it,
+                        )
+                    )
                 }
         }
     }

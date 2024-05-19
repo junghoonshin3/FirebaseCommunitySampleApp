@@ -3,8 +3,8 @@ package kr.sjh.presentation.navigation
 import android.os.Bundle
 import androidx.navigation.NavType
 import com.google.gson.Gson
-import kr.sjh.domain.usecase.login.model.Post
-import kr.sjh.domain.usecase.login.model.UserInfo
+import kr.sjh.model.Post
+import kr.sjh.model.UserInfo
 
 
 class PostType : NavType<Post>(isNullableAllowed = true) {

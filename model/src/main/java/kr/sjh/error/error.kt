@@ -1,5 +1,5 @@
-package kr.sjh.domain.error
+package kr.sjh.error
 
-class NotFoundUser constructor(
+class NotFoundUser(
     override val message: String = "Not Found User"
 ) : RuntimeException()

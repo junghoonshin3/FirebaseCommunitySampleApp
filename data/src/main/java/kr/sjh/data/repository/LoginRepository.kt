@@ -1,10 +1,9 @@
-package kr.sjh.domain.repository
+package kr.sjh.data.repository
 
 import com.kakao.sdk.auth.model.OAuthToken
 import com.kakao.sdk.user.model.AccessTokenInfo
 import com.kakao.sdk.user.model.User
-import kotlinx.coroutines.flow.Flow
-import kr.sjh.domain.usecase.login.model.UserInfo
+import kr.sjh.model.UserInfo
 
 interface LoginRepository {
     suspend fun loginForKakao(): Result<OAuthToken>

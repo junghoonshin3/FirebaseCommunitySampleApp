@@ -22,15 +22,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import kr.sjh.domain.usecase.login.model.UserInfo
+import kr.sjh.model.UserInfo
 import kr.sjh.presentation.R
-import kr.sjh.presentation.navigation.Graph
 
 
 @Composable
 fun LoginRoute(
     modifier: Modifier = Modifier,
-    onMoveScreen: (UserInfo) -> Unit,
+    moveMainScreen: () -> Unit,
     loginViewModel: LoginViewModel = hiltViewModel()
 ) {
     LaunchedEffect(key1 = Unit, block = {
@@ -46,8 +45,7 @@ fun LoginRoute(
 
                 is LoginUiState.Success -> {
                     Log.d("sjh", "Login Success")
-                    val userInfo = loginState.userInfo
-                    onMoveScreen(userInfo)
+                    moveMainScreen()
                 }
             }
         }

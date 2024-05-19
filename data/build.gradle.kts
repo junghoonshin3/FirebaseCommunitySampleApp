@@ -35,20 +35,20 @@ android {
 }
 
 dependencies {
-    implementation(project(":domain"))
-
+    implementation(project(":model"))
     //Dagger-Hilt
     implementation(DaggerHilt.daggerHilt)
     kapt(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
 
+    //kakao login
+    api(KaKao.kakao_login)
 
-    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
+    api(platform("com.google.firebase:firebase-bom:32.3.1"))
     //Firebase DB
-    implementation("com.google.firebase:firebase-database-ktx")
+    api("com.google.firebase:firebase-database-ktx")
     //Firebase Storage
-    implementation("com.google.firebase:firebase-storage-ktx")
-
+    api("com.google.firebase:firebase-storage-ktx")
 
 
 }

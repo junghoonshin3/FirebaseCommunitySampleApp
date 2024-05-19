@@ -21,14 +21,12 @@ class MainActivity : ComponentActivity() {
 
     private var condition = true
 
-    private val viewModel: MainActivityViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
             .setKeepOnScreenCondition {
                 condition
             }
-
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(backgroundColor.toArgb()),
             navigationBarStyle = SystemBarStyle.dark(backgroundColor.toArgb())
@@ -37,10 +35,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PickUpTheme {
-                val mainUiState by viewModel.mainUiState.collectAsStateWithLifecycle(MainUiState.Loading)
                 val appState =
                     rememberPickUpAppState()
-                PickUpApp(appState = appState, mainUiState = mainUiState) {
+                PickUpApp(
+                    appState = appState
+                ) {
                     condition = false
                 }
 

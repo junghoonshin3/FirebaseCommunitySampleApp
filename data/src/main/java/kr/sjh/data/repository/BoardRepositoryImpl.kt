@@ -1,25 +1,12 @@
 package kr.sjh.data.repository
 
-import android.util.Log
-import com.google.firebase.database.ChildEventListener
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.snapshots
 import com.google.firebase.storage.FirebaseStorage
-import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
-import kr.sjh.domain.repository.BoardRepository
-import kr.sjh.domain.usecase.login.model.Post
+import kr.sjh.model.Post
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -65,7 +52,21 @@ class BoardRepositoryImpl @Inject constructor(
         throw it
     }
 
-    override suspend fun updatePost(post: Map<String, Any>): Result<Boolean> =
+    override suspend fun deletePost(post: Post): Result<Unit> = runCatching {
+        suspendCoroutine { continuation ->
+            ref.child(post.key).removeValue()
+                .addOnSuccessListener {
+                    continuation.resume(Unit)
+                }
+                .addOnFailureListener {
+                    continuation.resumeWithException(it)
+                }
+        }
+    }.recoverCatching {
+        throw it
+    }
+
+    override suspend fun updatePost(post: Post): Result<Unit> =
         runCatching {
             _updatePost(post)
         }.recoverCatching {
@@ -73,10 +74,10 @@ class BoardRepositoryImpl @Inject constructor(
         }
 
 
-    private suspend fun _updatePost(post: Map<String, Any>) = suspendCoroutine { continuation ->
-        ref.updateChildren(
-            post
-        ).addOnSuccessListener { continuation.resume(true) }
+    private suspend fun _updatePost(post: Post) = suspendCoroutine { continuation ->
+        ref.child(post.key).updateChildren(
+            post.toMap()
+        ).addOnSuccessListener { continuation.resume(Unit) }
             .addOnFailureListener { continuation.resumeWithException(it) }
     }
 }

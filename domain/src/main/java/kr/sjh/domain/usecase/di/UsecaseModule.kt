@@ -1,12 +1,13 @@
-package kr.sjh.presentation.di
+package kr.sjh.domain.usecase.di
 
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kr.sjh.domain.repository.BoardRepository
-import kr.sjh.domain.repository.LoginRepository
+import kr.sjh.data.repository.BoardRepository
+import kr.sjh.data.repository.LoginRepository
 import kr.sjh.domain.usecase.board.CreatePostUseCase
+import kr.sjh.domain.usecase.board.DeletePostUseCase
 import kr.sjh.domain.usecase.board.ReadPostsUseCase
 import kr.sjh.domain.usecase.login.firebase.CreateUserUseCase
 import kr.sjh.domain.usecase.login.firebase.DeleteUserUseCase
@@ -51,10 +52,12 @@ object PresentationModule {
         return DeleteUserUseCase(login)
     }
 
+
     @Provides
     fun provideReadUser(login: LoginRepository): ReadUserUseCase {
         return ReadUserUseCase(login)
     }
+
 
     @Provides
     fun provideReadPostsUseCase(board: BoardRepository): ReadPostsUseCase {
@@ -66,8 +69,15 @@ object PresentationModule {
         return CreatePostUseCase(board)
     }
 
+
+    @Provides
+    fun provideDeletePostUseCase(board: BoardRepository): DeletePostUseCase {
+        return DeletePostUseCase(board)
+    }
+
     @Provides
     fun provideUpdateUserUseCase(login: LoginRepository): UpdateUserUseCase {
         return UpdateUserUseCase(login)
     }
+
 }

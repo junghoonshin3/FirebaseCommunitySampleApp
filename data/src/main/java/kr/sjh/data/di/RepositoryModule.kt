@@ -12,8 +12,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kr.sjh.data.repository.BoardRepositoryImpl
 import kr.sjh.data.repository.LoginRepositoryImpl
-import kr.sjh.domain.repository.BoardRepository
-import kr.sjh.domain.repository.LoginRepository
+import kr.sjh.data.repository.BoardRepository
+import kr.sjh.data.repository.LoginRepository
 import javax.inject.Singleton
 
 @Module

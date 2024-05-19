@@ -7,17 +7,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kr.sjh.domain.usecase.board.ReadPostsUseCase
 import kr.sjh.domain.usecase.board.UpdatePostUseCase
-import kr.sjh.domain.usecase.login.model.Post
+import kr.sjh.model.Post
 import javax.inject.Inject
 
 sealed interface BoardUiState {
@@ -31,8 +27,7 @@ sealed interface BoardUiState {
 
 @HiltViewModel
 class BoardViewModel @Inject constructor(
-    private val readPostsUseCase: ReadPostsUseCase,
-    private val updatePostUseCase: UpdatePostUseCase
+    private val readPostsUseCase: ReadPostsUseCase
 ) : ViewModel() {
 
     val posts: StateFlow<BoardUiState> =
@@ -48,15 +43,4 @@ class BoardViewModel @Inject constructor(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = BoardUiState.Loading
             )
-
-    fun postUpdate(post: Map<String, Any>) {
-        viewModelScope.launch(Dispatchers.IO) {
-            updatePostUseCase(post)
-                .onSuccess {
-                }
-                .onFailure {
-                    it.printStackTrace()
-                }
-        }
-    }
 }

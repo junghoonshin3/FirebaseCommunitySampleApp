@@ -2,13 +2,11 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
-    id("com.google.dagger.hilt.android")
-    id("com.google.gms.google-services")
     id("kotlin-parcelize")
 }
 
 android {
-    namespace = "kr.sjh.domain"
+    namespace = "kr.sjh.model"
     compileSdk = 34
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -17,11 +15,5 @@ android {
 }
 
 dependencies {
-    api(project(":data"))
-    implementation(project(":model"))
-    //Dagger-Hilt
-    ksp(DaggerHilt.daggerHilt)
-    ksp(DaggerHilt.daggerHiltCompiler)
-    implementation(DaggerHilt.hiltNavigation)
-
+    implementation("com.google.code.gson:gson:2.10.1")
 }

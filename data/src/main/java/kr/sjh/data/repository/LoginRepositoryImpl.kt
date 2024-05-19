@@ -1,12 +1,10 @@
 package kr.sjh.data.repository
 
 import android.content.Context
-import android.content.res.Resources.NotFoundException
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.snapshots
 import com.kakao.sdk.auth.AuthApiClient
 import com.kakao.sdk.auth.model.OAuthToken
 import com.kakao.sdk.common.model.ClientError
@@ -15,11 +13,8 @@ import com.kakao.sdk.common.model.KakaoSdkError
 import com.kakao.sdk.user.UserApiClient
 import com.kakao.sdk.user.model.AccessTokenInfo
 import com.kakao.sdk.user.model.User
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.flow.map
-import kr.sjh.domain.error.NotFoundUser
-import kr.sjh.domain.repository.LoginRepository
-import kr.sjh.domain.usecase.login.model.UserInfo
+import kr.sjh.error.NotFoundUser
+import kr.sjh.model.UserInfo
 import javax.inject.Inject
 import javax.security.auth.login.LoginException
 import kotlin.coroutines.Continuation
@@ -31,7 +26,7 @@ class LoginRepositoryImpl @Inject constructor(
     private val context: Context,
     private val db: FirebaseDatabase,
     private val authApiClient: AuthApiClient,
-    private val userApiClient: UserApiClient
+    private val userApiClient: UserApiClient,
 ) : LoginRepository {
 
     override suspend fun loginForKakao() = runCatching {
@@ -80,7 +75,7 @@ class LoginRepositoryImpl @Inject constructor(
                         if (user != null) {
                             continuation.resume(user)
                         } else {
-                            continuation.resumeWithException(NotFoundUser(("Not Found UserInfo")))
+                            continuation.resumeWithException(NotFoundUser())
                         }
                     }
 
@@ -136,33 +131,6 @@ class LoginRepositoryImpl @Inject constructor(
         }
 
     }
-
-//    private suspend fun read(
-//        id: String?,
-//    ) = suspendCoroutine { continuation ->
-//        if (!id.isNullOrBlank()) {
-//            db.reference.child("users").child(id)
-//                .addListenerForSingleValueEvent(
-//                    object : ValueEventListener {
-//                        override fun onDataChange(snapshot: DataSnapshot) {
-//                            val user = snapshot.getValue(UserInfo::class.java)
-//                            if (user != null) {
-//                                continuation.resume(user)
-//                            } else {
-//                                continuation.resumeWithException(NotFoundException(("Not Register User")))
-//                            }
-//                        }
-//
-//                        override fun onCancelled(error: DatabaseError) {
-//                            continuation.resumeWithException(error.toException())
-//                        }
-//
-//                    }
-//                )
-//        } else {
-//            continuation.resumeWithException(NullPointerException("ID is NullOrBlank"))
-//        }
-//    }
 
     private suspend fun delete(
         id: String?,

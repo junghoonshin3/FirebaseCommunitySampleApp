@@ -53,9 +53,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.skydoves.landscapist.glide.GlideImage
-import kr.sjh.domain.usecase.login.model.Post
+import kr.sjh.model.Post
+import kr.sjh.model.UserInfo
 import kr.sjh.presentation.R
-import kr.sjh.presentation.ui.bottomsheet.BottomSheetUiState
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kotlin.math.absoluteValue
@@ -68,7 +68,7 @@ val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    onMoreMenu: (Post) -> Unit,
+    onMoreMenu: (Post, UserInfo) -> Unit,
     detailViewModel: BoardDetailViewModel = hiltViewModel(),
 ) {
     val listState = rememberLazyListState()
@@ -94,17 +94,17 @@ fun BoardDetailRoute(
         }, label = ""
     )
 
-    val writeUiState by detailViewModel.writeUiState.collectAsStateWithLifecycle()
+    val writeUiState by detailViewModel.detailUiState.collectAsStateWithLifecycle()
 
     var isLike by remember {
         mutableStateOf(false)
     }
-    
+
     BoardDetailScreen(
         modifier = modifier,
         isCollapsed = isCollapsed,
         isLike = isLike,
-        writeUiState = writeUiState,
+        detailUiState = writeUiState,
         listState = listState,
         onBack = onBack,
         onMoreMenu = onMoreMenu,
@@ -119,30 +119,30 @@ fun BoardDetailRoute(
 @Composable
 fun BoardDetailScreen(
     modifier: Modifier = Modifier,
-    writeUiState: WriteUiState,
+    detailUiState: DetailUiState,
     color: Color,
     isCollapsed: Boolean,
     isLike: Boolean,
     listState: LazyListState,
     onBack: () -> Unit,
-    onMoreMenu: (Post) -> Unit,
+    onMoreMenu: (Post, UserInfo) -> Unit,
     onLikeChange: () -> Unit,
 ) {
 
     Box(modifier = modifier) {
         //접힌 상태 탑바
-        when (writeUiState) {
-            is WriteUiState.Error -> {
+        when (detailUiState) {
+            is DetailUiState.Error -> {
             }
 
-            WriteUiState.Loading -> {
+            DetailUiState.Loading -> {
                 CircularProgressIndicator(
                     color = carrot,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
 
-            is WriteUiState.Success -> {
+            is DetailUiState.Success -> {
                 //접힌 상태 탑바
                 DetailCollapsedTopBar(
                     modifier = Modifier
@@ -154,7 +154,7 @@ fun BoardDetailScreen(
                     color = color,
                     onLikeChange = onLikeChange,
                     onMoreMenu = {
-                        onMoreMenu(writeUiState.post)
+                        onMoreMenu(detailUiState.post, detailUiState.userInfo)
                     },
                     onBack = onBack
                 )
@@ -173,10 +173,10 @@ fun BoardDetailScreen(
                     }
                     item {
                         DetailWriterProfile(
-                            profileImageUrl = writeUiState.userInfo.profileImageUrl,
-                            nickName = writeUiState.userInfo.nickName ?: "닉네임이 없어요",
+                            profileImageUrl = detailUiState.userInfo.profileImageUrl,
+                            nickName = detailUiState.userInfo.nickName ?: "닉네임이 없어요",
                             readCount = 0,
-                            postCount = writeUiState.userInfo.postCount
+                            postCount = detailUiState.userInfo.postCount
                         )
                         HorizontalDivider(
                             modifier = Modifier.fillMaxWidth(),
@@ -185,11 +185,11 @@ fun BoardDetailScreen(
                         )
                         DetailTitle(
                             modifier = Modifier.padding(10.dp),
-                            title = writeUiState.post.title ?: ""
+                            title = detailUiState.post.title ?: ""
                         )
                         DetailContent(
                             Modifier.padding(10.dp),
-                            content = writeUiState.post.content ?: ""
+                            content = detailUiState.post.content ?: ""
                         )
 
                     }

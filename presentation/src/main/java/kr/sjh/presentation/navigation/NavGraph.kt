@@ -1,7 +1,6 @@
 package kr.sjh.presentation.navigation
 
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,28 +8,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import kr.sjh.domain.usecase.login.model.Post
-import kr.sjh.domain.usecase.login.model.UserInfo
+import kr.sjh.model.Post
+import kr.sjh.model.UserInfo
 import kr.sjh.presentation.ui.board.BoardRoute
 import kr.sjh.presentation.ui.board.detail.BoardDetailRoute
 import kr.sjh.presentation.ui.board.detail.BoardDetailViewModel
 import kr.sjh.presentation.ui.board.detail.BottomSheetMenu
 import kr.sjh.presentation.ui.board.write.BoardWriteRoute
-import kr.sjh.presentation.ui.bottomsheet.BottomSheetUiState
+import kr.sjh.presentation.ui.bottomsheet.BottomSheetState
 import kr.sjh.presentation.ui.bottomsheet.CommonModalBottomSheet
 import kr.sjh.presentation.ui.bottomsheet.rememberBottomSheetUiState
 import kr.sjh.presentation.ui.login.LoginRoute
 import kr.sjh.presentation.ui.main.MainRoute
+import kr.sjh.presentation.ui.splash.SplashScreen
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.utill.PickUpAppState
 
@@ -44,7 +44,7 @@ fun NavGraphBuilder.addNestedLoginGraph(
         composable(route = LoginRouteScreen.Login.route) {
             LoginRoute(
                 modifier = Modifier.fillMaxSize(),
-                onMoveScreen = { userInfo ->
+                moveMainScreen = {
                     appState.rootNavHostController.navigate(Graph.MainGraph.route) {
                         launchSingleTop = true
                         popUpTo(LoginRouteScreen.Login.route) { inclusive = true }
@@ -92,20 +92,22 @@ fun MainNavGraph(
 
 fun NavGraphBuilder.addNestedBoardGraph(
     appState: PickUpAppState,
-    bottomSheetUiState: BottomSheetUiState,
-    userInfo: UserInfo
+    bottomSheetState: BottomSheetState,
 ) {
     navigation(
         startDestination = BoardRouteScreen.Detail.route,
         route = Graph.BoardGraph.route
     ) {
-        composable(route = "${BoardRouteScreen.Detail.route}/{post}",
+        composable(route = "${BoardRouteScreen.Detail.route}?post={post}",
             arguments = listOf(
                 navArgument("post") {
                     // Make argument type safe
                     type = PostType()
+                    nullable = true
                 }
             )) {
+            val viewModel: BoardDetailViewModel = hiltViewModel()
+
             BoardDetailRoute(
                 modifier = Modifier
                     .fillMaxSize()
@@ -116,22 +118,33 @@ fun NavGraphBuilder.addNestedBoardGraph(
                         inclusive = false
                     )
                 },
-                onMoreMenu = { post ->
-                    bottomSheetUiState.bottomSheetVisible = true
+                onMoreMenu = { post, userInfo ->
+                    bottomSheetState.content = {
+                        BottomSheetMenu(onEdit = {
+                            appState.rootNavHostController.navigate(BoardRouteScreen.Write.route)
+                            bottomSheetState.bottomSheetVisible = false
+                        }) {
+                            viewModel.deletePost(post, {
+                                appState.rootNavHostController.popBackStack(
+                                    Graph.MainGraph.route,
+                                    inclusive = false
+                                )
+                            }, {
+                                it.printStackTrace()
+                            })
+                            bottomSheetState.bottomSheetVisible = false
+
+                        }
+                    }
+                    bottomSheetState.bottomSheetVisible = true
                 }
             )
         }
 
-        composable(route = "${BoardRouteScreen.Write.route}/{userInfo}/{post}", arguments = listOf(
-            navArgument("userInfo") {
-                type = UserInfoType()
-            },
-            navArgument("post") {
-                nullable = true
-                type = PostType()
-            }
+        composable(route = BoardRouteScreen.Write.route) {
 
-        )) {
+            val isEdit = it.arguments?.getBoolean("isEdit", false)
+
             BoardWriteRoute(
                 modifier = Modifier.fillMaxSize(),
                 onBack = {
@@ -175,44 +188,47 @@ fun NavGraphBuilder.addNestedMyPageGraph(
 @Composable
 fun PickUpNavHost(
     modifier: Modifier = Modifier,
-    userInfo: UserInfo,
     appState: PickUpAppState,
-    bottomSheetUiState: BottomSheetUiState = rememberBottomSheetUiState(Unit),
-    startScreen: Graph,
+    bottomSheetState: BottomSheetState = rememberBottomSheetUiState(Unit),
     onKeepOnScreenCondition: () -> Unit
 ) {
     val navController = appState.rootNavHostController
 
-    LaunchedEffect(key1 = Unit, block = {
-        onKeepOnScreenCondition()
-    })
-
     CommonModalBottomSheet(
         containerColor = backgroundColor,
-        showSheet = bottomSheetUiState.bottomSheetVisible,
+        showSheet = bottomSheetState.bottomSheetVisible,
         onDismissRequest = {
-            bottomSheetUiState.bottomSheetVisible = false
+            bottomSheetState.bottomSheetVisible = false
         }) {
-        bottomSheetUiState.content?.invoke()
+        bottomSheetState.content?.invoke()
     }
 
     NavHost(
         navController = navController,
-        startDestination = startScreen.route,
+        startDestination = Graph.SplashGraph.route,
         modifier = modifier.safeDrawingPadding()
     ) {
-        addNestedLoginGraph(appState)
+        composable(Graph.SplashGraph.route) {
+            SplashScreen(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
+                appState = appState,
+                onKeepOnScreenCondition = onKeepOnScreenCondition
+            )
+        }
+
+        addNestedLoginGraph(appState = appState)
         composable(
-            route = Graph.MainGraph.route
+            route = Graph.MainGraph.route,
         ) {
             MainRoute(
                 modifier = Modifier.fillMaxSize(),
                 rootNavController = appState.rootNavHostController,
                 mainNavController = appState.mainNavHostController,
-                userInfo = userInfo
             )
         }
-        addNestedBoardGraph(appState, bottomSheetUiState)
+        addNestedBoardGraph(appState, bottomSheetState)
         addNestedChatGraph(appState)
         addNestedMyPageGraph(appState)
     }
