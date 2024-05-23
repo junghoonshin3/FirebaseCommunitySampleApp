@@ -1,8 +1,7 @@
 package kr.sjh.domain.usecase.login.firebase
 
-import kotlinx.coroutines.flow.flow
+import kr.sjh.domain.model.UserInfo
 import kr.sjh.domain.repository.LoginRepository
-import kr.sjh.domain.usecase.login.model.UserInfo
 import javax.inject.Inject
 
 class CreateUserUseCase @Inject constructor(

@@ -35,20 +35,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":domain"))
-
+    api(project(":domain"))
     //Dagger-Hilt
     implementation(DaggerHilt.daggerHilt)
     kapt(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
-
-
-    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
-    //Firebase DB
-    implementation("com.google.firebase:firebase-database-ktx")
-    //Firebase Storage
-    implementation("com.google.firebase:firebase-storage-ktx")
-
-
-
 }

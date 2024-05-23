@@ -1,19 +1,7 @@
 package kr.sjh.presentation.navigation
 
-import kr.sjh.domain.usecase.login.model.UserInfo
-
-//하단 Navigation Screen
-//sealed class LeafScreen(
-//    val route: String,
-//) {
-//    data object BoardWrite : LeafScreen("write")
-//    data object Chat : LeafScreen("chat")
-//    data object MyPage : LeafScreen("my_page")
-//    data object Board : LeafScreen("board")
-//    data object BoardDetail : LeafScreen("board_detail")
-//}
-
 sealed class Graph(val route: String) {
+    data object SplashGraph : Graph("splashGraph")
     data object LoginGraph : Graph("loginGraph")
     data object MainGraph : Graph("mainGraph")
 
@@ -26,6 +14,8 @@ sealed class Graph(val route: String) {
 
 sealed class LoginRouteScreen(val route: String) {
     data object Login : LoginRouteScreen("login")
+
+    data object Detail : LoginRouteScreen("detail")
 }
 
 sealed class MainRouteScreen(val route: String) {
@@ -40,6 +30,8 @@ sealed class BoardRouteScreen(val route: String) {
     data object Detail : MainRouteScreen("board_detail")
 
     data object Write : MainRouteScreen("board_write")
+
+    data object Edit : MainRouteScreen("board_edit")
 }
 
 sealed class ChatRouteScreen(val route: String) {

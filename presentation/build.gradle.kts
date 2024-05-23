@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
-    id ("com.google.devtools.ksp")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -41,7 +41,7 @@ android {
 
 dependencies {
 
-    implementation(project(":domain"))
+    api(project(":domain"))
     implementation(Deps.core)
     implementation(CoroutinesLifeCycleScope.lifeCycleRuntime)
     implementation(JetPackCompose.composeActivity)
@@ -78,6 +78,9 @@ dependencies {
 
     //permission
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
+
+    //constraintLayout
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
 
 
 }
