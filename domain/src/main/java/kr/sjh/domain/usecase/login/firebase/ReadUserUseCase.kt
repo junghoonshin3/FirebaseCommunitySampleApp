@@ -1,6 +1,6 @@
 package kr.sjh.domain.usecase.login.firebase
 
-import kr.sjh.data.repository.LoginRepository
+import kr.sjh.domain.repository.LoginRepository
 import javax.inject.Inject
 
 class ReadUserUseCase @Inject constructor(

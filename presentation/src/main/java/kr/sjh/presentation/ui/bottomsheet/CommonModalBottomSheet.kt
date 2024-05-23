@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package kr.sjh.presentation.ui.bottomsheet
 
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +43,7 @@ fun CommonModalBottomSheet(
     tonalElevation: Dp = BottomSheetDefaults.Elevation,
     scrimColor: Color = BottomSheetDefaults.ScrimColor,
     dragHandle: @Composable (() -> Unit)? = { BottomSheetDefaults.DragHandle() },
-    windowInsets: WindowInsets = WindowInsets.displayCutout,
+    windowInsets: WindowInsets = WindowInsets(0, 0, 0, 0),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -60,18 +64,3 @@ fun CommonModalBottomSheet(
         }
     }
 }
-
-
-@Stable
-class BottomSheetState {
-    var content by mutableStateOf<(@Composable () -> Unit)?>(null)
-    var bottomSheetVisible by mutableStateOf(false)
-}
-
-@Composable
-fun rememberBottomSheetUiState(key1: Any): BottomSheetState {
-    return remember(key1) {
-        BottomSheetState()
-    }
-}
-

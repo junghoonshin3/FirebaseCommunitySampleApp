@@ -12,8 +12,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kr.sjh.data.repository.BoardRepositoryImpl
 import kr.sjh.data.repository.LoginRepositoryImpl
-import kr.sjh.data.repository.BoardRepository
-import kr.sjh.data.repository.LoginRepository
+import kr.sjh.domain.repository.BoardRepository
+import kr.sjh.domain.repository.KaKaoLoginRepository
+import kr.sjh.data.repository.KaKaoLoginRepositoryImpl
+import kr.sjh.domain.repository.LoginRepository
 import javax.inject.Singleton
 
 @Module
@@ -22,14 +24,22 @@ class RepositoryModule {
     @Provides
     @Singleton
     fun provideLoginRepository(
-        @ApplicationContext context: Context,
-        db: FirebaseDatabase,
-        authApiClient: AuthApiClient,
-        userApiClient: UserApiClient
+        db: FirebaseDatabase
     ): LoginRepository {
         return LoginRepositoryImpl(
+            db
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideKaKaoLoginRepository(
+        @ApplicationContext context: Context,
+        authApiClient: AuthApiClient,
+        userApiClient: UserApiClient
+    ): KaKaoLoginRepository {
+        return KaKaoLoginRepositoryImpl(
             context,
-            db,
             authApiClient,
             userApiClient
         )
@@ -46,4 +56,6 @@ class RepositoryModule {
             db
         )
     }
+
+
 }

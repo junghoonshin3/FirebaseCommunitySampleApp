@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
@@ -28,7 +30,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -38,30 +39,21 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldColors
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -77,18 +69,20 @@ import com.bumptech.glide.request.RequestOptions
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.skydoves.landscapist.glide.GlideImage
-import kotlinx.coroutines.launch
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.common.AppTopBar
+import kr.sjh.presentation.ui.common.ContentTextField
 import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.clearFocusOnKeyboardDismiss
+import kr.sjh.presentation.utill.getActivity
 
 @Composable
 fun BoardWriteRoute(
     modifier: Modifier = Modifier,
     boardWriteViewModel: BoardWriteViewModel = hiltViewModel(),
-    loginViewModel: LoginViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
     onBack: () -> Unit
 ) {
     var selectedPhotos by remember {
@@ -97,14 +91,6 @@ fun BoardWriteRoute(
 
     val scrollState = rememberScrollState()
 
-    val title by boardWriteViewModel.title.collectAsState()
-
-    val content by boardWriteViewModel.content.collectAsState()
-
-    val writeUiState by boardWriteViewModel.writeUiState.collectAsStateWithLifecycle(
-        initialValue = BoardWriteUiState.Loading,
-    )
-
     val userInfo by loginViewModel.userInfo.collectAsStateWithLifecycle()
 
     BoardWriteScreen(
@@ -112,8 +98,8 @@ fun BoardWriteRoute(
         onPost = {
             userInfo?.let {
                 boardWriteViewModel.createPost(it)
+                onBack()
             }
-
         },
         onBack = onBack,
         selectedPhotos = selectedPhotos,
@@ -122,8 +108,8 @@ fun BoardWriteRoute(
             selectedPhotos = it
         },
         scrollState = scrollState,
-        title = title,
-        content = content,
+        title = boardWriteViewModel.title,
+        content = boardWriteViewModel.content,
         updateContent = {
             boardWriteViewModel.updateContent(it)
         },
@@ -157,15 +143,15 @@ fun BoardWriteScreen(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            BoardWriteTopBar(
+            AppTopBar(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(70.dp)
-                    .background(backgroundColor),
+                    .padding(10.dp),
                 title = "음식점 후기글 쓰기",
                 buttonTitle = "등록",
                 onBack = onBack,
-                onPost = onPost
+                backIcon = Icons.Default.ArrowBack,
+                onClick = onPost
             )
             BoardWriteBody(
                 modifier = Modifier
@@ -204,51 +190,6 @@ fun BoardWriteWarning(
             text = text
         )
     }
-}
-
-@Composable
-fun BoardWriteTopBar(
-    modifier: Modifier = Modifier,
-    title: String,
-    buttonTitle: String,
-    onBack: () -> Unit,
-    onPost: () -> Unit
-) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Image(
-                modifier = Modifier
-                    .padding(10.dp)
-                    .clickable {
-                        onBack()
-                    },
-                imageVector = Icons.Default.ArrowBack,
-                colorFilter = ColorFilter.tint(Color.White),
-                contentDescription = "Back"
-            )
-            Text(text = title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text(
-                modifier = Modifier
-                    .padding(10.dp)
-                    .clickable {
-                        onPost()
-                    },
-                text = buttonTitle,
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
-        HorizontalDivider(
-            Modifier
-                .fillMaxWidth(), 1.dp, color = Color(0xFFC1C7CD)
-        )
-    }
-
 }
 
 @Composable
@@ -328,22 +269,25 @@ fun BoardWriteBody(
             ),
             modifier = Modifier
                 .fillMaxWidth()
+                .height(90.dp)
                 .padding(10.dp),
             text = title,
             onTextChanged = { updateTitle(it) },
             placeholder = {
-                Text(text = "제목을 입력하세요.", color = Color.LightGray)
+                Text(fontSize = 20.sp, text = "제목을 입력하세요.", color = Color.LightGray)
             }
         )
         ContentTextField(
             parentScrollState = scrollState,
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 400.dp)
                 .padding(10.dp),
             text = content,
             onTextChanged = { updateContent(it) },
             placeholder = {
                 Text(
+                    fontSize = 17.sp,
                     text = "방문한 음식점에 대한 정보를 공유해 주세요!추천하는 메뉴나 매장 이용 팁 등을 공유해 주세요!",
                     color = Color.LightGray
                 )
@@ -367,56 +311,6 @@ fun BoardWriteBody(
     }
 }
 
-@Composable
-fun ContentTextField(
-    modifier: Modifier = Modifier,
-    text: String,
-    onTextChanged: (text: String) -> Unit,
-    singleLine: Boolean = false,
-    placeholder: @Composable () -> Unit,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    textStyle: TextStyle = TextStyle.Default,
-    parentScrollState: ScrollState? = null
-) {
-    val coroutineScope = rememberCoroutineScope()
-    var prevHeight by remember { mutableIntStateOf(0) }
-
-    BasicTextField(
-        singleLine = singleLine,
-        modifier = modifier
-            .onSizeChanged { size ->
-                parentScrollState?.let {
-                    //변경된 텍스트 필드의 높이 - 변경되기 전 높이
-                    val diff = size.height - prevHeight
-                    prevHeight = size.height
-                    if (prevHeight == 0 || diff == 0) {
-                        return@onSizeChanged
-                    }
-                    coroutineScope.launch {
-                        // 줄바꿈시 스크롤을 마지막으로 이동
-                        it.scrollTo(
-                            it.maxValue
-                        )
-                    }
-                }
-            },
-        value = text,
-        onValueChange = { text ->
-            onTextChanged(text)
-        },
-        keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
-        textStyle = textStyle,
-        cursorBrush = SolidColor(Color.White),
-        decorationBox = { innerTextField ->
-            if (text.isEmpty()) {
-                placeholder()
-            }
-            innerTextField()
-        }
-    )
-}
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable

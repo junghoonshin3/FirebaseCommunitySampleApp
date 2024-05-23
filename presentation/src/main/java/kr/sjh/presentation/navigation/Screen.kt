@@ -14,6 +14,8 @@ sealed class Graph(val route: String) {
 
 sealed class LoginRouteScreen(val route: String) {
     data object Login : LoginRouteScreen("login")
+
+    data object Detail : LoginRouteScreen("detail")
 }
 
 sealed class MainRouteScreen(val route: String) {
@@ -28,6 +30,8 @@ sealed class BoardRouteScreen(val route: String) {
     data object Detail : MainRouteScreen("board_detail")
 
     data object Write : MainRouteScreen("board_write")
+
+    data object Edit : MainRouteScreen("board_edit")
 }
 
 sealed class ChatRouteScreen(val route: String) {

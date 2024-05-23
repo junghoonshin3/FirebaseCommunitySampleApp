@@ -1,7 +1,7 @@
 package kr.sjh.presentation.ui.board
 
-import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,20 +31,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kr.sjh.model.Post
+import kr.sjh.domain.model.Post
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.calculationTime
 
 @Composable
 fun BoardRoute(
     modifier: Modifier = Modifier,
-    moveBoardDetail: (Post) -> Unit,
+    moveBoardDetail: (String) -> Unit,
     moveBoardWrite: () -> Unit,
     boardViewModel: BoardViewModel = hiltViewModel()
 ) {
@@ -53,7 +56,10 @@ fun BoardRoute(
     BoardScreen(
         modifier = modifier,
         boardUiState = boardUiState,
-        moveBoardDetail = moveBoardDetail,
+        moveBoardDetail = { post ->
+            moveBoardDetail(post.key)
+            boardViewModel.postReadCount(post = post)
+        },
         moveBoardWrite = moveBoardWrite
     )
 }
@@ -65,14 +71,44 @@ fun BoardScreen(
     moveBoardDetail: (Post) -> Unit,
     moveBoardWrite: () -> Unit
 ) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.background(backgroundColor)) {
         when (boardUiState) {
             BoardUiState.Loading -> {
-                CircularProgressIndicator(color = carrot)
-
+                CircularProgressIndicator(
+                    Modifier.align(Alignment.Center),
+                    color = carrot
+                )
             }
 
             is BoardUiState.Success -> {
+                ExtendedFloatingActionButton(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(10.dp)
+                        .zIndex(1f),
+                    shape = RoundedCornerShape(30.dp),
+                    containerColor = Color.Black,
+                    text = { Text(text = "글쓰기", color = Color.White) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Create,
+                            contentDescription = "create",
+                            tint = Color.White
+                        )
+                    },
+                    onClick = moveBoardWrite
+                )
+                if (boardUiState.list.isEmpty()) {
+                    Text(
+                        text = "텅! 글쓰기를 해볼까요?",
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                    return@Box
+                }
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -103,31 +139,6 @@ fun BoardScreen(
                             )
                     }
                 }
-                ExtendedFloatingActionButton(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(10.dp),
-                    shape = RoundedCornerShape(30.dp),
-                    containerColor = Color.Black,
-                    text = { Text(text = "글쓰기", color = Color.White) },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Create,
-                            contentDescription = "create",
-                            tint = Color.White
-                        )
-                    },
-                    onClick = moveBoardWrite
-                )
-
-            }
-
-            BoardUiState.Empty -> {
-                Text(
-                    text = "No Item",
-                    color = Color.White,
-                    modifier = Modifier.align(Alignment.Center)
-                )
             }
 
             is BoardUiState.Error -> {
@@ -166,28 +177,34 @@ fun PostItem(
                 .fillMaxSize()
                 .padding(start = 10.dp)
         ) {
-            Text(text = title, overflow = TextOverflow.Ellipsis, fontSize = 19.sp, maxLines = 1)
+            Text(
+                text = title,
+                color = Color.White,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 19.sp,
+                maxLines = 1
+            )
             Text(
                 text = nickname,
-                color = Color.Gray,
+                color = Color.White,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1
             )
             Text(
                 text = minutesAgo,
-                color = Color.Gray,
+                color = Color.White,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1
             )
             Text(
                 text = "조회수 $readCount",
-                color = Color.Gray,
+                color = Color.White,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1
             )
             Text(
                 text = "관심 $likeCount",
-                color = Color.Gray,
+                color = Color.White,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1
             )

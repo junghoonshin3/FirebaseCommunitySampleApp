@@ -42,7 +42,6 @@ android {
 dependencies {
 
     api(project(":domain"))
-    implementation(project(":model"))
     implementation(Deps.core)
     implementation(CoroutinesLifeCycleScope.lifeCycleRuntime)
     implementation(JetPackCompose.composeActivity)
@@ -79,6 +78,9 @@ dependencies {
 
     //permission
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
+
+    //constraintLayout
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
 
 
 }

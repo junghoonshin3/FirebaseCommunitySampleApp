@@ -1,7 +1,7 @@
 package kr.sjh.domain.usecase.login.firebase
 
-import kr.sjh.data.repository.LoginRepository
-import kr.sjh.model.UserInfo
+import kr.sjh.domain.model.UserInfo
+import kr.sjh.domain.repository.LoginRepository
 import javax.inject.Inject
 
 class UpdateUserUseCase @Inject constructor(

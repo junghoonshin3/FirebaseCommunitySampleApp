@@ -2,6 +2,7 @@ package kr.sjh.presentation.ui.board.detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,25 +18,26 @@ import androidx.compose.ui.unit.sp
 import kr.sjh.presentation.ui.theme.backgroundColor
 
 @Composable
-fun BottomSheetMenu(
-    onEdit: () -> Unit,
+fun BottomSheetMoreMenu(
+    moveEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .wrapContentHeight()
             .fillMaxWidth()
-            .background(backgroundColor)
+            .background(backgroundColor),
+        verticalArrangement = Arrangement.Center
     ) {
         Text(
             textAlign = TextAlign.Center,
             text = "수정",
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp)
                 .clickable {
-                    onEdit()
+                    moveEdit()
                 },
             color = Color.White
         )
@@ -43,7 +45,7 @@ fun BottomSheetMenu(
         Text(
             textAlign = TextAlign.Center,
             text = "삭제",
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp)

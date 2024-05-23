@@ -1,6 +1,6 @@
 package kr.sjh.domain.usecase.board
 
-import kr.sjh.data.repository.BoardRepository
+import kr.sjh.domain.repository.BoardRepository
 import javax.inject.Inject
 
 class ReadPostsUseCase @Inject constructor(

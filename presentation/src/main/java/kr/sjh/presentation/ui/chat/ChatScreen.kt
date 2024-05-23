@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
 import com.skydoves.landscapist.glide.GlideImage
-import kr.sjh.model.UserInfo
+import kr.sjh.domain.model.UserInfo
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.backgroundColor
 

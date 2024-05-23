@@ -33,9 +33,6 @@ object JetPackCompose {
     const val composeUi = "androidx.compose.ui:ui:${Versions.composeUi}"
     const val composeUiToolingPreview =
         "androidx.compose.ui:ui-tooling-preview:${Versions.toolingPreview}"
-    const val composeMaterial = "androidx.compose.material3:material3:${Versions.composeMaterial}"
-    const val composeViewModel =
-        "androidx.lifecycle:lifecycle-viewmodel-compose:${Versions.composeViewModel}"
     const val composeBom = "androidx.compose:compose-bom:${Versions.composeBom}"
     const val uiGraphics = "androidx.compose.ui:ui-graphics"
     const val material3 = "androidx.compose.material3:material3:${Versions.material3}"

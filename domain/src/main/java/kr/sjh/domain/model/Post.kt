@@ -1,12 +1,14 @@
-package kr.sjh.model
+package kr.sjh.domain.model
 
 import android.net.Uri
 import android.os.Parcelable
+import androidx.compose.runtime.Stable
 import com.google.gson.Gson
 import kotlinx.parcelize.Parcelize
 
 
 @Parcelize
+@Stable
 data class Post(
     val writerId: String = "",
     var key: String = "",

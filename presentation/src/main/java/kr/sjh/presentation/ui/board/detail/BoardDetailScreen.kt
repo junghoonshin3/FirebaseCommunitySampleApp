@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.board.detail
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,7 +24,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,23 +54,28 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.skydoves.landscapist.glide.GlideImage
-import kr.sjh.model.Post
-import kr.sjh.model.UserInfo
+import kr.sjh.domain.model.Post
+import kr.sjh.domain.model.UserInfo
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.bottomsheet.CommonModalBottomSheet
+import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.getActivity
 import kotlin.math.absoluteValue
 
 
 val COLLAPSED_TOP_BAR_HEIGHT = 50.dp
 val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    onMoreMenu: (Post, UserInfo) -> Unit,
+    moveEdit: (String) -> Unit,
     detailViewModel: BoardDetailViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
 ) {
     val listState = rememberLazyListState()
 
@@ -86,55 +92,15 @@ fun BoardDetailRoute(
         }
     }
 
-    val color by animateColorAsState(
-        if (isCollapsed) {
-            backgroundColor
-        } else {
-            Color.Transparent
-        }, label = ""
-    )
-
     val writeUiState by detailViewModel.detailUiState.collectAsStateWithLifecycle()
 
-    var isLike by remember {
+    var bottomSheetShow by remember {
         mutableStateOf(false)
     }
 
-    BoardDetailScreen(
-        modifier = modifier,
-        isCollapsed = isCollapsed,
-        isLike = isLike,
-        detailUiState = writeUiState,
-        listState = listState,
-        onBack = onBack,
-        onMoreMenu = onMoreMenu,
-        color = color,
-        onLikeChange = {
-            isLike = !isLike
-        }
-    )
-
-}
-
-@Composable
-fun BoardDetailScreen(
-    modifier: Modifier = Modifier,
-    detailUiState: DetailUiState,
-    color: Color,
-    isCollapsed: Boolean,
-    isLike: Boolean,
-    listState: LazyListState,
-    onBack: () -> Unit,
-    onMoreMenu: (Post, UserInfo) -> Unit,
-    onLikeChange: () -> Unit,
-) {
-
     Box(modifier = modifier) {
-        //접힌 상태 탑바
-        when (detailUiState) {
-            is DetailUiState.Error -> {
-            }
-
+        when (writeUiState) {
+            is DetailUiState.Error -> {}
             DetailUiState.Loading -> {
                 CircularProgressIndicator(
                     color = carrot,
@@ -143,60 +109,107 @@ fun BoardDetailScreen(
             }
 
             is DetailUiState.Success -> {
-                //접힌 상태 탑바
-                DetailCollapsedTopBar(
-                    modifier = Modifier
-                        .zIndex(1f)
-                        .fillMaxWidth()
-                        .height(COLLAPSED_TOP_BAR_HEIGHT),
+                val (post, userInfo) = (writeUiState as DetailUiState.Success).pair
+                var isLike by remember {
+                    mutableStateOf(userInfo.likePosts.contains(post.key))
+                }
+                CommonModalBottomSheet(
+                    showSheet = bottomSheetShow,
+                    dragHandle = {
+                        BottomSheetDefaults.DragHandle(color = Color.LightGray)
+                    },
+                    containerColor = backgroundColor,
+                    onDismissRequest = {
+                        bottomSheetShow = false
+                    }) {
+                    BottomSheetMoreMenu(moveEdit = {
+                        moveEdit(post.key)
+                        bottomSheetShow = false
+                    }, onDelete = {
+                        detailViewModel.deletePost(post.key)
+                        bottomSheetShow = false
+                        onBack()
+                    })
+                }
+
+                BoardDetailScreen(
                     isCollapsed = isCollapsed,
                     isLike = isLike,
-                    color = color,
-                    onLikeChange = onLikeChange,
+                    listState = listState,
+                    onBack = onBack,
+                    post = post,
+                    userInfo = userInfo,
                     onMoreMenu = {
-                        onMoreMenu(detailUiState.post, detailUiState.userInfo)
+                        bottomSheetShow = true
                     },
-                    onBack = onBack
+                    onLikeChange = {
+                        isLike = !isLike
+                        detailViewModel.updateLikeCount(isLike, userInfo, post)
+                    }
                 )
-                LazyColumn(
-                    modifier = Modifier
-                        .background(backgroundColor)
-                        .fillMaxSize(), state = listState
-                ) {
-                    item {
-                        //확장된 상태 탑바
-                        DetailExpendedTopBar(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(EXPANDED_TOP_BAR_HEIGHT)
-                        )
-                    }
-                    item {
-                        DetailWriterProfile(
-                            profileImageUrl = detailUiState.userInfo.profileImageUrl,
-                            nickName = detailUiState.userInfo.nickName ?: "닉네임이 없어요",
-                            readCount = 0,
-                            postCount = detailUiState.userInfo.postCount
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.fillMaxWidth(),
-                            thickness = 1.dp,
-                            color = Color.Gray
-                        )
-                        DetailTitle(
-                            modifier = Modifier.padding(10.dp),
-                            title = detailUiState.post.title ?: ""
-                        )
-                        DetailContent(
-                            Modifier.padding(10.dp),
-                            content = detailUiState.post.content ?: ""
-                        )
-
-                    }
-                }
             }
         }
+    }
+}
 
+@Composable
+fun BoardDetailScreen(
+    isCollapsed: Boolean,
+    isLike: Boolean,
+    userInfo: UserInfo,
+    post: Post,
+    listState: LazyListState,
+    onBack: () -> Unit,
+    onMoreMenu: () -> Unit,
+    onLikeChange: () -> Unit,
+) {
+    DetailCollapsedTopBar(
+        modifier = Modifier
+            .zIndex(1f)
+            .fillMaxWidth()
+            .height(COLLAPSED_TOP_BAR_HEIGHT),
+        isCollapsed = isCollapsed,
+        isLike = isLike,
+        isWriter = userInfo.id == post.writerId,
+        onLikeChange = onLikeChange,
+        onMoreMenu = onMoreMenu,
+        onBack = onBack
+    )
+    LazyColumn(
+        modifier = Modifier
+            .background(backgroundColor)
+            .fillMaxSize(), state = listState
+    ) {
+        item {
+            //확장된 상태 탑바
+            DetailExpendedTopBar(
+                Modifier
+                    .fillMaxWidth()
+                    .height(EXPANDED_TOP_BAR_HEIGHT)
+            )
+        }
+        item {
+            DetailWriterProfile(
+                profileImageUrl = userInfo.profileImageUrl,
+                nickName = userInfo.nickName ?: "닉네임이 없어요",
+                readCount = post.readCount,
+                postCount = userInfo.postCount
+            )
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                thickness = 1.dp,
+                color = Color.Gray
+            )
+            DetailTitle(
+                modifier = Modifier.padding(10.dp),
+                title = post.title ?: ""
+            )
+            DetailContent(
+                Modifier.padding(10.dp),
+                content = post.content ?: ""
+            )
+
+        }
     }
 }
 
@@ -232,8 +245,8 @@ fun DetailCollapsedTopBar(
     modifier: Modifier = Modifier,
     isCollapsed: Boolean,
     isLike: Boolean,
-    color: Color,
     onLikeChange: () -> Unit,
+    isWriter: Boolean,
     onMoreMenu: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -249,9 +262,22 @@ fun DetailCollapsedTopBar(
         }
     }
 
+    val likeColor by remember(isLike, isCollapsed) {
+        derivedStateOf {
+            ColorFilter.tint(
+                color = if (isLike) {
+                    carrot
+                } else if (isCollapsed) {
+                    Color.White
+                } else {
+                    Color.Black
+                }
+            )
+        }
+    }
+
     Row(
-        modifier = modifier
-            .background(color),
+        modifier = modifier,
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -272,7 +298,7 @@ fun DetailCollapsedTopBar(
                 .clickable {
                     onLikeChange()
                 },
-            colorFilter = colorFilter,
+            colorFilter = likeColor,
             imageVector = ImageVector.vectorResource(
                 id = if (isLike) {
                     R.drawable.baseline_favorite_24
@@ -282,16 +308,18 @@ fun DetailCollapsedTopBar(
             ),
             contentDescription = "Like"
         )
-        Image(
-            colorFilter = colorFilter,
-            modifier = Modifier
-                .padding(10.dp)
-                .clickable {
-                    onMoreMenu()
-                },
-            imageVector = ImageVector.vectorResource(id = R.drawable.baseline_more_vert_24),
-            contentDescription = ""
-        )
+        if (isWriter) {
+            Image(
+                colorFilter = colorFilter,
+                modifier = Modifier
+                    .padding(10.dp)
+                    .clickable {
+                        onMoreMenu()
+                    },
+                imageVector = ImageVector.vectorResource(id = R.drawable.baseline_more_vert_24),
+                contentDescription = ""
+            )
+        }
     }
 }
 

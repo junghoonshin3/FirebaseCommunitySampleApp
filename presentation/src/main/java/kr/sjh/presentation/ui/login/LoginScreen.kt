@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,39 +22,61 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import kr.sjh.model.UserInfo
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kr.sjh.domain.error.NotFoundUser
 import kr.sjh.presentation.R
+import kr.sjh.presentation.navigation.Graph
+import kr.sjh.presentation.navigation.LoginRouteScreen
+import kr.sjh.presentation.utill.PickUpAppState
+import kr.sjh.presentation.utill.getActivity
 
 
 @Composable
 fun LoginRoute(
+    appState: PickUpAppState,
     modifier: Modifier = Modifier,
     moveMainScreen: () -> Unit,
-    loginViewModel: LoginViewModel = hiltViewModel()
+    loginViewModel: LoginViewModel = hiltViewModel(getActivity())
 ) {
-    LaunchedEffect(key1 = Unit, block = {
-        loginViewModel.loginUiState.collect { loginState ->
-            when (loginState) {
-                is LoginUiState.Error -> {
-                    Log.d("sjh", "Login Error")
+    val loginState by loginViewModel.loginState.collectAsStateWithLifecycle()
+
+    when (loginState) {
+        is LoginUiState.Error -> {
+            Log.d("sjh", "LoginUiState.Error")
+            when ((loginState as LoginUiState.Error).throwable) {
+                is NotFoundUser -> {
+                    appState.rootNavHostController.navigate(LoginRouteScreen.Detail.route) {
+                        popUpTo(LoginRouteScreen.Login.route) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
                 }
 
-                LoginUiState.Loading -> {
-                    Log.d("sjh", "Login Loading")
-                }
-
-                is LoginUiState.Success -> {
-                    Log.d("sjh", "Login Success")
-                    moveMainScreen()
-                }
+                else -> {}
             }
         }
-    })
+
+        LoginUiState.Loading -> {
+            Log.d("sjh", "LoginUiState.Loading")
+        }
+
+        LoginUiState.Success -> {
+            Log.d("sjh", "LoginUiState.Success")
+            appState.rootNavHostController.navigate(Graph.MainGraph.route){
+                popUpTo(LoginRouteScreen.Login.route) {
+                    inclusive = false
+                }
+                launchSingleTop = true
+            }
+        }
+    }
+
 
     LoginScreen(
         modifier = modifier,
         onLogin = {
-            loginViewModel.loginForKakao()
+            loginViewModel.kaKaoLogin()
         }
     )
 }

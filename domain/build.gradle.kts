@@ -17,11 +17,14 @@ android {
 }
 
 dependencies {
-    api(project(":data"))
-    implementation(project(":model"))
     //Dagger-Hilt
     ksp(DaggerHilt.daggerHilt)
     ksp(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
-
+    api(KaKao.kakao_login)
+    api(platform("com.google.firebase:firebase-bom:32.3.1"))
+    //Firebase DB
+    api("com.google.firebase:firebase-database-ktx")
+    //Firebase Storage
+    api("com.google.firebase:firebase-storage-ktx")
 }

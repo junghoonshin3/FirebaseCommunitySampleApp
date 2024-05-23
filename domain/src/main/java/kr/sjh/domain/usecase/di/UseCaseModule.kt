@@ -4,8 +4,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kr.sjh.data.repository.BoardRepository
-import kr.sjh.data.repository.LoginRepository
+import kr.sjh.domain.repository.BoardRepository
+import kr.sjh.domain.repository.KaKaoLoginRepository
+import kr.sjh.domain.repository.LoginRepository
 import kr.sjh.domain.usecase.board.CreatePostUseCase
 import kr.sjh.domain.usecase.board.DeletePostUseCase
 import kr.sjh.domain.usecase.board.ReadPostsUseCase
@@ -13,33 +14,21 @@ import kr.sjh.domain.usecase.login.firebase.CreateUserUseCase
 import kr.sjh.domain.usecase.login.firebase.DeleteUserUseCase
 import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
 import kr.sjh.domain.usecase.login.firebase.UpdateUserUseCase
-import kr.sjh.domain.usecase.login.kakao.GetKakaoUserInfoUseCase
-import kr.sjh.domain.usecase.login.kakao.LoginForKakaoUseCase
-import kr.sjh.domain.usecase.login.kakao.LogoutKakaoUseCase
-import kr.sjh.domain.usecase.login.kakao.ValidateKakaoAccessTokenUseCase
+import kr.sjh.domain.usecase.login.kakao.KaKaoLogOutUseCase
+import kr.sjh.domain.usecase.login.kakao.KaKaoLoginUseCase
 
 @Module
 @InstallIn(SingletonComponent::class)
-object PresentationModule {
+object UseCaseModule {
 
     @Provides
-    fun provideLoginForKakao(login: LoginRepository): LoginForKakaoUseCase {
-        return LoginForKakaoUseCase(login)
+    fun provideKaKaoLogOut(repository: KaKaoLoginRepository): KaKaoLogOutUseCase {
+        return KaKaoLogOutUseCase(repository)
     }
 
     @Provides
-    fun provideValidateToken(login: LoginRepository): ValidateKakaoAccessTokenUseCase {
-        return ValidateKakaoAccessTokenUseCase(login)
-    }
-
-    @Provides
-    fun provideGetKakaoUserInfo(login: LoginRepository): GetKakaoUserInfoUseCase {
-        return GetKakaoUserInfoUseCase(login)
-    }
-
-    @Provides
-    fun provideLogoutKakao(login: LoginRepository): LogoutKakaoUseCase {
-        return LogoutKakaoUseCase(login)
+    fun provideKaKaoLogin(repository: KaKaoLoginRepository): KaKaoLoginUseCase {
+        return KaKaoLoginUseCase(repository)
     }
 
     @Provides

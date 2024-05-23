@@ -12,14 +12,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import kr.sjh.presentation.navigation.BoardRouteScreen
 import kr.sjh.presentation.navigation.BottomNavItem
+import kr.sjh.presentation.navigation.Graph
 import kr.sjh.presentation.navigation.MainNavGraph
 import kr.sjh.presentation.navigation.MainRouteScreen
-import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.utill.navigateMainRoute
 
 @Composable
@@ -28,7 +26,6 @@ fun MainRoute(
     rootNavController: NavHostController,
     mainNavController: NavHostController
 ) {
-
 
     Scaffold(
         modifier = modifier,
@@ -42,14 +39,19 @@ fun MainRoute(
             modifier = Modifier.fillMaxSize(),
             mainNavController = mainNavController,
             paddingValues = it,
-            moveBoardDetail = { post ->
-                rootNavController.navigate("${BoardRouteScreen.Detail.route}?post=${post}")
+            moveBoardDetail = { postKey ->
+                rootNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=${postKey}") {
+                    popUpTo(Graph.MainGraph.route)
+                    launchSingleTop = true
+                }
             },
             moveBoardWrite = {
-                rootNavController.navigate(BoardRouteScreen.Write.route)
+                rootNavController.navigate(BoardRouteScreen.Write.route) {
+                    popUpTo(Graph.MainGraph.route)
+                    launchSingleTop = true
+                }
             }
         )
-
     }
 }
 

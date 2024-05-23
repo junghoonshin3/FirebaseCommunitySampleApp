@@ -6,7 +6,8 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
-import kr.sjh.model.Post
+import kr.sjh.domain.model.Post
+import kr.sjh.domain.repository.BoardRepository
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -52,9 +53,9 @@ class BoardRepositoryImpl @Inject constructor(
         throw it
     }
 
-    override suspend fun deletePost(post: Post): Result<Unit> = runCatching {
+    override suspend fun deletePost(postKey: String): Result<Unit> = runCatching {
         suspendCoroutine { continuation ->
-            ref.child(post.key).removeValue()
+            ref.child(postKey).removeValue()
                 .addOnSuccessListener {
                     continuation.resume(Unit)
                 }
@@ -68,16 +69,11 @@ class BoardRepositoryImpl @Inject constructor(
 
     override suspend fun updatePost(post: Post): Result<Unit> =
         runCatching {
-            _updatePost(post)
-        }.recoverCatching {
-            throw it
+            suspendCoroutine { continuation ->
+                ref.child(post.key).updateChildren(
+                    post.toMap()
+                ).addOnSuccessListener { continuation.resume(Unit) }
+                    .addOnFailureListener { continuation.resumeWithException(it) }
+            }
         }
-
-
-    private suspend fun _updatePost(post: Post) = suspendCoroutine { continuation ->
-        ref.child(post.key).updateChildren(
-            post.toMap()
-        ).addOnSuccessListener { continuation.resume(Unit) }
-            .addOnFailureListener { continuation.resumeWithException(it) }
-    }
 }
