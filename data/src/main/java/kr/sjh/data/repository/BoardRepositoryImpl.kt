@@ -1,5 +1,6 @@
 package kr.sjh.data.repository
 
+import android.net.Uri
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ktx.snapshots
 import com.google.firebase.storage.FirebaseStorage
@@ -76,4 +77,11 @@ class BoardRepositoryImpl @Inject constructor(
                     .addOnFailureListener { continuation.resumeWithException(it) }
             }
         }
+
+
+    override suspend fun uploadImages(userId: String, images: List<Uri>) = runCatching {
+        suspendCoroutine<List<String>> {
+            storage.reference.child("images/${userId}/")
+        }
+    }
 }

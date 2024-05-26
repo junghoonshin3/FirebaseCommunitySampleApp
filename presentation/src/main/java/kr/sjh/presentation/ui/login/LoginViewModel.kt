@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.login
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -61,10 +62,10 @@ class LoginViewModel @Inject constructor(
     private val _loginCheckState = MutableStateFlow<LoginCheckUiState>(LoginCheckUiState.Loading)
     val loginCheckState = _loginCheckState.asStateFlow()
 
-    fun kaKaoLogin() {
+    fun kaKaoLogin(context: Context) {
         viewModelScope.launch {
             _loginState.emit(LoginUiState.Loading)
-            kaKaLoginUseCase().mapCatching { authToken ->
+            kaKaLoginUseCase(context).mapCatching { authToken ->
                 //카카오 로그인 성공 및 카카오 사용자 정보 가져오기
                 kaKaoMeUseCase().getOrThrow()
             }.mapCatching { user ->
@@ -82,11 +83,10 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun tokenExist() {
+    fun tokenExist(context: Context) {
         viewModelScope.launch {
             _loginCheckState.emit(LoginCheckUiState.Loading)
-
-            kaKaoExistAccessToken().mapCatching {
+            kaKaoExistAccessToken(context).mapCatching {
                 //토큰 유효성 체크 성공(필요 시 토큰 갱신됨)
                 Log.d("sjh", "authToken : ${it.id}")
                 //카카오 계정정보 가져오기

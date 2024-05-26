@@ -27,11 +27,11 @@ sealed class MainRouteScreen(val route: String) {
 }
 
 sealed class BoardRouteScreen(val route: String) {
-    data object Detail : MainRouteScreen("board_detail")
+    data object Detail : BoardRouteScreen("board_detail")
 
-    data object Write : MainRouteScreen("board_write")
+    data object Write : BoardRouteScreen("board_write")
 
-    data object Edit : MainRouteScreen("board_edit")
+    data object Edit : BoardRouteScreen("board_edit")
 }
 
 sealed class ChatRouteScreen(val route: String) {

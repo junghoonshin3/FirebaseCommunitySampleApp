@@ -78,15 +78,15 @@ class BoardDetailViewModel @Inject constructor(
                     likeCount = if (isLike) post.likeCount.plus(1) else post.likeCount.minus(1)
                 )
             ).mapCatching {
-                val likePosts = userInfo.likePosts
+                val likes = userInfo.likePosts.toMutableList()
                 if (isLike) {
-                    likePosts.add(post.key)
+                    likes.add(post.key)
                 } else {
-                    likePosts.remove(post.key)
+                    likes.remove(post.key)
                 }
                 updateUserUseCase(
                     userInfo.copy(
-                        likePosts = likePosts
+                        likePosts = likes.toList()
                     )
                 ).getOrThrow()
             }.onSuccess {

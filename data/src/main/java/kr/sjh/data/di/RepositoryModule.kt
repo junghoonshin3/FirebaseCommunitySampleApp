@@ -34,12 +34,10 @@ class RepositoryModule {
     @Provides
     @Singleton
     fun provideKaKaoLoginRepository(
-        @ApplicationContext context: Context,
         authApiClient: AuthApiClient,
         userApiClient: UserApiClient
     ): KaKaoLoginRepository {
         return KaKaoLoginRepositoryImpl(
-            context,
             authApiClient,
             userApiClient
         )

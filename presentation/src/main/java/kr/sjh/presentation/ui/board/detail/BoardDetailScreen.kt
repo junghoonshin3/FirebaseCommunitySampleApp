@@ -224,11 +224,9 @@ fun DetailExpendedTopBar(modifier: Modifier) {
             5
         }
         HorizontalPager(state = pagerState) {
-            Image(
-                modifier = Modifier.fillMaxSize(),
-                painter = painterResource(R.drawable.test_image),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+            GlideImage(
+                imageModel = { R.drawable.test_image },
+                modifier = Modifier.fillMaxSize()
             )
         }
         Indicator(

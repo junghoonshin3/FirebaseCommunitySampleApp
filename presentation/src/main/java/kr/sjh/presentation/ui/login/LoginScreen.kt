@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,14 +37,13 @@ import kr.sjh.presentation.utill.getActivity
 fun LoginRoute(
     appState: PickUpAppState,
     modifier: Modifier = Modifier,
-    moveMainScreen: () -> Unit,
     loginViewModel: LoginViewModel = hiltViewModel(getActivity())
 ) {
     val loginState by loginViewModel.loginState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     when (loginState) {
         is LoginUiState.Error -> {
-            Log.d("sjh", "LoginUiState.Error")
             when ((loginState as LoginUiState.Error).throwable) {
                 is NotFoundUser -> {
                     appState.rootNavHostController.navigate(LoginRouteScreen.Detail.route) {
@@ -53,7 +54,9 @@ fun LoginRoute(
                     }
                 }
 
-                else -> {}
+                else -> {
+                    (loginState as LoginUiState.Error).throwable.printStackTrace()
+                }
             }
         }
 
@@ -63,7 +66,7 @@ fun LoginRoute(
 
         LoginUiState.Success -> {
             Log.d("sjh", "LoginUiState.Success")
-            appState.rootNavHostController.navigate(Graph.MainGraph.route){
+            appState.rootNavHostController.navigate(Graph.MainGraph.route) {
                 popUpTo(LoginRouteScreen.Login.route) {
                     inclusive = false
                 }
@@ -72,11 +75,10 @@ fun LoginRoute(
         }
     }
 
-
     LoginScreen(
         modifier = modifier,
         onLogin = {
-            loginViewModel.kaKaoLogin()
+            loginViewModel.kaKaoLogin(context)
         }
     )
 }

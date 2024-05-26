@@ -1,15 +1,10 @@
 package kr.sjh.presentation.ui.board.write
 
-import android.Manifest
-import android.app.Activity
-import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,12 +29,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -66,8 +57,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.request.RequestOptions
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.skydoves.landscapist.glide.GlideImage
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.common.AppTopBar
@@ -96,15 +85,13 @@ fun BoardWriteRoute(
     BoardWriteScreen(
         modifier = modifier,
         onPost = {
-            userInfo?.let {
-                boardWriteViewModel.createPost(it)
-                onBack()
-            }
+            boardWriteViewModel.createPost(userInfo?.id.toString())
+            onBack()
         },
         onBack = onBack,
         selectedPhotos = selectedPhotos,
         onSelectedPhotos = {
-            Log.d("sjh", "picture : ${it.size}")
+            Log.d("picture Size", "picture : ${it.size}")
             selectedPhotos = it
         },
         scrollState = scrollState,
@@ -233,26 +220,26 @@ fun BoardWriteBody(
                 append("정지될 수 있습니다.")
             }
         )
-        if (selectedPhotos.isNotEmpty()) {
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                contentPadding = PaddingValues(start = 10.dp, end = 10.dp)
-            ) {
-                items(selectedPhotos) { uri ->
-                    GlideImage(
-                        imageModel = {
-                            uri
-                        },
-                        requestOptions = {
-                            RequestOptions().override(100, 100)
-                        }
-                    )
-                }
-            }
-        }
+//        if (selectedPhotos.isNotEmpty()) {
+//            LazyRow(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(60.dp),
+//                verticalAlignment = Alignment.CenterVertically,
+//                contentPadding = PaddingValues(start = 10.dp, end = 10.dp)
+//            ) {
+//                items(selectedPhotos) { uri ->
+//                    GlideImage(
+//                        imageModel = {
+//                            uri
+//                        },
+//                        requestOptions = {
+//                            RequestOptions().override(100, 100)
+//                        }
+//                    )
+//                }
+//            }
+//        }
         ContentTextField(
             singleLine = true,
             keyboardOptions = KeyboardOptions(
@@ -312,60 +299,14 @@ fun BoardWriteBody(
 }
 
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun BoardWritePicture(modifier: Modifier, onPhoto: (List<Uri>) -> Unit) {
-    val mediaPermissionState = rememberMultiplePermissionsState(
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            listOf(
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
-            )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            listOf(
-                Manifest.permission.READ_MEDIA_IMAGES
-            )
-        } else {
-            listOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            )
-        }
-    )
-
-    val takePhotoFromAlbumLauncher = // 갤러리에서 사진 가져오기
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val photos = mutableListOf<Uri>()
-            if (result.resultCode == Activity.RESULT_OK) {
-                val clipData = result.data?.clipData
-                if (clipData == null) {
-                    //이미지가 한개일 경우
-                    val imageUri = result.data?.data!!
-                    photos.add(imageUri)
-                    onPhoto(photos)
-                } else {
-                    val size = clipData.itemCount
-                    for (i in 0 until size) {
-                        val imageUri = clipData.getItemAt(i).uri
-                        photos.add(imageUri)
-                    }
-                    onPhoto(photos)
-                }
-            } else if (result.resultCode != Activity.RESULT_CANCELED) {
-                onPhoto(emptyList())
-            } else {
-                onPhoto(emptyList())
+    val multiplePhotoPickerLauncher = // 갤러리에서 사진 가져오기
+        rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris: List<Uri> ->
+            for (uri in uris) {
+                Log.d("sjh", "uri : ${uri.path}")
+                onPhoto(uris)
             }
-        }
-
-    val takePhotoFromAlbumIntent =
-        Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
-            type = "image/*"
-            action = Intent.ACTION_GET_CONTENT
-            putExtra(
-                Intent.EXTRA_MIME_TYPES,
-                arrayOf("image/jpeg", "image/png", "image/bmp", "image/webp")
-            )
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
 
     Row(
@@ -377,10 +318,12 @@ fun BoardWritePicture(modifier: Modifier, onPhoto: (List<Uri>) -> Unit) {
                 .wrapContentSize()
                 .background(backgroundColor, RoundedCornerShape(10.dp))
                 .clickable {
-                    mediaPermissionState.launchMultiplePermissionRequest()
-                    if (mediaPermissionState.allPermissionsGranted) {
-                        takePhotoFromAlbumLauncher.launch(takePhotoFromAlbumIntent)
-                    }
+                    multiplePhotoPickerLauncher.launch(
+                        PickVisualMediaRequest(
+                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                        )
+                    )
+
                 },
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically

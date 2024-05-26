@@ -1,5 +1,6 @@
 package kr.sjh.presentation.utill
 
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -70,12 +71,11 @@ class PickUpAppState(
 
 fun NavHostController.navigateMainRoute(screen: MainRouteScreen) {
     navigate(screen.route) {
-        launchSingleTop = true
-        restoreState = true
-        popUpTo(graph.findStartDestination().id) {
-            saveState = true
+        popUpTo(screen.route) {
             inclusive = true
         }
+        launchSingleTop = true
+        restoreState = true
     }
 }
 

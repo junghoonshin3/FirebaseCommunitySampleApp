@@ -3,8 +3,10 @@ package kr.sjh.data.repository
 import android.content.Context
 import android.util.Log
 import com.kakao.sdk.auth.AuthApiClient
+import com.kakao.sdk.auth.Constants
 import com.kakao.sdk.auth.model.OAuthToken
 import com.kakao.sdk.common.model.AuthError
+import com.kakao.sdk.common.model.AuthErrorResponse
 import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.common.model.KakaoSdkError
@@ -18,30 +20,26 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 class KaKaoLoginRepositoryImpl @Inject constructor(
-    private val context: Context,
     private val authApiClient: AuthApiClient,
     private val userApiClient: UserApiClient,
 ) : KaKaoLoginRepository {
-    override suspend fun kaKaoLogin(): Result<OAuthToken> = runCatching {
+    override suspend fun kaKaoLogin(context: Context): Result<OAuthToken> = runCatching {
         if (userApiClient.isKakaoTalkLoginAvailable(context)) {
-            loginWithKaKaoTalk()
+            loginWithKaKaoTalk(context)
         } else {
-            loginWithKaKaoAccount()
+            loginWithKaKaoAccount(context)
         }
-    }.onFailure {
-        // 카카오톡 로그인 시도시 로그인 된 계정이 없는경우 카카오 계정으로 로그인 시도
-        if (it is AuthError) {
-            loginWithKaKaoAccount()
-        }
+    }.recoverCatching {
+        // 로그인 된 계정이 없는 경우 카카오 계정으로 로그인 시도
+        loginWithKaKaoAccount(context)
     }
 
     /*카카오 로그인 토큰 유효성 검사*/
-    override suspend fun kaKaoTokenExist(): Result<AccessTokenInfo> = runCatching {
+    override suspend fun kaKaoTokenExist(context: Context): Result<AccessTokenInfo> = runCatching {
         suspendCoroutine { continuation ->
             // 토큰을 가지고 있더라도 사용자가 로그인 상태임을 보장할수 없음
             if (authApiClient.hasToken()) {
                 userApiClient.accessTokenInfo { tokenInfo, error ->
-                    Log.d("sjh", "tokeninfo : $tokenInfo, error : $error")
                     if (error != null) {
                         continuation.resumeWithException(error)
                     } else if (tokenInfo != null) {
@@ -59,13 +57,6 @@ class KaKaoLoginRepositoryImpl @Inject constructor(
                     )
                 )
             }
-        }
-    }.onFailure { error ->
-        if (error is KakaoSdkError && error.isInvalidTokenError()) {
-            //로그인 필요
-            kaKaoLogin()
-        } else {
-            //기타 에러
         }
     }
 
@@ -105,30 +96,35 @@ class KaKaoLoginRepositoryImpl @Inject constructor(
 
 
     //카카오톡 로그인 시도
-    private suspend fun loginWithKaKaoTalk(): OAuthToken = suspendCoroutine { continuation ->
-        userApiClient.loginWithKakaoTalk(context) { token, error ->
-            if (error != null) {
-                continuation.resumeWithException(error)
-                if (error is ClientError && error.reason == ClientErrorCause.Cancelled) {
-                    return@loginWithKakaoTalk
+    private suspend fun loginWithKaKaoTalk(context: Context): OAuthToken =
+        suspendCoroutine { continuation ->
+            userApiClient.loginWithKakaoTalk(context) { token, error ->
+                if (error != null) {
+                    if (error is ClientError && error.reason == ClientErrorCause.Cancelled) {
+                        return@loginWithKakaoTalk
+                    }
+                    continuation.resumeWithException(error)
+                } else if (token != null) {
+                    continuation.resume(token)
                 }
-            } else if (token != null) {
-                continuation.resume(token)
             }
         }
-    }
 
     //카카오 계정으로 로그인 시도
-    private suspend fun loginWithKaKaoAccount(): OAuthToken = suspendCoroutine { continuation ->
-        // 카카오 계정으로 로그인
-        userApiClient.loginWithKakaoAccount(context) { token, error ->
-            if (error != null) {
-                continuation.resumeWithException(error)
-            } else if (token != null) {
-                continuation.resume(token)
+    private suspend fun loginWithKaKaoAccount(context: Context): OAuthToken =
+        suspendCoroutine { continuation ->
+            // 카카오 계정으로 로그인
+            userApiClient.loginWithKakaoAccount(context) { token, error ->
+                if (error != null) {
+                    if (error is ClientError && error.reason == ClientErrorCause.Cancelled) {
+                        return@loginWithKakaoAccount
+                    }
+                    continuation.resumeWithException(error)
+                } else if (token != null) {
+                    continuation.resume(token)
+                }
             }
         }
-    }
 
 
 }

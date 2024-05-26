@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.skydoves.landscapist.glide.GlideImage
 import kr.sjh.domain.model.Post
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.backgroundColor
@@ -164,13 +165,14 @@ fun PostItem(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
+        GlideImage(
+            imageModel = {
+                R.drawable.test_image
+            },
             modifier = Modifier
                 .width(150.dp)
                 .height(150.dp)
                 .clip(RoundedCornerShape(20.dp)),
-            painter = painterResource(id = R.drawable.test_image),
-            contentDescription = ""
         )
         Column(
             modifier = Modifier

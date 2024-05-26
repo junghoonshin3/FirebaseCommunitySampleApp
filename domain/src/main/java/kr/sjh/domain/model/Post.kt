@@ -3,12 +3,15 @@ package kr.sjh.domain.model
 import android.net.Uri
 import android.os.Parcelable
 import androidx.compose.runtime.Stable
+import com.google.firebase.database.IgnoreExtraProperties
+import com.google.firebase.database.PropertyName
 import com.google.gson.Gson
 import kotlinx.parcelize.Parcelize
 
 
 @Parcelize
 @Stable
+@IgnoreExtraProperties
 data class Post(
     val writerId: String = "",
     var key: String = "",
@@ -18,7 +21,8 @@ data class Post(
     val createdAt: Long? = null,
     var imageUrl: String? = null,
     var readCount: Int = 0,
-    var likeCount: Int = 0
+    var likeCount: Int = 0,
+    val imageUrlList: List<String> = listOf()
 ) : Parcelable {
     override fun toString(): String {
         return Uri.encode(Gson().toJson(this))
@@ -35,6 +39,7 @@ data class Post(
             "imageUrl" to imageUrl,
             "readCount" to readCount,
             "likeCount" to likeCount,
+            "imageUrlList" to imageUrlList
         )
     }
 

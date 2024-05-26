@@ -12,6 +12,7 @@ import kr.sjh.domain.usecase.board.CreatePostUseCase
 import kr.sjh.domain.usecase.login.firebase.UpdateUserUseCase
 import kr.sjh.domain.model.Post
 import kr.sjh.domain.model.UserInfo
+import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
 import java.util.Date
 import javax.inject.Inject
 
@@ -19,6 +20,7 @@ import javax.inject.Inject
 class BoardWriteViewModel @Inject constructor(
     private val createPostsUseCase: CreatePostUseCase,
     private val updateUserUseCase: UpdateUserUseCase,
+    private val readUserUseCase: ReadUserUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -34,24 +36,26 @@ class BoardWriteViewModel @Inject constructor(
         this.content = content
     }
 
-    fun createPost(userInfo: UserInfo) {
+    fun createPost(userId: String) {
         viewModelScope.launch {
-            createPostsUseCase(
-                Post(
-                    writerId = userInfo.id!!,
-                    nickName = userInfo.nickName!!,
-                    title = title,
-                    content = content,
-                    createdAt = Date().time
-                )
-            ).onSuccess {
-                updateUserUseCase(
-                    userInfo.copy(
-                        postCount = userInfo.postCount.plus(1)
+            readUserUseCase(userId).mapCatching { userInfo ->
+                createPostsUseCase(
+                    Post(
+                        writerId = userInfo.id!!,
+                        nickName = userInfo.nickName!!,
+                        title = title,
+                        content = content,
+                        createdAt = Date().time
                     )
-                )
+                ).onSuccess {
+                    updateUserUseCase(
+                        userInfo.copy(
+                            postCount = userInfo.postCount.plus(1)
+                        )
+                    ).getOrThrow()
+                }
             }.onFailure {
-
+                it.printStackTrace()
             }
         }
     }

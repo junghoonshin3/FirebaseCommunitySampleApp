@@ -6,8 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kakao.sdk.common.model.AuthError
+import com.kakao.sdk.common.model.AuthErrorResponse
 import kr.sjh.presentation.navigation.Graph
 import kr.sjh.presentation.ui.login.LoginCheckUiState
 import kr.sjh.presentation.ui.login.LoginViewModel
@@ -22,14 +25,15 @@ fun SplashScreen(
     viewModel: LoginViewModel = hiltViewModel(getActivity())
 ) {
     val state by viewModel.loginCheckState.collectAsStateWithLifecycle()
-
+    val context = LocalContext.current
     LaunchedEffect(key1 = Unit, block = {
-        viewModel.tokenExist()
+        viewModel.tokenExist(context)
     })
 
     when (state) {
         is LoginCheckUiState.Error -> {
             Log.d("sjh", "SplashScreen Error")
+            (state as LoginCheckUiState.Error).throwable.printStackTrace()
             appState.rootNavHostController.navigate(Graph.LoginGraph.route) {
                 popUpTo(Graph.SplashGraph.route) {
                     inclusive = true

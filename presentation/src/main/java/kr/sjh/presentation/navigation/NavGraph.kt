@@ -39,12 +39,6 @@ fun NavGraphBuilder.addNestedLoginGraph(
             LoginRoute(
                 appState = appState,
                 modifier = Modifier.fillMaxSize(),
-                moveMainScreen = {
-                    appState.rootNavHostController.navigate(Graph.MainGraph.route) {
-                        launchSingleTop = true
-                        popUpTo(LoginRouteScreen.Login.route) { inclusive = true }
-                    }
-                }
             )
         }
 
@@ -188,7 +182,7 @@ fun NavGraphBuilder.addNestedMyPageGraph(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun PickUpNavHost(
     modifier: Modifier = Modifier,
@@ -217,7 +211,7 @@ fun PickUpNavHost(
         composable(
             route = Graph.MainGraph.route,
         ) {
-            MainRoute(
+             MainRoute(
                 modifier = Modifier.fillMaxSize(),
                 rootNavController = appState.rootNavHostController,
                 mainNavController = appState.mainNavHostController,

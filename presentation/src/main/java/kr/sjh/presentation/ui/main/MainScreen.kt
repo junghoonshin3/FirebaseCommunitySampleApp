@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.main
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -7,12 +8,16 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import kr.sjh.presentation.navigation.BoardRouteScreen
 import kr.sjh.presentation.navigation.BottomNavItem
 import kr.sjh.presentation.navigation.Graph
@@ -30,9 +35,7 @@ fun MainRoute(
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            BottomNavigation {
-                mainNavController.navigateMainRoute(it)
-            }
+            BottomNavigation(mainNavController)
         }
     ) {
         MainNavGraph(
@@ -57,29 +60,39 @@ fun MainRoute(
 
 @Composable
 fun BottomNavigation(
-    onClick: (MainRouteScreen) -> Unit,
+    navController: NavHostController
 ) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+
+    val currentDestination = navBackStackEntry?.destination
+
+
     val navItem =
         listOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
 
-    var selectedScreen by remember {
-        mutableStateOf<MainRouteScreen>(MainRouteScreen.Board)
-    }
+    LaunchedEffect(key1 = currentDestination, block = {
+        Log.d("sjh", "currentDestination:  $currentDestination")
+    })
+
     NavigationBar {
-        navItem.forEach {
+        navItem.forEach { item ->
             NavigationBarItem(
                 alwaysShowLabel = true,
                 label = {
-                    Text(text = it.title)
+                    Text(text = item.title)
                 },
-                selected = selectedScreen == it.mainScreenRoute,
+                selected = currentDestination?.route == item.mainScreenRoute.route,
                 onClick = {
-                    if (selectedScreen != it.mainScreenRoute) {
-                        selectedScreen = it.mainScreenRoute
+                    navController.navigate(item.mainScreenRoute.route) {
+                        popUpTo(currentDestination?.route.toString()) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                        restoreState = false
+
                     }
-                    onClick(it.mainScreenRoute)
                 },
-                icon = { Icon(imageVector = it.icon, contentDescription = "") })
+                icon = { Icon(imageVector = item.icon, contentDescription = "") })
         }
     }
 }
