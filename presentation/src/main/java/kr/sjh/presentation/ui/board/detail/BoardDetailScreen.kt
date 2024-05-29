@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -238,17 +240,20 @@ fun DetailExpendedTopBar(modifier: Modifier, images: List<String>) {
         contentAlignment = Alignment.BottomCenter
     ) {
 
-        val pageCount = remember {
-            if (images.isEmpty()) {
-                1
-            } else {
-                images.size
-            }
+        val pageCount by remember(images) {
+            mutableIntStateOf(
+                if (images.isEmpty()) {
+                    1
+                } else {
+                    images.size
+                }
+            )
         }
 
-        val pagerState = rememberPagerState {
+        val pagerState = rememberPagerState(initialPage = 0) {
             pageCount
         }
+
         HorizontalPager(state = pagerState) { index ->
             GlideImage(
                 imageModel = {
