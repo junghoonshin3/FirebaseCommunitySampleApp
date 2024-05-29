@@ -1,11 +1,13 @@
 package kr.sjh.presentation.ui.login.detail
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Text
@@ -82,6 +84,7 @@ fun LoginDetailScreen(
             ContentTextField(
                 singleLine = true,
                 modifier = Modifier
+                    .border(1.dp, Color.LightGray, shape = RoundedCornerShape(3.dp))
                     .fillMaxWidth()
                     .imePadding(),
                 text = nickName,

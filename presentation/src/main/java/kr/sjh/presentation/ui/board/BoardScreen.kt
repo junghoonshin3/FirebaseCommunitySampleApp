@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -30,7 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.glide.GlideImage
 import kr.sjh.domain.model.Post
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.calculationTime
@@ -75,10 +79,7 @@ fun BoardScreen(
     Box(modifier = modifier.background(backgroundColor)) {
         when (boardUiState) {
             BoardUiState.Loading -> {
-                CircularProgressIndicator(
-                    Modifier.align(Alignment.Center),
-                    color = carrot
-                )
+                LoadingDialog()
             }
 
             is BoardUiState.Success -> {
@@ -88,8 +89,12 @@ fun BoardScreen(
                         .padding(10.dp)
                         .zIndex(1f),
                     shape = RoundedCornerShape(30.dp),
-                    containerColor = Color.Black,
-                    text = { Text(text = "글쓰기", color = Color.White) },
+                    containerColor = carrot,
+                    text = {
+                        Text(
+                            text = "글쓰기", color = Color.White
+                        )
+                    },
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Create,
@@ -120,7 +125,7 @@ fun BoardScreen(
                         PostItem(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(150.dp)
+                                .height(100.dp)
                                 .clickable {
                                     moveBoardDetail(post)
                                 },
@@ -128,7 +133,8 @@ fun BoardScreen(
                             nickname = post.nickName ?: "",
                             createAt = post.createdAt ?: 0,
                             readCount = post.readCount,
-                            likeCount = post.likeCount
+                            likeCount = post.likeCount,
+                            images = post.images
                         )
                         if (index < boardUiState.list.size - 1)
                             HorizontalDivider(
@@ -152,6 +158,7 @@ fun BoardScreen(
 fun PostItem(
     modifier: Modifier = Modifier,
     title: String,
+    images: List<String>,
     nickname: String,
     createAt: Long,
     readCount: Int,
@@ -167,12 +174,22 @@ fun PostItem(
     ) {
         GlideImage(
             imageModel = {
-                R.drawable.test_image
+                if (images.isEmpty()) {
+                    R.drawable.baseline_image_24
+                } else {
+                    images.first()
+                }
             },
             modifier = Modifier
-                .width(150.dp)
-                .height(150.dp)
+                .size(100.dp)
                 .clip(RoundedCornerShape(20.dp)),
+            failure = {
+                Image(
+                    modifier = Modifier.fillMaxSize(),
+                    imageVector = ImageVector.vectorResource(id = R.drawable.baseline_image_not_supported_24),
+                    contentDescription = ""
+                )
+            }
         )
         Column(
             modifier = Modifier
@@ -183,31 +200,35 @@ fun PostItem(
                 text = title,
                 color = Color.White,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 19.sp,
+                fontSize = 17.sp,
                 maxLines = 1
             )
             Text(
                 text = nickname,
                 color = Color.White,
                 overflow = TextOverflow.Ellipsis,
+                fontSize = 15.sp,
                 maxLines = 1
             )
             Text(
                 text = minutesAgo,
                 color = Color.White,
                 overflow = TextOverflow.Ellipsis,
+                fontSize = 15.sp,
                 maxLines = 1
             )
             Text(
                 text = "조회수 $readCount",
                 color = Color.White,
                 overflow = TextOverflow.Ellipsis,
+                fontSize = 15.sp,
                 maxLines = 1
             )
             Text(
                 text = "관심 $likeCount",
                 color = Color.White,
                 overflow = TextOverflow.Ellipsis,
+                fontSize = 15.sp,
                 maxLines = 1
             )
         }

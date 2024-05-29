@@ -4,9 +4,14 @@ import android.net.Uri
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ktx.snapshots
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import kr.sjh.domain.model.Post
 import kr.sjh.domain.repository.BoardRepository
 import javax.inject.Inject
@@ -30,7 +35,6 @@ class BoardRepositoryImpl @Inject constructor(
         } else {
             emptyList()
         }
-
     }
 
 
@@ -39,10 +43,9 @@ class BoardRepositoryImpl @Inject constructor(
             snapshot.child(postKey).getValue(Post::class.java)
         }.filterNotNull()
 
-    override suspend fun createPost(post: Post): Result<Unit> = runCatching {
+    override suspend fun createPost(post: Post) = runCatching {
         suspendCoroutine { continuation ->
-            val key = ref.push().key.toString()
-            ref.child(key).setValue(post.copy(key = key))
+            ref.child(post.key).setValue(post)
                 .addOnSuccessListener {
                     continuation.resume(Unit)
                 }
@@ -50,8 +53,6 @@ class BoardRepositoryImpl @Inject constructor(
                     continuation.resumeWithException(it)
                 }
         }
-    }.recoverCatching {
-        throw it
     }
 
     override suspend fun deletePost(postKey: String): Result<Unit> = runCatching {
@@ -79,9 +80,48 @@ class BoardRepositoryImpl @Inject constructor(
         }
 
 
-    override suspend fun uploadImages(userId: String, images: List<Uri>) = runCatching {
-        suspendCoroutine<List<String>> {
-            storage.reference.child("images/${userId}/")
+    override suspend fun uploadImages(postKey: String, images: List<Uri>) =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                images.map { image ->
+                    async {
+                        storage
+                            .reference
+                            .child("images/$postKey/${image.lastPathSegment}")
+                            .putFile(image)
+                            .await()
+                            .storage
+                            .downloadUrl
+                            .await()
+                    }
+                }.awaitAll()
+            }
         }
-    }
+
+
+    override suspend fun uploadImage(userId: String, image: Uri): Result<Uri> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                storage.reference.child("images/$userId/${image.lastPathSegment}").putFile(image)
+                    .await()
+                    .storage.downloadUrl.await()
+            }
+        }
+
+    override suspend fun removeImages(postKey: String): Result<List<Void>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                storage.reference.child("images/$postKey").listAll()
+                    .await()
+                    .items
+                    .map { image ->
+                        async {
+                            image.delete().await()
+                        }
+                    }.awaitAll()
+            }
+        }
+
+
+    override fun createPostKey(): String = ref.push().key.toString()
 }

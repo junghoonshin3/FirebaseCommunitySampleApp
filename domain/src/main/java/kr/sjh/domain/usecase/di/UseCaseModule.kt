@@ -7,9 +7,12 @@ import dagger.hilt.components.SingletonComponent
 import kr.sjh.domain.repository.BoardRepository
 import kr.sjh.domain.repository.KaKaoLoginRepository
 import kr.sjh.domain.repository.LoginRepository
+import kr.sjh.domain.usecase.board.CreatePostKeyUseCase
 import kr.sjh.domain.usecase.board.CreatePostUseCase
 import kr.sjh.domain.usecase.board.DeletePostUseCase
 import kr.sjh.domain.usecase.board.ReadPostsUseCase
+import kr.sjh.domain.usecase.board.RemoveImagesUsaCase
+import kr.sjh.domain.usecase.board.UploadMultiImageUseCase
 import kr.sjh.domain.usecase.login.firebase.CreateUserUseCase
 import kr.sjh.domain.usecase.login.firebase.DeleteUserUseCase
 import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
@@ -67,6 +70,22 @@ object UseCaseModule {
     @Provides
     fun provideUpdateUserUseCase(login: LoginRepository): UpdateUserUseCase {
         return UpdateUserUseCase(login)
+    }
+
+
+    @Provides
+    fun provideUploadMultiImageUseCase(board: BoardRepository): UploadMultiImageUseCase {
+        return UploadMultiImageUseCase(board)
+    }
+
+    @Provides
+    fun provideCreatePostKeyUseCase(board: BoardRepository): CreatePostKeyUseCase {
+        return CreatePostKeyUseCase(board)
+    }
+
+    @Provides
+    fun provideRemoveImagesUsaCase(board: BoardRepository): RemoveImagesUsaCase {
+        return RemoveImagesUsaCase(board)
     }
 
 }

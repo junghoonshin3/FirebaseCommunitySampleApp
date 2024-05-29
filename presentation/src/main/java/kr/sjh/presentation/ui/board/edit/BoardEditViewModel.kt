@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.board.edit
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -8,8 +9,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -21,11 +24,13 @@ import kr.sjh.domain.model.Post
 import javax.inject.Inject
 
 sealed interface BoardEditUiState {
-    data class Success(val post: Post) : BoardEditUiState
+    data object Success : BoardEditUiState
 
     data class Error(val throwable: Throwable) : BoardEditUiState
 
     data object Loading : BoardEditUiState
+
+    data object Init : BoardEditUiState
 }
 
 @HiltViewModel
@@ -37,32 +42,22 @@ class BoardEditViewModel @Inject constructor(
 
     private val postKey = savedStateHandle.get<String>("postKey")
 
-    init {
-        Log.d("BoardEditViewModel", "postKey : $postKey")
-    }
-
     var title by mutableStateOf("")
 
     var content by mutableStateOf("")
 
-
-    val editUiState: StateFlow<BoardEditUiState> =
-        readPostUseCase(postKey.toString())
-            .map {
-                title = it.title ?: ""
-                content = it.content ?: ""
-                it
-            }
-            .map<Post, BoardEditUiState>(BoardEditUiState::Success)
-            .onStart { emit(BoardEditUiState.Loading) }
-            .catch {
-                emit(BoardEditUiState.Error(it))
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = BoardEditUiState.Loading
-            )
+    val post: StateFlow<Post> = readPostUseCase(postKey.toString()).map {
+        title = it.title ?: ""
+        content = it.content ?: ""
+        it
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = Post()
+    )
+    private val _editUiState: MutableStateFlow<BoardEditUiState> =
+        MutableStateFlow(BoardEditUiState.Init)
+    val editUiState = _editUiState.asStateFlow()
 
     fun updateTitle(title: String) {
         this.title = title
@@ -74,15 +69,16 @@ class BoardEditViewModel @Inject constructor(
 
     fun updatePost(post: Post) {
         viewModelScope.launch {
+            _editUiState.emit(BoardEditUiState.Loading)
             updatePostUseCase(
                 post.copy(
                     title = title,
-                    content = content
+                    content = content,
                 )
             ).onSuccess {
-
+                _editUiState.emit(BoardEditUiState.Success)
             }.onFailure {
-
+                _editUiState.emit(BoardEditUiState.Error(it))
             }
         }
     }

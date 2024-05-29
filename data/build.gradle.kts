@@ -40,4 +40,5 @@ dependencies {
     implementation(DaggerHilt.daggerHilt)
     kapt(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
+
 }
