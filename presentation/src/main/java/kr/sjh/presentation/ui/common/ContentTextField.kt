@@ -1,10 +1,10 @@
 package kr.sjh.presentation.ui.common
 
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -36,12 +37,14 @@ fun ContentTextField(
 ) {
     val coroutineScope = rememberCoroutineScope()
     var prevHeight by remember { mutableIntStateOf(0) }
-
     Box(
         modifier = modifier
-            .border(1.dp, Color.LightGray, shape = RoundedCornerShape(3.dp))
             .padding(10.dp),
+        contentAlignment = Alignment.CenterStart
     ) {
+        if (text.isEmpty()) {
+            placeholder()
+        }
         BasicTextField(
             singleLine = singleLine,
             modifier = modifier
@@ -70,10 +73,12 @@ fun ContentTextField(
             textStyle = textStyle,
             cursorBrush = SolidColor(Color.White),
             decorationBox = { innerTextField ->
-                if (text.isEmpty()) {
-                    placeholder()
+                Column(
+                    modifier = modifier,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    innerTextField()
                 }
-                innerTextField()
             }
         )
     }

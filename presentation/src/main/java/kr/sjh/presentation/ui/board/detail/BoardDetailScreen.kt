@@ -1,9 +1,9 @@
 package kr.sjh.presentation.ui.board.detail
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +28,9 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -41,9 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -58,10 +59,9 @@ import kr.sjh.domain.model.Post
 import kr.sjh.domain.model.UserInfo
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.bottomsheet.CommonModalBottomSheet
-import kr.sjh.presentation.ui.login.LoginViewModel
+import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
-import kr.sjh.presentation.utill.getActivity
 import kotlin.math.absoluteValue
 
 
@@ -75,7 +75,6 @@ fun BoardDetailRoute(
     onBack: () -> Unit,
     moveEdit: (String) -> Unit,
     detailViewModel: BoardDetailViewModel = hiltViewModel(),
-    loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
 ) {
     val listState = rememberLazyListState()
 
@@ -92,24 +91,39 @@ fun BoardDetailRoute(
         }
     }
 
-    val writeUiState by detailViewModel.detailUiState.collectAsStateWithLifecycle()
+    val detailUiState by detailViewModel.detailUiState.collectAsStateWithLifecycle()
+
+    val bottomSheetUiState by detailViewModel.bottomSheetUiState.collectAsStateWithLifecycle()
 
     var bottomSheetShow by remember {
         mutableStateOf(false)
     }
 
     Box(modifier = modifier) {
-        when (writeUiState) {
+        when (bottomSheetUiState) {
+            is BottomSheetUiState.Error -> {
+            }
+
+            BottomSheetUiState.Loading -> {
+                LoadingDialog()
+            }
+
+            BottomSheetUiState.Success -> {
+                Log.d("sjh", "1111")
+                onBack()
+            }
+
+            BottomSheetUiState.Init -> {}
+        }
+
+        when (detailUiState) {
             is DetailUiState.Error -> {}
             DetailUiState.Loading -> {
-                CircularProgressIndicator(
-                    color = carrot,
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                LoadingDialog()
             }
 
             is DetailUiState.Success -> {
-                val (post, userInfo) = (writeUiState as DetailUiState.Success).pair
+                val (post, userInfo) = (detailUiState as DetailUiState.Success).pair
                 var isLike by remember {
                     mutableStateOf(userInfo.likePosts.contains(post.key))
                 }
@@ -122,14 +136,16 @@ fun BoardDetailRoute(
                     onDismissRequest = {
                         bottomSheetShow = false
                     }) {
-                    BottomSheetMoreMenu(moveEdit = {
-                        moveEdit(post.key)
-                        bottomSheetShow = false
-                    }, onDelete = {
-                        detailViewModel.deletePost(post.key)
-                        bottomSheetShow = false
-                        onBack()
-                    })
+
+                    BottomSheetMoreMenu(
+                        moveEdit = {
+                            moveEdit(post.key)
+                            bottomSheetShow = false
+                        },
+                        onDelete = {
+                            detailViewModel.deletePost(post)
+                            bottomSheetShow = false
+                        })
                 }
 
                 BoardDetailScreen(
@@ -185,7 +201,8 @@ fun BoardDetailScreen(
             DetailExpendedTopBar(
                 Modifier
                     .fillMaxWidth()
-                    .height(EXPANDED_TOP_BAR_HEIGHT)
+                    .height(EXPANDED_TOP_BAR_HEIGHT),
+                images = post.images
             )
         }
         item {
@@ -215,22 +232,45 @@ fun BoardDetailScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun DetailExpendedTopBar(modifier: Modifier) {
+fun DetailExpendedTopBar(modifier: Modifier, images: List<String>) {
     Box(
         modifier = modifier,
         contentAlignment = Alignment.BottomCenter
     ) {
-        val pagerState = rememberPagerState {
-            5
+
+        val pageCount = remember {
+            if (images.isEmpty()) {
+                1
+            } else {
+                images.size
+            }
         }
-        HorizontalPager(state = pagerState) {
+
+        val pagerState = rememberPagerState {
+            pageCount
+        }
+        HorizontalPager(state = pagerState) { index ->
             GlideImage(
-                imageModel = { R.drawable.test_image },
-                modifier = Modifier.fillMaxSize()
+                imageModel = {
+                    if (images.isEmpty()) {
+                        R.drawable.test_image
+                    } else {
+                        images[index]
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+                failure = {
+                    Image(
+                        modifier = Modifier.size(50.dp),
+                        colorFilter = ColorFilter.tint(Color.White),
+                        imageVector = ImageVector.vectorResource(id = R.drawable.baseline_image_not_supported_24),
+                        contentDescription = ""
+                    )
+                }
             )
         }
         Indicator(
-            5, pagerState,
+            pageCount, pagerState,
             Modifier
                 .height(20.dp)
         )
@@ -248,29 +288,25 @@ fun DetailCollapsedTopBar(
     onMoreMenu: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val colorFilter by remember(isCollapsed) {
+    val collapseColor by remember(isCollapsed) {
         derivedStateOf {
-            ColorFilter.tint(
-                if (isCollapsed) {
-                    Color.White
-                } else {
-                    Color.Black
-                }
-            )
+            if (isCollapsed) {
+                Color.White
+            } else {
+                Color.Black
+            }
         }
     }
 
     val likeColor by remember(isLike, isCollapsed) {
         derivedStateOf {
-            ColorFilter.tint(
-                color = if (isLike) {
-                    carrot
-                } else if (isCollapsed) {
-                    Color.White
-                } else {
-                    Color.Black
-                }
-            )
+            if (isLike) {
+                carrot
+            } else if (isCollapsed) {
+                Color.White
+            } else {
+                Color.Black
+            }
         }
     }
 
@@ -279,44 +315,49 @@ fun DetailCollapsedTopBar(
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            modifier = Modifier
-                .padding(10.dp)
-                .clickable {
-                    onBack()
-                },
-            colorFilter = colorFilter,
-            imageVector = Icons.Default.ArrowBack,
-            contentDescription = "Back"
+        IconButton(
+            modifier = Modifier.size(50.dp),
+            content = {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back"
+                )
+            },
+            colors = IconButtonDefaults.iconButtonColors(contentColor = collapseColor),
+            onClick = onBack
         )
+
         Spacer(modifier = Modifier.weight(1f))
-        Image(
-            modifier = Modifier
-                .padding(10.dp)
-                .clickable {
-                    onLikeChange()
-                },
-            colorFilter = likeColor,
-            imageVector = ImageVector.vectorResource(
-                id = if (isLike) {
-                    R.drawable.baseline_favorite_24
-                } else {
-                    R.drawable.baseline_favorite_border_24
-                }
-            ),
-            contentDescription = "Like"
+        IconButton(
+            modifier = Modifier.size(50.dp),
+            content = {
+                Icon(
+                    imageVector = ImageVector.vectorResource(
+                        id = if (isLike) {
+                            R.drawable.baseline_favorite_24
+                        } else {
+                            R.drawable.baseline_favorite_border_24
+                        }
+                    ),
+                    contentDescription = "Like"
+                )
+            },
+            colors = IconButtonDefaults.iconButtonColors(contentColor = likeColor),
+            onClick = onLikeChange
         )
         if (isWriter) {
-            Image(
-                colorFilter = colorFilter,
-                modifier = Modifier
-                    .padding(10.dp)
-                    .clickable {
-                        onMoreMenu()
-                    },
-                imageVector = ImageVector.vectorResource(id = R.drawable.baseline_more_vert_24),
-                contentDescription = ""
-            )
+            IconButton(
+                onClick = onMoreMenu,
+                colors = IconButtonDefaults.iconButtonColors(contentColor = collapseColor)
+            ) {
+                Icon(
+                    modifier = Modifier
+                        .padding(10.dp),
+                    imageVector = ImageVector.vectorResource(id = R.drawable.baseline_more_vert_24),
+                    contentDescription = ""
+                )
+            }
+
         }
     }
 }
