@@ -34,9 +34,7 @@ sealed interface BottomSheetUiState {
     data object Success : BottomSheetUiState
     data class Error(val throwable: Throwable) : BottomSheetUiState
     data object Loading : BottomSheetUiState
-
     data object Init : BottomSheetUiState
-
 }
 
 @HiltViewModel
@@ -58,6 +56,7 @@ class BoardDetailViewModel @Inject constructor(
 
     val detailUiState: StateFlow<DetailUiState> = readPostUseCase(postKey.toString())
         .map { post ->
+            Log.d("sjh", "post : ${post.images.size}")
             val userInfo = readUserUseCase(post.writerId).getOrThrow()
             Pair(post, userInfo)
         }
