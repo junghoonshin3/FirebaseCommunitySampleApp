@@ -58,7 +58,7 @@ fun CommonModalBottomSheet(
             dragHandle = dragHandle,
             windowInsets = windowInsets
         ) {
-            Column(modifier = Modifier.padding(bottomPadding)) {
+            Column(modifier = Modifier.padding(bottom = bottomPadding)) {
                 content()
             }
         }

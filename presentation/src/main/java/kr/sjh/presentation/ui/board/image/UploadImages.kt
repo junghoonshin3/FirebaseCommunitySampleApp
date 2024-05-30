@@ -45,7 +45,12 @@ private fun Picture(uri: Uri, onDelete: (Uri) -> Unit) {
                 uri
             },
             loading = {
-                CircularProgressIndicator(color = carrot, modifier = Modifier.size(30.dp))
+                Box(modifier = Modifier.matchParentSize()) {
+                    CircularProgressIndicator(
+                        color = carrot,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
             }
         )
         Image(

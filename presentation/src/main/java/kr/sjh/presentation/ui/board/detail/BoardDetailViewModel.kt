@@ -76,10 +76,30 @@ class BoardDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _bottomSheetUiState.emit(BottomSheetUiState.Loading)
             runCatching {
+                val userInfo = readUserUseCase(post.writerId).getOrThrow()
                 deletePostUseCase(post.key).getOrThrow()
+
                 if (post.images.isNotEmpty()) {
                     removeImagesUsaCase(post.key).getOrThrow()
                 }
+                
+                // '좋아요 리스트'에 글이 포함된 경우
+                // 아닌 경우 기존 리스트 리턴
+                val newLikePosts = if (userInfo.likePosts.contains(post.key)) {
+                    userInfo.likePosts.toMutableList().apply {
+                        remove(post.key)
+                    }
+                } else {
+                    userInfo.likePosts
+                }
+
+                //내가 쓴 글 1 뺴기
+                updateUserUseCase(
+                    userInfo.copy(
+                        likePosts = newLikePosts,
+                        postCount = userInfo.postCount.minus(1)
+                    )
+                ).getOrThrow()
             }.onSuccess {
                 _bottomSheetUiState.emit(BottomSheetUiState.Success)
             }

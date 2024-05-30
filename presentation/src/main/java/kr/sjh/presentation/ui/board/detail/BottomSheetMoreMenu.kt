@@ -19,14 +19,13 @@ import kr.sjh.presentation.ui.theme.backgroundColor
 
 @Composable
 fun BottomSheetMoreMenu(
+    modifier: Modifier = Modifier,
     moveEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+
     Column(
-        modifier = Modifier
-            .wrapContentHeight()
-            .fillMaxWidth()
-            .background(backgroundColor),
+        modifier = modifier,
         verticalArrangement = Arrangement.Center
     ) {
         Text(

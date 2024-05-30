@@ -25,7 +25,7 @@ sealed interface WriteUiState {
     data object Init : WriteUiState
     data object Loading : WriteUiState
 
-    data object Success : WriteUiState
+    data class Success(val postKey: String) : WriteUiState
 
     data class Error(val throwable: Throwable) : WriteUiState
 
@@ -60,6 +60,7 @@ class BoardWriteViewModel @Inject constructor(
     fun createPost(userId: String, uris: List<Uri>) =
         viewModelScope.launch {
             _uiState.emit(WriteUiState.Loading)
+
             runCatching {
                 val userInfo = readUserUseCase(userId).getOrThrow()
                 val postKey = createPostKeyUseCase()
@@ -80,8 +81,9 @@ class BoardWriteViewModel @Inject constructor(
                 )
                 createPostsUseCase(post).getOrThrow()
                 updateUserUseCase(userInfo.copy(postCount = userInfo.postCount.plus(1))).getOrThrow()
-            }.onSuccess {
-                _uiState.emit(WriteUiState.Success)
+                postKey
+            }.onSuccess { key ->
+                _uiState.emit(WriteUiState.Success(key))
             }.onFailure {
                 _uiState.emit(WriteUiState.Error(it))
             }

@@ -69,7 +69,6 @@ import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
-import kr.sjh.presentation.utill.clearFocusOnKeyboardDismiss
 import kr.sjh.presentation.utill.getActivity
 
 @Composable
@@ -77,7 +76,8 @@ fun BoardWriteRoute(
     modifier: Modifier = Modifier,
     boardWriteViewModel: BoardWriteViewModel = hiltViewModel(),
     loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onComplete: (String) -> Unit
 ) {
     var selectedImages = remember {
         mutableStateListOf<Uri>()
@@ -102,8 +102,8 @@ fun BoardWriteRoute(
             LoadingDialog()
         }
 
-        WriteUiState.Success -> {
-            onBack()
+        is WriteUiState.Success -> {
+            onComplete((uiState as WriteUiState.Success).postKey)
         }
 
         WriteUiState.Init -> {}
@@ -162,7 +162,6 @@ fun BoardWriteScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .clearFocusOnKeyboardDismiss()
     ) {
         AppTopBar(
             modifier = Modifier
@@ -185,7 +184,7 @@ fun BoardWriteScreen(
             updateTitle = updateTitle,
             scrollState = scrollState,
             onDelete = {
-                selectedImages.remove(it)
+                selectedImages.removeAt(selectedImages.indexOf(it))
             }
         )
         BoardPicture(

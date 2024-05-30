@@ -124,6 +124,9 @@ fun NavGraphBuilder.addNestedBoardGraph(
                 },
                 moveEdit = {
                     appState.rootNavHostController.navigate("${BoardRouteScreen.Edit.route}?postKey=$it")
+                },
+                onChat = {
+
                 }
             )
         }
@@ -136,6 +139,15 @@ fun NavGraphBuilder.addNestedBoardGraph(
                         Graph.MainGraph.route,
                         inclusive = false
                     )
+                },
+                onComplete = {
+                    appState.rootNavHostController.navigate(
+                        "${BoardRouteScreen.Detail.route}?postKey=${it}"
+                    ) {
+                        popUpTo(BoardRouteScreen.Write.route) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }

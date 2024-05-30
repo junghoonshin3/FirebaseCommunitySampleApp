@@ -1,7 +1,12 @@
 package kr.sjh.data.repository
 
 import android.net.Uri
+import android.util.Log
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.MutableData
+import com.google.firebase.database.Transaction
 import com.google.firebase.database.ktx.snapshots
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
@@ -72,10 +77,24 @@ class BoardRepositoryImpl @Inject constructor(
     override suspend fun updatePost(post: Post): Result<Unit> =
         runCatching {
             suspendCoroutine { continuation ->
-                ref.child(post.key).updateChildren(
-                    post.toMap()
-                ).addOnSuccessListener { continuation.resume(Unit) }
-                    .addOnFailureListener { continuation.resumeWithException(it) }
+                ref.child(post.key).runTransaction(object : Transaction.Handler {
+                    override fun doTransaction(currentData: MutableData): Transaction.Result {
+                        currentData.value = post
+                        return Transaction.success(currentData)
+                    }
+
+                    override fun onComplete(
+                        error: DatabaseError?,
+                        committed: Boolean,
+                        currentData: DataSnapshot?
+                    ) {
+                        if (error != null) {
+                            continuation.resumeWithException(error.toException())
+                        } else if (committed) {
+                            continuation.resume(Unit)
+                        }
+                    }
+                })
             }
         }
 

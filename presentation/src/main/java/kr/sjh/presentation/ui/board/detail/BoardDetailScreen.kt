@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,9 +13,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,9 +26,13 @@ import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -46,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
@@ -75,6 +83,7 @@ val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
+    onChat: () -> Unit,
     moveEdit: (String) -> Unit,
     detailViewModel: BoardDetailViewModel = hiltViewModel(),
 ) {
@@ -140,6 +149,9 @@ fun BoardDetailRoute(
                     }) {
 
                     BottomSheetMoreMenu(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(backgroundColor),
                         moveEdit = {
                             moveEdit(post.key)
                             bottomSheetShow = false
@@ -163,7 +175,8 @@ fun BoardDetailRoute(
                     onLikeChange = {
                         isLike = !isLike
                         detailViewModel.updateLikeCount(isLike, userInfo, post)
-                    }
+                    },
+                    onChat = onChat
                 )
             }
         }
@@ -180,7 +193,10 @@ fun BoardDetailScreen(
     onBack: () -> Unit,
     onMoreMenu: () -> Unit,
     onLikeChange: () -> Unit,
+    onChat: () -> Unit,
 ) {
+    val configuration = LocalConfiguration.current
+
     DetailCollapsedTopBar(
         modifier = Modifier
             .zIndex(1f)
@@ -208,6 +224,7 @@ fun BoardDetailScreen(
             )
         }
         item {
+
             DetailWriterProfile(
                 profileImageUrl = userInfo.profileImageUrl,
                 nickName = userInfo.nickName ?: "닉네임이 없어요",
@@ -224,8 +241,17 @@ fun BoardDetailScreen(
                 title = post.title ?: ""
             )
             DetailContent(
-                Modifier.padding(10.dp),
+                Modifier
+                    .padding(10.dp)
+                    .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT),
                 content = post.content ?: ""
+            )
+            DetailRequestChat(
+                modifier = Modifier
+                    .size(100.dp, 60.dp)
+                    .padding(10.dp)
+                    .background(carrot, RoundedCornerShape(5.dp)),
+                onClick = onChat
             )
 
         }
@@ -486,4 +512,22 @@ fun DetailContent(modifier: Modifier = Modifier, content: String) {
         fontSize = 20.sp,
         color = Color.White
     )
+}
+
+@Composable
+fun DetailRequestChat(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Box(
+            modifier = modifier
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(fontSize = 15.sp, color = Color.White, text = "채팅하기")
+        }
+    }
 }

@@ -104,7 +104,7 @@ fun BoardEditRoute(
                 boardEditViewModel.updateTitle(it)
             },
             onDelete = {
-                selectedImages.remove(it)
+                selectedImages.removeAt(selectedImages.indexOf(it))
             }
         )
         SnackbarHost(hostState = snackBarState, modifier = Modifier.align(Alignment.BottomCenter))
