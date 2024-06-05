@@ -125,7 +125,6 @@ fun BoardScreen(
                         PostItem(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(100.dp)
                                 .clickable {
                                     moveBoardDetail(post)
                                 },

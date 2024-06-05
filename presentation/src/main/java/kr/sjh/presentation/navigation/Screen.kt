@@ -1,7 +1,6 @@
 package kr.sjh.presentation.navigation
 
 sealed class Graph(val route: String) {
-    data object SplashGraph : Graph("splashGraph")
     data object LoginGraph : Graph("loginGraph")
     data object MainGraph : Graph("mainGraph")
 
@@ -15,18 +14,11 @@ sealed class Graph(val route: String) {
 sealed class LoginRouteScreen(val route: String) {
     data object Login : LoginRouteScreen("login")
 
-    data object Detail : LoginRouteScreen("detail")
-}
-
-sealed class MainRouteScreen(val route: String) {
-    data object Board : MainRouteScreen("board")
-
-    data object Chat : MainRouteScreen("chat")
-
-    data object MyPage : MainRouteScreen("myPage")
+    data object Detail : LoginRouteScreen("login_detail")
 }
 
 sealed class BoardRouteScreen(val route: String) {
+    data object Board : BoardRouteScreen("board")
     data object Detail : BoardRouteScreen("board_detail")
 
     data object Write : BoardRouteScreen("board_write")
@@ -35,10 +27,12 @@ sealed class BoardRouteScreen(val route: String) {
 }
 
 sealed class ChatRouteScreen(val route: String) {
+    data object Chat : ChatRouteScreen("chat")
     data object Detail : ChatRouteScreen("chat_detail")
 }
 
 sealed class MyPageRouteScreen(val route: String) {
+    data object MyPage : MyPageRouteScreen("myPage")
     data object Detail : MyPageRouteScreen("myPage_detail")
 
 }

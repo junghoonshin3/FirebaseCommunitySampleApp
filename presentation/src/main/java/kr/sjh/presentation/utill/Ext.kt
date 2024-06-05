@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,10 +19,12 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import kr.sjh.presentation.navigation.MainRouteScreen
+import kr.sjh.presentation.navigation.Graph
 
 @OptIn(ExperimentalLayoutApi::class)
 fun Modifier.clearFocusOnKeyboardDismiss(): Modifier = composed {
@@ -48,36 +52,50 @@ fun Modifier.clearFocusOnKeyboardDismiss(): Modifier = composed {
 }
 
 @Composable
-fun rememberPickUpAppState(
-    rootNavHostController: NavHostController = rememberNavController(),
-    mainNavHostController: NavHostController = rememberNavController(),
-): PickUpAppState {
-    return remember(
-        rootNavHostController,
-        mainNavHostController,
-    ) {
-        PickUpAppState(
-            rootNavHostController,
-            mainNavHostController,
-        )
-    }
-}
+fun getActivity() = LocalContext.current as ComponentActivity
 
 @Stable
-class PickUpAppState(
-    val rootNavHostController: NavHostController,
-    val mainNavHostController: NavHostController,
-)
+@Composable
+fun NavController.currentScreenAsState(): State<Graph> {
+    val selectedItem = remember { mutableStateOf<Graph>(Graph.BoardGraph) }
+    DisposableEffect(key1 = this) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+            when {
+                destination.hierarchy.any { it.route == Graph.BoardGraph.route } -> {
+                    selectedItem.value = Graph.BoardGraph
+                }
 
-fun NavHostController.navigateMainRoute(screen: MainRouteScreen) {
-    navigate(screen.route) {
-        popUpTo(screen.route) {
-            inclusive = true
+                destination.hierarchy.any { it.route == Graph.ChatGraph.route } -> {
+                    selectedItem.value = Graph.ChatGraph
+                }
+
+                destination.hierarchy.any { it.route == Graph.MyPageGraph.route } -> {
+                    selectedItem.value = Graph.MyPageGraph
+                }
+            }
         }
-        launchSingleTop = true
-        restoreState = true
+        addOnDestinationChangedListener(listener)
+        onDispose {
+            removeOnDestinationChangedListener(listener)
+        }
     }
+    return selectedItem
 }
 
+
+@Stable
 @Composable
-fun getActivity() = LocalContext.current as ComponentActivity
+fun NavController.currentRouteAsState(): State<String?> {
+    val selectedItem = remember { mutableStateOf<String?>(null) }
+    DisposableEffect(this) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+            selectedItem.value = destination.route
+        }
+        addOnDestinationChangedListener(listener)
+
+        onDispose {
+            removeOnDestinationChangedListener(listener)
+        }
+    }
+    return selectedItem
+}

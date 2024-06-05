@@ -1,84 +1,49 @@
 package kr.sjh.presentation.ui.login
 
-import android.util.Log
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kr.sjh.domain.error.NotFoundUser
 import kr.sjh.presentation.R
-import kr.sjh.presentation.navigation.Graph
-import kr.sjh.presentation.navigation.LoginRouteScreen
-import kr.sjh.presentation.utill.PickUpAppState
 import kr.sjh.presentation.utill.getActivity
 
 
 @Composable
 fun LoginRoute(
-    appState: PickUpAppState,
     modifier: Modifier = Modifier,
-    loginViewModel: LoginViewModel = hiltViewModel(getActivity())
+    loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
 ) {
-    val loginState by loginViewModel.loginState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    when (loginState) {
-        is LoginUiState.Error -> {
-            when ((loginState as LoginUiState.Error).throwable) {
-                is NotFoundUser -> {
-                    appState.rootNavHostController.navigate(LoginRouteScreen.Detail.route) {
-                        popUpTo(LoginRouteScreen.Login.route) {
-                            inclusive = false
-                        }
-                        launchSingleTop = true
-                    }
-                }
-
-                else -> {
-                    (loginState as LoginUiState.Error).throwable.printStackTrace()
-                }
-            }
-        }
-
-        LoginUiState.Loading -> {
-            Log.d("sjh", "LoginUiState.Loading")
-        }
-
-        LoginUiState.Success -> {
-            Log.d("sjh", "LoginUiState.Success")
-            appState.rootNavHostController.navigate(Graph.MainGraph.route) {
-                popUpTo(LoginRouteScreen.Login.route) {
-                    inclusive = false
-                }
-                launchSingleTop = true
-            }
-        }
-    }
-
+    val context = (LocalContext.current as LoginActivity)
     LoginScreen(
         modifier = modifier,
         onLogin = {
-            loginViewModel.kaKaoLogin(context)
+            loginViewModel.kaKaoLogin(context) { userInfo, throwable ->
+                if (userInfo != null) {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, "petory://main".toUri())
+                            .putExtra("userInfo", userInfo)
+                    )
+                } else if (throwable != null) {
+                    throwable.printStackTrace()
+                }
+                context.finish()
+            }
         }
     )
 }
@@ -88,37 +53,34 @@ private fun LoginScreen(
     modifier: Modifier = Modifier,
     onLogin: () -> Unit
 ) {
-    Surface(modifier = modifier, color = Color.Black) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Logo(
-                modifier = Modifier
-                    .width(200.dp)
-                    .height(200.dp)
-            )
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(30.dp)
-            )
-            Image(
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .width(300.dp)
-                    .height(90.dp)
-                    .padding(10.dp)
-                    .clickable {
-                        onLogin()
-                    },
-                painter = painterResource(id = R.drawable.kakao_login_large_narrow),
-                contentDescription = "login"
-            )
-        }
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Logo(
+            modifier = Modifier
+                .width(200.dp)
+                .height(200.dp)
+        )
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(30.dp)
+        )
+        Image(
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .width(300.dp)
+                .height(90.dp)
+                .padding(10.dp)
+                .clickable {
+                    onLogin()
+                },
+            painter = painterResource(id = R.drawable.kakao_login_large_narrow),
+            contentDescription = "login"
+        )
     }
-
 }
 
 @Composable

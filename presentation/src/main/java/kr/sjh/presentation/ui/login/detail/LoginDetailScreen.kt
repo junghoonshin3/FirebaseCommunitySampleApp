@@ -39,11 +39,11 @@ fun LoginDetailScreen(
     onComplete: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val kaKaoUser by loginViewModel.kaKaoUser.collectAsStateWithLifecycle()
+//    val kaKaoUser by loginViewModel.kaKaoUser.collectAsStateWithLifecycle()
 
-    var nickName by remember {
-        mutableStateOf(kaKaoUser?.kakaoAccount?.profile?.nickname ?: "")
-    }
+//    var nickName by remember {
+//        mutableStateOf(kaKaoUser?.kakaoAccount?.profile?.nickname ?: "")
+//    }
 
     Column(modifier = modifier) {
         AppTopBar(
@@ -55,7 +55,7 @@ fun LoginDetailScreen(
             buttonTitle = "완료",
             onBack = onBack,
             onClick = {
-                loginViewModel.createUser(nickName)
+//                loginViewModel.createUser(nickName)
                 onComplete()
             }
         )
@@ -66,8 +66,9 @@ fun LoginDetailScreen(
             ProfileImage(
                 modifier = Modifier.fillMaxWidth(),
                 imageModel = {
-                    kaKaoUser?.kakaoAccount?.profile?.thumbnailImageUrl
-                        ?: R.drawable.baseline_image_24
+//                    kaKaoUser?.kakaoAccount?.profile?.thumbnailImageUrl
+//                        ?:
+                        R.drawable.baseline_image_24
                 },
                 requestOptions = {
                     RequestOptions()
@@ -87,8 +88,10 @@ fun LoginDetailScreen(
                     .border(1.dp, Color.LightGray, shape = RoundedCornerShape(3.dp))
                     .fillMaxWidth()
                     .imePadding(),
-                text = nickName,
-                onTextChanged = { text -> nickName = text },
+                text = "nickName",
+                onTextChanged = { text ->
+//                    nickName = text
+                                },
                 textStyle = TextStyle.Default.copy(color = Color.White, fontSize = 20.sp),
                 placeholder = {
                     Text(

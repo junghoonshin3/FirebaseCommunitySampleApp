@@ -28,13 +28,43 @@
         android:theme="@style/Theme.PickUp.Splash"
         tools:targetApi="31">
         <activity
-            android:name="kr.sjh.presentation.ui.MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:windowSoftInputMode="adjustResize">
+            android:name="kr.sjh.presentation.ui.intro.IntroActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="kr.sjh.presentation.ui.login.LoginActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PickUp"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="login"
+                    android:scheme="petory" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="kr.sjh.presentation.ui.main.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PickUp"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="main"
+                    android:scheme="petory" />
             </intent-filter>
         </activity>
         <activity

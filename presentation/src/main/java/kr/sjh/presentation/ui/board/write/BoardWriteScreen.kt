@@ -75,7 +75,7 @@ import kr.sjh.presentation.utill.getActivity
 fun BoardWriteRoute(
     modifier: Modifier = Modifier,
     boardWriteViewModel: BoardWriteViewModel = hiltViewModel(),
-    loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
+//    loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
     onBack: () -> Unit,
     onComplete: (String) -> Unit
 ) {
@@ -85,7 +85,7 @@ fun BoardWriteRoute(
 
     val scrollState = rememberScrollState()
 
-    val userInfo by loginViewModel.userInfo.collectAsStateWithLifecycle()
+//    val userInfo by loginViewModel.userInfo.collectAsStateWithLifecycle()
 
     val uiState by boardWriteViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -112,9 +112,9 @@ fun BoardWriteRoute(
         modifier = modifier.background(backgroundColor),
     ) {
         BoardWriteScreen(
-            modifier = modifier,
+            modifier = Modifier.fillMaxSize(),
             onPost = {
-                boardWriteViewModel.createPost(userInfo?.id.toString(), selectedImages)
+//                boardWriteViewModel.createPost(userInfo?.id.toString(), selectedImages)
             },
             selectedImages = selectedImages,
             onBack = onBack,
@@ -160,8 +160,7 @@ fun BoardWriteScreen(
     onBack: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier.imePadding()
     ) {
         AppTopBar(
             modifier = Modifier
@@ -190,8 +189,7 @@ fun BoardWriteScreen(
         BoardPicture(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp)
-                .imePadding(),
+                .padding(10.dp),
             onPhoto = onPhoto
         )
     }
