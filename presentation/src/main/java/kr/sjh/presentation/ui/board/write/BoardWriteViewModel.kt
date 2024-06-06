@@ -24,7 +24,6 @@ import javax.inject.Inject
 sealed interface WriteUiState {
     data object Init : WriteUiState
     data object Loading : WriteUiState
-
     data class Success(val postKey: String) : WriteUiState
 
     data class Error(val throwable: Throwable) : WriteUiState
@@ -60,7 +59,6 @@ class BoardWriteViewModel @Inject constructor(
     fun createPost(userId: String, uris: List<Uri>) =
         viewModelScope.launch {
             _uiState.emit(WriteUiState.Loading)
-
             runCatching {
                 val userInfo = readUserUseCase(userId).getOrThrow()
                 val postKey = createPostKeyUseCase()

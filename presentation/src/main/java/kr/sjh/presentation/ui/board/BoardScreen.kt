@@ -61,10 +61,7 @@ fun BoardRoute(
     BoardScreen(
         modifier = modifier,
         boardUiState = boardUiState,
-        moveBoardDetail = { post ->
-            moveBoardDetail(post.key)
-            boardViewModel.postReadCount(post = post)
-        },
+        moveBoardDetail = moveBoardDetail,
         moveBoardWrite = moveBoardWrite
     )
 }
@@ -73,7 +70,7 @@ fun BoardRoute(
 fun BoardScreen(
     modifier: Modifier = Modifier,
     boardUiState: BoardUiState,
-    moveBoardDetail: (Post) -> Unit,
+    moveBoardDetail: (String) -> Unit,
     moveBoardWrite: () -> Unit
 ) {
     Box(modifier = modifier.background(backgroundColor)) {
@@ -126,7 +123,7 @@ fun BoardScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    moveBoardDetail(post)
+                                    moveBoardDetail(post.key)
                                 },
                             title = post.title ?: "",
                             nickname = post.nickName ?: "",
@@ -149,6 +146,8 @@ fun BoardScreen(
 
             is BoardUiState.Error -> {
             }
+
+            BoardUiState.Init -> {}
         }
     }
 }

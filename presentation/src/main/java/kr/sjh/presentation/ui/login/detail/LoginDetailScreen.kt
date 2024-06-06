@@ -1,10 +1,12 @@
 package kr.sjh.presentation.ui.login.detail
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.request.RequestOptions
+import kr.sjh.domain.model.UserInfo
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.ContentTextField
@@ -32,18 +35,19 @@ import kr.sjh.presentation.ui.common.ProfileImage
 import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.utill.getActivity
 
+@SuppressLint("RememberReturnType")
 @Composable
 fun LoginDetailScreen(
     modifier: Modifier = Modifier,
     loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
-    onComplete: () -> Unit,
+    onComplete: (UserInfo) -> Unit,
     onBack: () -> Unit,
 ) {
-//    val kaKaoUser by loginViewModel.kaKaoUser.collectAsStateWithLifecycle()
+    val userInfo = loginViewModel.userInfo
 
-//    var nickName by remember {
-//        mutableStateOf(kaKaoUser?.kakaoAccount?.profile?.nickname ?: "")
-//    }
+    var nickName by remember {
+        mutableStateOf(userInfo?.nickName ?: "")
+    }
 
     Column(modifier = modifier) {
         AppTopBar(
@@ -55,8 +59,14 @@ fun LoginDetailScreen(
             buttonTitle = "완료",
             onBack = onBack,
             onClick = {
-//                loginViewModel.createUser(nickName)
-                onComplete()
+                loginViewModel.createUser(nickName) { userInfo, throwable ->
+                    if (userInfo != null) {
+                        onComplete(userInfo)
+                    } else if (throwable != null) {
+
+                    }
+                }
+//                onComplete()
             }
         )
         Column(
@@ -66,9 +76,7 @@ fun LoginDetailScreen(
             ProfileImage(
                 modifier = Modifier.fillMaxWidth(),
                 imageModel = {
-//                    kaKaoUser?.kakaoAccount?.profile?.thumbnailImageUrl
-//                        ?:
-                        R.drawable.baseline_image_24
+                    userInfo?.profileImageUrl ?: R.drawable.baseline_image_24
                 },
                 requestOptions = {
                     RequestOptions()
@@ -86,15 +94,17 @@ fun LoginDetailScreen(
                 singleLine = true,
                 modifier = Modifier
                     .border(1.dp, Color.LightGray, shape = RoundedCornerShape(3.dp))
+                    .height(50.dp)
                     .fillMaxWidth()
                     .imePadding(),
-                text = "nickName",
+                text = nickName,
                 onTextChanged = { text ->
-//                    nickName = text
-                                },
+                    nickName = text
+                },
                 textStyle = TextStyle.Default.copy(color = Color.White, fontSize = 20.sp),
                 placeholder = {
                     Text(
+                        fontSize = 20.sp,
                         text = "닉네임을 입력해주세요",
                         color = Color.LightGray
                     )

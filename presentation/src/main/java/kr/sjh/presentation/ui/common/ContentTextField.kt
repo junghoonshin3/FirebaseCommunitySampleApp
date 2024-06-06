@@ -4,6 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -47,7 +48,7 @@ fun ContentTextField(
         }
         BasicTextField(
             singleLine = singleLine,
-            modifier = modifier
+            modifier = Modifier
                 .onSizeChanged { size ->
                     parentScrollState?.let {
                         //변경된 텍스트 필드의 높이 - 변경되기 전 높이
@@ -74,7 +75,7 @@ fun ContentTextField(
             cursorBrush = SolidColor(Color.White),
             decorationBox = { innerTextField ->
                 Column(
-                    modifier = modifier,
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     innerTextField()

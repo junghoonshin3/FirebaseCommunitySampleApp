@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kr.sjh.presentation.navigation.LoginNavGraph
+import kr.sjh.presentation.navigation.LoginRouteScreen
 
 @AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
@@ -18,6 +20,7 @@ class LoginActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxSize(),
                 navController = rememberNavController()
             )
+
         }
     }
 }

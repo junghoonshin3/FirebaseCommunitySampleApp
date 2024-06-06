@@ -24,7 +24,11 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import kr.sjh.presentation.navigation.BoardRouteScreen
+import kr.sjh.presentation.navigation.ChatRouteScreen
 import kr.sjh.presentation.navigation.Graph
+import kr.sjh.presentation.navigation.MyPageRouteScreen
+import kr.sjh.presentation.navigation.Screen
 
 @OptIn(ExperimentalLayoutApi::class)
 fun Modifier.clearFocusOnKeyboardDismiss(): Modifier = composed {
@@ -54,48 +58,3 @@ fun Modifier.clearFocusOnKeyboardDismiss(): Modifier = composed {
 @Composable
 fun getActivity() = LocalContext.current as ComponentActivity
 
-@Stable
-@Composable
-fun NavController.currentScreenAsState(): State<Graph> {
-    val selectedItem = remember { mutableStateOf<Graph>(Graph.BoardGraph) }
-    DisposableEffect(key1 = this) {
-        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
-            when {
-                destination.hierarchy.any { it.route == Graph.BoardGraph.route } -> {
-                    selectedItem.value = Graph.BoardGraph
-                }
-
-                destination.hierarchy.any { it.route == Graph.ChatGraph.route } -> {
-                    selectedItem.value = Graph.ChatGraph
-                }
-
-                destination.hierarchy.any { it.route == Graph.MyPageGraph.route } -> {
-                    selectedItem.value = Graph.MyPageGraph
-                }
-            }
-        }
-        addOnDestinationChangedListener(listener)
-        onDispose {
-            removeOnDestinationChangedListener(listener)
-        }
-    }
-    return selectedItem
-}
-
-
-@Stable
-@Composable
-fun NavController.currentRouteAsState(): State<String?> {
-    val selectedItem = remember { mutableStateOf<String?>(null) }
-    DisposableEffect(this) {
-        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
-            selectedItem.value = destination.route
-        }
-        addOnDestinationChangedListener(listener)
-
-        onDispose {
-            removeOnDestinationChangedListener(listener)
-        }
-    }
-    return selectedItem
-}

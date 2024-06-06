@@ -2,6 +2,9 @@ package kr.sjh.presentation.ui.login
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kakao.sdk.user.model.User
@@ -18,6 +21,7 @@ import kr.sjh.domain.usecase.login.kakao.KaKaoLoginUseCase
 import kr.sjh.domain.usecase.login.kakao.KaKaoMeUseCase
 import kr.sjh.domain.usecase.login.kakao.KaKaoExistAccessToken
 import kr.sjh.domain.model.UserInfo
+import kr.sjh.presentation.utill.toUserInfo
 import javax.inject.Inject
 
 sealed interface LoginUiState {
@@ -43,6 +47,7 @@ class LoginViewModel @Inject constructor(
     private val updateUserUseCase: UpdateUserUseCase,
 ) : ViewModel() {
 
+    var userInfo by mutableStateOf<UserInfo?>(null)
     fun kaKaoLogin(context: Context, onResult: (UserInfo?, Throwable?) -> Unit) {
         viewModelScope.launch {
             kaKaLoginUseCase(context).mapCatching { authToken ->
@@ -50,9 +55,11 @@ class LoginViewModel @Inject constructor(
                 kaKaoMeUseCase().getOrThrow()
             }.mapCatching { user ->
                 //파이어 베이스 db에서 계정정보 읽어오기
+                userInfo = user.toUserInfo()
                 readUserUseCase(user.id.toString()).getOrThrow()
             }.onSuccess {
                 // 성공시 상태변경 및 유저정보
+                userInfo = it
                 onResult(it, null)
             }
                 .onFailure {
@@ -78,22 +85,19 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun createUser(nickName: String) {
+    fun createUser(nickName: String, onResult: (UserInfo?, Throwable?) -> Unit) {
         viewModelScope.launch {
-//            _kaKaoUser.value?.let {
-//                val userInfo = UserInfo(
-//                    email = it.kakaoAccount?.email,
-//                    nickName = nickName,
-//                    id = it.id.toString(),
-//                    profileImageUrl = it.kakaoAccount?.profile?.profileImageUrl
-//                )
-//                createUserUseCase(userInfo)
-//                    .onSuccess {
-//                        _userInfo.value = it
-//                    }.onFailure {
-//
-//                    }
-//            }
+            userInfo?.let {
+                createUserUseCase(it.apply {
+                    this.nickName = nickName
+                }).onSuccess {
+                    userInfo = it
+                    onResult(it, null)
+                }.onFailure {
+                    onResult(null, it)
+                }
+            }
+
         }
     }
 

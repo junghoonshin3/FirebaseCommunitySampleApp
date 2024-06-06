@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,6 +68,7 @@ import kr.sjh.presentation.ui.common.BoardPicture
 import kr.sjh.presentation.ui.common.ContentTextField
 import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.login.LoginViewModel
+import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.getActivity
@@ -75,7 +77,7 @@ import kr.sjh.presentation.utill.getActivity
 fun BoardWriteRoute(
     modifier: Modifier = Modifier,
     boardWriteViewModel: BoardWriteViewModel = hiltViewModel(),
-//    loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
+    mainViewModel: MainViewModel = hiltViewModel(getActivity()),
     onBack: () -> Unit,
     onComplete: (String) -> Unit
 ) {
@@ -85,7 +87,7 @@ fun BoardWriteRoute(
 
     val scrollState = rememberScrollState()
 
-//    val userInfo by loginViewModel.userInfo.collectAsStateWithLifecycle()
+    val userInfo by mainViewModel.userInfo.collectAsStateWithLifecycle()
 
     val uiState by boardWriteViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -93,57 +95,41 @@ fun BoardWriteRoute(
 
     val coroutineScope = rememberCoroutineScope()
 
-    when (uiState) {
-        is WriteUiState.Error -> {
-            (uiState as WriteUiState.Error).throwable.printStackTrace()
-        }
-
-        WriteUiState.Loading -> {
-            LoadingDialog()
-        }
-
-        is WriteUiState.Success -> {
-            onComplete((uiState as WriteUiState.Success).postKey)
-        }
-
-        WriteUiState.Init -> {}
-    }
-    Box(
-        modifier = modifier.background(backgroundColor),
-    ) {
-        BoardWriteScreen(
-            modifier = Modifier.fillMaxSize(),
-            onPost = {
-//                boardWriteViewModel.createPost(userInfo?.id.toString(), selectedImages)
-            },
-            selectedImages = selectedImages,
-            onBack = onBack,
-            scrollState = scrollState,
-            title = boardWriteViewModel.title,
-            content = boardWriteViewModel.content,
-            updateContent = {
-                boardWriteViewModel.updateContent(it)
-            },
-            updateTitle = {
-                boardWriteViewModel.updateTitle(it)
-            },
-            onPhoto = {
-                if ((selectedImages.size + it.size) > 3) {
-                    coroutineScope.launch {
-                        snackBarState.showSnackbar(
-                            "사진은 최대 3장까지 첨부 할 수 있어요",
-                            "확인",
-                            duration = SnackbarDuration.Short
-                        )
-                    }
-                    return@BoardWriteScreen
+    BoardWriteScreen(
+        modifier = modifier,
+        onPost = {
+            boardWriteViewModel.createPost(userInfo?.id.toString(), selectedImages)
+        },
+        uiState = uiState,
+        snackBarState = snackBarState,
+        selectedImages = selectedImages,
+        onBack = onBack,
+        scrollState = scrollState,
+        title = boardWriteViewModel.title,
+        content = boardWriteViewModel.content,
+        updateContent = {
+            boardWriteViewModel.updateContent(it)
+        },
+        updateTitle = {
+            boardWriteViewModel.updateTitle(it)
+        },
+        onPhoto = {
+            if ((selectedImages.size + it.size) > 3) {
+                coroutineScope.launch {
+                    snackBarState.showSnackbar(
+                        "사진은 최대 3장까지 첨부 할 수 있어요",
+                        "확인",
+                        duration = SnackbarDuration.Short
+                    )
                 }
-                selectedImages.addAll(it)
+                return@BoardWriteScreen
             }
-        )
+            selectedImages.addAll(it)
+        },
+        onComplete = onComplete
+    )
 
-        SnackbarHost(hostState = snackBarState, modifier = Modifier.align(Alignment.BottomCenter))
-    }
+
 }
 
 @Composable
@@ -151,49 +137,75 @@ fun BoardWriteScreen(
     modifier: Modifier = Modifier,
     title: String,
     content: String,
+    uiState: WriteUiState,
+    snackBarState: SnackbarHostState,
     selectedImages: MutableList<Uri>,
     scrollState: ScrollState,
     updateContent: (String) -> Unit,
     updateTitle: (String) -> Unit,
     onPhoto: (List<Uri>) -> Unit,
+    onComplete: (String) -> Unit,
     onPost: () -> Unit,
     onBack: () -> Unit,
 ) {
-    Column(
-        modifier = modifier.imePadding()
-    ) {
-        AppTopBar(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            title = "음식점 후기글 쓰기",
-            buttonTitle = "등록",
-            onBack = onBack,
-            backIcon = Icons.Default.ArrowBack,
-            onClick = onPost
-        )
-        BoardWriteBody(
-            selectedImages = selectedImages,
-            modifier = Modifier
-                .weight(1f)
-                .padding(10.dp),
-            title = title,
-            content = content,
-            updateContent = updateContent,
-            updateTitle = updateTitle,
-            scrollState = scrollState,
-            onDelete = {
-                selectedImages.removeAt(selectedImages.indexOf(it))
-            }
-        )
-        BoardPicture(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            onPhoto = onPhoto
-        )
-    }
 
+    when (uiState) {
+        is WriteUiState.Error -> {
+            uiState.throwable.printStackTrace()
+        }
+
+        WriteUiState.Loading -> {
+            LoadingDialog()
+        }
+
+        is WriteUiState.Success -> {
+            onComplete(uiState.postKey)
+        }
+
+        WriteUiState.Init -> {}
+    }
+    Box(
+        modifier = modifier.background(backgroundColor),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            AppTopBar(
+                modifier = Modifier
+                    .padding(5.dp)
+                    .fillMaxWidth()
+                    .height(60.dp),
+                title = "음식점 후기글 쓰기",
+                buttonTitle = "등록",
+                onBack = onBack,
+                backIcon = Icons.Default.ArrowBack,
+                onClick = onPost
+            )
+            BoardWriteBody(
+                selectedImages = selectedImages,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(5.dp),
+                title = title,
+                content = content,
+                updateContent = updateContent,
+                updateTitle = updateTitle,
+                scrollState = scrollState,
+                onDelete = {
+                    selectedImages.removeAt(selectedImages.indexOf(it))
+                }
+            )
+            BoardPicture(
+                modifier = Modifier
+                    .padding(5.dp)
+                    .fillMaxWidth()
+                    .imePadding(),
+                onPhoto = onPhoto
+            )
+        }
+        SnackbarHost(hostState = snackBarState, modifier = Modifier.align(Alignment.BottomCenter))
+    }
 }
 
 
@@ -224,7 +236,6 @@ fun BoardWriteBody(
     updateContent: (String) -> Unit,
     onDelete: (Uri) -> Unit,
     scrollState: ScrollState
-
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -276,10 +287,10 @@ fun BoardWriteBody(
             textStyle = TextStyle.Default.copy(
                 color = Color.White,
                 fontSize = 20.sp,
-
-                ),
+            ),
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .height(50.dp),
             text = title,
             onTextChanged = { updateTitle(it) },
             placeholder = {

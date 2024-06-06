@@ -20,7 +20,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import kr.sjh.domain.error.NotFoundUser
+import kr.sjh.domain.model.UserInfo
 import kr.sjh.presentation.R
+import kr.sjh.presentation.navigation.LoginRouteScreen
 import kr.sjh.presentation.utill.getActivity
 
 
@@ -28,22 +32,13 @@ import kr.sjh.presentation.utill.getActivity
 fun LoginRoute(
     modifier: Modifier = Modifier,
     loginViewModel: LoginViewModel = hiltViewModel(getActivity()),
+    onLogin: (UserInfo?, Throwable?) -> Unit
 ) {
     val context = (LocalContext.current as LoginActivity)
     LoginScreen(
         modifier = modifier,
         onLogin = {
-            loginViewModel.kaKaoLogin(context) { userInfo, throwable ->
-                if (userInfo != null) {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, "petory://main".toUri())
-                            .putExtra("userInfo", userInfo)
-                    )
-                } else if (throwable != null) {
-                    throwable.printStackTrace()
-                }
-                context.finish()
-            }
+            loginViewModel.kaKaoLogin(context, onLogin)
         }
     )
 }

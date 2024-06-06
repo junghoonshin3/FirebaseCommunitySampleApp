@@ -6,11 +6,15 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import kr.sjh.presentation.R
 
 sealed class BottomNavItem(
-    val title: String, val icon: ImageVector, val rootGraph: Graph
+    val title: String, val iconResource: Int, val screen: Screen
 ) {
-    data object Chat : BottomNavItem("채팅", Icons.Default.Home, Graph.ChatGraph)
-    data object Board : BottomNavItem("글 목록", Icons.Default.List, Graph.BoardGraph)
-    data object MyPage : BottomNavItem("내 정보", Icons.Default.AccountCircle, Graph.MyPageGraph)
+    data object Chat : BottomNavItem("채팅", R.drawable.baseline_chat_24, ChatRouteScreen.Chat)
+    data object Board :
+        BottomNavItem("글 목록", R.drawable.baseline_format_list_numbered_24, BoardRouteScreen.Board)
+
+    data object MyPage :
+        BottomNavItem("내 정보", R.drawable.baseline_person_24, MyPageRouteScreen.MyPage)
 }

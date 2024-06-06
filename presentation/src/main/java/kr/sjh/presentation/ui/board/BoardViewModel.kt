@@ -16,6 +16,7 @@ import kr.sjh.domain.model.Post
 import javax.inject.Inject
 
 sealed interface BoardUiState {
+    data object Init : BoardUiState
     data class Success(val list: List<Post>) : BoardUiState
     data object Loading : BoardUiState
     data class Error(val throwable: Throwable) : BoardUiState
@@ -39,7 +40,7 @@ class BoardViewModel @Inject constructor(
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = BoardUiState.Loading
+                initialValue = BoardUiState.Init
             )
 
     fun postReadCount(post: Post) {

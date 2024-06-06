@@ -14,5 +14,10 @@ class MainViewModel @Inject constructor(
     private val readUserUseCase: ReadUserUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    val userInfo = savedStateHandle.getStateFlow("userInfo", null)
+
+    val userInfo = savedStateHandle.getStateFlow<UserInfo?>("userInfo", null)
+
+    init {
+        Log.d("MainViewModel", "${userInfo.value}")
+    }
 }

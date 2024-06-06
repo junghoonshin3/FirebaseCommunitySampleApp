@@ -12,7 +12,7 @@ import kotlinx.parcelize.Parcelize
 @IgnoreExtraProperties
 data class UserInfo(
     val email: String? = null,
-    val nickName: String? = null,
+    var nickName: String? = null,
     val id: String? = null,
     val profileImageUrl: String? = null,
     val postCount: Int = 0,

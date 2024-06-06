@@ -1,11 +1,7 @@
 package kr.sjh.presentation.utill
 
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.ime
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.platform.LocalDensity
+import com.kakao.sdk.user.model.User
+import kr.sjh.domain.model.UserInfo
 import java.util.concurrent.TimeUnit
 
 fun calculationTime(createDateTime: Long): String {
@@ -44,8 +40,11 @@ fun calculationTime(createDateTime: Long): String {
     return value
 }
 
-@Composable
-fun keyboardAsState(): State<Boolean> {
-    val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    return rememberUpdatedState(isImeVisible)
+fun User.toUserInfo(): UserInfo {
+    return UserInfo(
+        email = kakaoAccount?.email,
+        nickName = kakaoAccount?.profile?.nickname,
+        id = id.toString(),
+        profileImageUrl = kakaoAccount?.profile?.profileImageUrl,
+    )
 }

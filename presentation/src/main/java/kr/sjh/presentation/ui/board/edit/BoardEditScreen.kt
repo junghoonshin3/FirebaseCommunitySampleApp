@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -56,6 +57,64 @@ fun BoardEditRoute(
 
     val coroutineScope = rememberCoroutineScope()
 
+    BoardEditScreen(
+        modifier = modifier,
+        onUpdate = {
+            boardEditViewModel.updatePost(
+                post.copy(
+                    images = selectedImages.map { it.toString() }
+                )
+            )
+        },
+        onBack = onBack,
+        selectedPhotos = selectedImages,
+        onPhoto = {
+            if ((selectedImages.size + it.size) > 3) {
+                coroutineScope.launch {
+                    snackBarState.showSnackbar(
+                        "사진은 최대 3장까지 첨부 할 수 있어요",
+                        "확인",
+                        duration = SnackbarDuration.Short
+                    )
+                }
+                return@BoardEditScreen
+            }
+            selectedImages.addAll(it)
+        },
+        editUiState = editUiState,
+        scrollState = scrollState,
+        snackBarState = snackBarState,
+        title = boardEditViewModel.title,
+        content = boardEditViewModel.content,
+        updateContent = {
+            boardEditViewModel.updateContent(it)
+        },
+        updateTitle = {
+            boardEditViewModel.updateTitle(it)
+        },
+        onDelete = {
+            selectedImages.removeAt(selectedImages.indexOf(it))
+        }
+    )
+
+}
+
+@Composable
+private fun BoardEditScreen(
+    modifier: Modifier = Modifier,
+    selectedPhotos: List<Uri>,
+    title: String,
+    content: String,
+    editUiState: BoardEditUiState,
+    scrollState: ScrollState,
+    snackBarState: SnackbarHostState,
+    onPhoto: (List<Uri>) -> Unit,
+    updateContent: (String) -> Unit,
+    updateTitle: (String) -> Unit,
+    onUpdate: () -> Unit,
+    onDelete: (Uri) -> Unit,
+    onBack: () -> Unit,
+) {
     when (editUiState) {
         is BoardEditUiState.Error -> {}
         BoardEditUiState.Loading -> {
@@ -68,78 +127,16 @@ fun BoardEditRoute(
 
         BoardEditUiState.Init -> {}
     }
-
     Box(modifier = modifier.background(backgroundColor)) {
-        BoardEditScreen(
-            modifier = modifier,
-            onUpdate = {
-                boardEditViewModel.updatePost(
-                    post.copy(
-                        images = selectedImages.map { it.toString() }
-                    )
-                )
-            },
-            onBack = onBack,
-            selectedPhotos = selectedImages,
-            onPhoto = {
-                if ((selectedImages.size + it.size) > 3) {
-                    coroutineScope.launch {
-                        snackBarState.showSnackbar(
-                            "사진은 최대 3장까지 첨부 할 수 있어요",
-                            "확인",
-                            duration = SnackbarDuration.Short
-                        )
-                    }
-                    return@BoardEditScreen
-                }
-                selectedImages.addAll(it)
-            },
-            scrollState = scrollState,
-            title = boardEditViewModel.title,
-            content = boardEditViewModel.content,
-            updateContent = {
-                boardEditViewModel.updateContent(it)
-            },
-            updateTitle = {
-                boardEditViewModel.updateTitle(it)
-            },
-            onDelete = {
-                selectedImages.removeAt(selectedImages.indexOf(it))
-            }
-        )
-        SnackbarHost(hostState = snackBarState, modifier = Modifier.align(Alignment.BottomCenter))
-    }
-}
-
-@Composable
-private fun BoardEditScreen(
-    modifier: Modifier = Modifier,
-    selectedPhotos: List<Uri>,
-    title: String,
-    content: String,
-    scrollState: ScrollState,
-    onPhoto: (List<Uri>) -> Unit,
-    updateContent: (String) -> Unit,
-    updateTitle: (String) -> Unit,
-    onUpdate: () -> Unit,
-    onDelete: (Uri) -> Unit,
-    onBack: () -> Unit,
-) {
-
-    Surface(
-        modifier = modifier,
-        contentColor = backgroundColor,
-        color = backgroundColor
-    ) {
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
         ) {
             AppTopBar(
                 modifier = Modifier
+                    .padding(5.dp)
                     .fillMaxWidth()
-                    .padding(10.dp),
+                    .height(60.dp),
                 title = "음식점 후기글 쓰기",
                 buttonTitle = "수정",
                 onBack = onBack,
@@ -148,8 +145,8 @@ private fun BoardEditScreen(
             )
             BoardWriteBody(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(10.dp),
+                    .padding(5.dp)
+                    .weight(1f),
                 selectedImages = selectedPhotos,
                 title = title,
                 content = content,
@@ -160,12 +157,13 @@ private fun BoardEditScreen(
             )
             BoardPicture(
                 modifier = Modifier
+                    .padding(5.dp)
                     .fillMaxWidth()
-                    .padding(10.dp)
                     .imePadding(),
                 onPhoto = onPhoto
             )
         }
+        SnackbarHost(hostState = snackBarState, modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
 

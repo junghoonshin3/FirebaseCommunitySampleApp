@@ -1,16 +1,9 @@
 package kr.sjh.presentation.navigation
 
-import android.os.Build
+import android.content.Intent
 import android.util.Log
-import android.view.WindowManager
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -18,40 +11,41 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.core.view.WindowCompat
-import androidx.navigation.NavController
+import androidx.core.net.toUri
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.dialog
-import androidx.navigation.navArgument
-import androidx.navigation.navigation
-import kr.sjh.presentation.ui.board.BoardRoute
+import androidx.navigation.compose.rememberNavController
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
+import com.skydoves.landscapist.ImageOptions
+import com.skydoves.landscapist.glide.GlideImage
+import kr.sjh.domain.error.NotFoundUser
 import kr.sjh.presentation.ui.board.detail.BoardDetailRoute
 import kr.sjh.presentation.ui.board.edit.BoardEditRoute
 import kr.sjh.presentation.ui.board.write.BoardWriteRoute
+import kr.sjh.presentation.ui.login.LoginActivity
 import kr.sjh.presentation.ui.login.LoginRoute
+import kr.sjh.presentation.ui.login.detail.LoginDetailScreen
+import kr.sjh.presentation.ui.main.MainScreen
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
-import kr.sjh.presentation.utill.currentScreenAsState
 
 @Composable
 fun LoginNavGraph(
     modifier: Modifier,
-    navController: NavHostController
+    navController: NavHostController = rememberNavController()
 ) {
+    val activity = LocalContext.current as LoginActivity
     NavHost(
         navController = navController,
         modifier = modifier,
@@ -63,10 +57,39 @@ fun LoginNavGraph(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black),
+                onLogin = { userInfo, throwable ->
+                    if (userInfo != null) {
+                        activity.startActivity(
+                            Intent(Intent.ACTION_VIEW, "petory://main".toUri())
+                                .putExtra("userInfo", userInfo)
+                        )
+                        activity.finish()
+                    } else if (throwable != null) {
+                        when (throwable) {
+                            is NotFoundUser -> {
+                                navController.navigate(LoginRouteScreen.Detail.route)
+                            }
+
+                            else -> {
+
+                            }
+                        }
+                    }
+
+
+                }
             )
         }
         composable(route = LoginRouteScreen.Detail.route) {
-//            LoginDetailScreen(modifier = Modifier.fillMaxSize())
+            LoginDetailScreen(modifier = Modifier.fillMaxSize(),
+                onComplete = {
+                    activity.startActivity(
+                        Intent(Intent.ACTION_VIEW, "petory://main".toUri())
+                            .putExtra("userInfo", it)
+                    )
+                }, onBack = {
+                    navController.popBackStack(LoginRouteScreen.Login.route, false)
+                })
         }
     }
 }
@@ -74,75 +97,74 @@ fun LoginNavGraph(
 @Composable
 fun MainNavGraph(
     modifier: Modifier,
-    paddingValues: PaddingValues,
-    navController: NavHostController
 ) {
+    val mainNavController = rememberNavController()
+    val detailNavController = rememberNavController()
     NavHost(
-        modifier = modifier.padding(paddingValues),
-        navController = navController,
-        route = Graph.MainGraph.route,
-        startDestination = Graph.BoardGraph.route
+        modifier = modifier,
+        navController = detailNavController,
+        startDestination = Graph.MainGraph.route
     ) {
-        navigation(
-            route = Graph.BoardGraph.route,
-            startDestination = BoardRouteScreen.Board.route
+
+        composable(route = Graph.MainGraph.route) {
+            MainScreen(
+                modifier = Modifier
+                    .fillMaxSize(),
+                navController = mainNavController,
+                moveBoardWrite = {
+                    detailNavController.navigate(BoardRouteScreen.Write.route)
+                }, moveBoardDetail = {
+                    detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=$it")
+                })
+        }
+
+        composable(
+            route = "${BoardRouteScreen.Detail.route}?postKey={postKey}"
         ) {
-            composable(route = BoardRouteScreen.Board.route) {
-                BoardRoute(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    moveBoardDetail = {
-                        navController.navigate("${BoardRouteScreen.Detail.route}?postKey=${it}")
-                    }, moveBoardWrite = {
-                        navController.navigate(BoardRouteScreen.Write.route)
-                    }
-                )
-            }
-            composable(
-                route = "${BoardRouteScreen.Detail.route}?postKey={postKey}"
-            ) {
-                BoardDetailRoute(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    onBack = { /*TODO*/ },
-                    onChat = { /*TODO*/ },
-                    moveEdit = {
-
-                    })
-            }
-            composable(route = BoardRouteScreen.Edit.route) {
-                BoardEditRoute(modifier = Modifier.fillMaxSize()) {
-
+            BoardDetailRoute(
+                modifier = Modifier
+                    .fillMaxSize(),
+                onBack = {
+                    detailNavController.popBackStack(
+                        Graph.MainGraph.route,
+                        inclusive = false,
+                    )
+                },
+                onChat = { /*TODO*/ },
+                moveEdit = {
+                    detailNavController.navigate("${BoardRouteScreen.Edit.route}?postKey=$it")
+                })
+        }
+        composable(route = "${BoardRouteScreen.Edit.route}?postKey={postKey}") {
+            BoardEditRoute(
+                modifier = Modifier
+                    .fillMaxSize(),
+                onBack = {
+                    detailNavController.popBackStack(
+                        BoardRouteScreen.Detail.route,
+                        inclusive = false
+                    )
                 }
-            }
-            composable(
-                route = BoardRouteScreen.Write.route
-            ) {
-                BoardWriteRoute(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    onBack = { },
-                    onComplete = {
-
-                    })
-            }
+            )
         }
-        navigation(
-            route = Graph.ChatGraph.route,
-            startDestination = ChatRouteScreen.Chat.route
+        composable(
+            route = BoardRouteScreen.Write.route
         ) {
-            composable(route = ChatRouteScreen.Chat.route) {
-
-            }
+            BoardWriteRoute(
+                modifier = Modifier
+                    .fillMaxSize(),
+                onBack = {
+                    detailNavController.popBackStack(
+                        Graph.MainGraph.route,
+                        inclusive = false,
+                    )
+                },
+                onComplete = {
+                    detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=${it}")
+                })
         }
-        navigation(
-            route = Graph.MyPageGraph.route,
-            startDestination = MyPageRouteScreen.MyPage.route
-        ) {
-            composable(route = MyPageRouteScreen.MyPage.route) {
 
-            }
-        }
+
     }
 
 }
@@ -150,118 +172,64 @@ fun MainNavGraph(
 
 @Composable
 fun BottomNavigation(
-    navController: NavController,
-    currentSelectedScreen: Graph,
-    bottomBarState: Boolean
+    navController: NavHostController,
+    currentRoute: String?,
+    imageUrl: String?
 ) {
-    val navItems =
-        listOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
-
-    AnimatedVisibility(
-        visible = bottomBarState,
-        enter = slideInVertically(initialOffsetY = { it }),
-        exit = slideOutVertically(targetOffsetY = { it }),
-    ) {
-        NavigationBar(containerColor = backgroundColor) {
-            navItems.forEach { item ->
-                NavigationBarItem(
-                    colors = NavigationBarItemDefaults.colors(indicatorColor = carrot),
-                    alwaysShowLabel = true,
-                    label = {
-                        Text(text = item.title, color = Color.White, fontSize = 12.sp)
-                    },
-                    selected = currentSelectedScreen.route == item.rootGraph.route,
-                    onClick = {
-                        navController.navigate(item.rootGraph.route) {
-                            popUpTo(currentSelectedScreen.route) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
+    val navItems = listOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
+    NavigationBar(containerColor = backgroundColor) {
+        navItems.forEach { item ->
+            NavigationBarItem(
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = Color.Transparent,
+                    selectedTextColor = carrot,
+                    unselectedTextColor = Color.White,
+                ),
+                alwaysShowLabel = true,
+                label = {
+                    Text(text = item.title, fontSize = 12.sp)
+                },
+                selected = currentRoute == item.screen.route,
+                onClick = {
+                    navController.navigate(item.screen.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
                         }
-                    },
-                    icon = {
-                        Icon(
-                            tint = Color.White,
-                            imageVector = item.icon,
-                            contentDescription = "",
-                            modifier = Modifier.size(22.dp)
-                        )
+                        launchSingleTop = true
+                        restoreState = true
                     }
-                )
-            }
+                },
+                icon = {
+                    GlideImage(
+                        imageOptions = ImageOptions(
+                            colorFilter = if (item.screen.route == MyPageRouteScreen.MyPage.route) {
+                                null
+                            } else if (currentRoute == item.screen.route) {
+                                ColorFilter.tint(carrot)
+                            } else {
+                                ColorFilter.tint(Color.White)
+                            }
+                        ),
+                        requestOptions = {
+                            RequestOptions().override(60).circleCrop()
+                        },
+                        imageModel = {
+                            when (item.screen) {
+                                MyPageRouteScreen.MyPage -> {
+                                    imageUrl ?: item.iconResource
+                                }
 
+                                else -> {
+                                    item.iconResource
+                                }
+                            }
+                        }
+                    )
+                }
+            )
         }
     }
 
 }
 
-fun NavGraphBuilder.addNestedBoardGraph(
-) {
-    navigation(
-        startDestination = BoardRouteScreen.Detail.route,
-        route = Graph.BoardGraph.route
-    ) {
-        composable(route = "${BoardRouteScreen.Detail.route}?postKey={postKey}",
-            arguments = listOf(
-                navArgument("postKey") {
-                    type = NavType.StringType
-                    nullable = true
-                }
-            )) {
-            BoardDetailRoute(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(backgroundColor),
-                onBack = {
-//                    appState.rootNavHostController.popBackStack(
-//                        Graph.MainGraph.route,
-//                        inclusive = false
-//                    )
-                },
-                moveEdit = {
-//                    appState.rootNavHostController.navigate("${BoardRouteScreen.Edit.route}?postKey=$it")
-                },
-                onChat = {
-
-                }
-            )
-        }
-
-        composable(route = BoardRouteScreen.Write.route) {
-            BoardWriteRoute(
-                modifier = Modifier.fillMaxSize(),
-                onBack = {
-//                    appState.rootNavHostController.popBackStack(
-//                        Graph.MainGraph.route,
-//                        inclusive = false
-//                    )
-                },
-                onComplete = {
-//                    appState.rootNavHostController.navigate(
-//                        "${BoardRouteScreen.Detail.route}?postKey=${it}"
-//                    ) {
-//                        popUpTo(BoardRouteScreen.Write.route) {
-//                            inclusive = true
-//                        }
-//                    }
-                }
-            )
-        }
-        composable(route = "${BoardRouteScreen.Edit.route}?postKey={postKey}",
-            arguments = listOf(
-                navArgument("postKey") {
-                    type = NavType.StringType
-                }
-            )) {
-            BoardEditRoute(
-                modifier = Modifier.fillMaxSize(),
-                onBack = {
-//                    appState.rootNavHostController.popBackStack(
-//                        BoardRouteScreen.Detail.route,
-//                        inclusive = false
-//                    )
-                })
-        }
-    }
-}
 

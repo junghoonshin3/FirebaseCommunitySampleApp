@@ -28,14 +28,9 @@ sealed interface DetailUiState {
     data class Success(val pair: Pair<Post, UserInfo>) : DetailUiState
     data class Error(val throwable: Throwable) : DetailUiState
     data object Loading : DetailUiState
+    data object Init : DetailUiState
 }
 
-sealed interface BottomSheetUiState {
-    data object Success : BottomSheetUiState
-    data class Error(val throwable: Throwable) : BottomSheetUiState
-    data object Loading : BottomSheetUiState
-    data object Init : BottomSheetUiState
-}
 
 @HiltViewModel
 class BoardDetailViewModel @Inject constructor(
@@ -48,11 +43,7 @@ class BoardDetailViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val postKey = savedStateHandle.get<String>("postKey")
-
-    private val _bottomSheetUiState =
-        MutableStateFlow<BottomSheetUiState>(BottomSheetUiState.Init)
-    val bottomSheetUiState = _bottomSheetUiState.asStateFlow()
+    val postKey = savedStateHandle.get<String>("postKey")
 
     val detailUiState: StateFlow<DetailUiState> = readPostUseCase(postKey.toString())
         .map { post ->
@@ -74,7 +65,6 @@ class BoardDetailViewModel @Inject constructor(
 
     fun deletePost(post: Post) {
         viewModelScope.launch {
-            _bottomSheetUiState.emit(BottomSheetUiState.Loading)
             runCatching {
                 val userInfo = readUserUseCase(post.writerId).getOrThrow()
                 deletePostUseCase(post.key).getOrThrow()
@@ -82,7 +72,7 @@ class BoardDetailViewModel @Inject constructor(
                 if (post.images.isNotEmpty()) {
                     removeImagesUsaCase(post.key).getOrThrow()
                 }
-                
+
                 // '좋아요 리스트'에 글이 포함된 경우
                 // 아닌 경우 기존 리스트 리턴
                 val newLikePosts = if (userInfo.likePosts.contains(post.key)) {
@@ -101,11 +91,9 @@ class BoardDetailViewModel @Inject constructor(
                     )
                 ).getOrThrow()
             }.onSuccess {
-                _bottomSheetUiState.emit(BottomSheetUiState.Success)
             }
                 .onFailure {
                     it.printStackTrace()
-                    _bottomSheetUiState.emit(BottomSheetUiState.Error(it))
                 }
 
         }
@@ -136,16 +124,4 @@ class BoardDetailViewModel @Inject constructor(
             }
         }
     }
-
-    fun removeImages(postKey: String) {
-        viewModelScope.launch {
-            removeImagesUsaCase(postKey)
-                .onSuccess {
-                }
-                .onFailure {
-
-                }
-        }
-    }
-
 }

@@ -3,15 +3,20 @@ package kr.sjh.presentation.ui.common
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -24,16 +29,23 @@ fun AppTopBar(
     onClick: () -> Unit
 ) {
     Box(modifier = modifier) {
-        Image(
+        Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
+                .size(45.dp)
+                .clip(RoundedCornerShape(20.dp))
                 .clickable {
                     onBack()
                 },
-            imageVector = backIcon,
-            colorFilter = ColorFilter.tint(Color.White),
-            contentDescription = "Back"
-        )
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                imageVector = backIcon,
+                colorFilter = ColorFilter.tint(Color.White),
+                contentDescription = "Back"
+            )
+        }
+
         Text(
             modifier = Modifier
                 .align(Alignment.Center),
@@ -43,17 +55,22 @@ fun AppTopBar(
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold
         )
-        Text(
+        Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
+                .size(45.dp)
+                .clip(RoundedCornerShape(20.dp))
                 .clickable {
                     onClick()
                 },
-            text = buttonTitle,
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal
-        )
-
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = buttonTitle,
+                color = Color.White,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Normal
+            )
+        }
     }
 }

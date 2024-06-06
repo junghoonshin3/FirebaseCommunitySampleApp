@@ -1,7 +1,7 @@
 object Versions {
     const val hilt_navigation = "1.1.0-alpha01"
     const val composeViewModel = "2.6.1"
-    const val composeNavigation = "2.7.6"
+    const val composeNavigation = "2.7.7"
     const val material3WindowSizeClass = "1.1.2"
     const val espressoCore = "3.5.1"
     const val core = "1.9.0"

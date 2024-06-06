@@ -70,15 +70,16 @@ import kr.sjh.domain.model.UserInfo
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.bottomsheet.CommonModalBottomSheet
 import kr.sjh.presentation.ui.common.LoadingDialog
+import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.getActivity
 import kotlin.math.absoluteValue
 
 
 val COLLAPSED_TOP_BAR_HEIGHT = 50.dp
 val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
@@ -86,6 +87,8 @@ fun BoardDetailRoute(
     onChat: () -> Unit,
     moveEdit: (String) -> Unit,
     detailViewModel: BoardDetailViewModel = hiltViewModel(),
+    mainViewModel: MainViewModel = hiltViewModel(getActivity())
+
 ) {
     val listState = rememberLazyListState()
 
@@ -104,29 +107,69 @@ fun BoardDetailRoute(
 
     val detailUiState by detailViewModel.detailUiState.collectAsStateWithLifecycle()
 
-    val bottomSheetUiState by detailViewModel.bottomSheetUiState.collectAsStateWithLifecycle()
-
     var bottomSheetShow by remember {
         mutableStateOf(false)
     }
+    val userInfo by mainViewModel.userInfo.collectAsStateWithLifecycle()
+
+    var isLike by remember {
+        mutableStateOf(userInfo?.likePosts?.contains(detailViewModel.postKey) ?: false)
+    }
+
+    BoardDetailScreen(
+        modifier = modifier,
+        isCollapsed = isCollapsed,
+        isLike = isLike,
+        listState = listState,
+        bottomSheetShow = bottomSheetShow,
+        detailUiState = detailUiState,
+        onBack = onBack,
+        userId = userInfo?.id.toString(),
+        onMoreMenu = {
+            bottomSheetShow = true
+        },
+        onLikeChange = {
+            isLike = !isLike
+//            detailViewModel.updateLikeCount(isLike, userInfo, post)
+        },
+        onChat = onChat,
+        onDismissRequest = {
+            bottomSheetShow = false
+        },
+        moveEdit = {
+            moveEdit(it)
+            bottomSheetShow = false
+        },
+        onDelete = {
+            detailViewModel.deletePost(it)
+            bottomSheetShow = false
+            onBack()
+        }
+    )
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BoardDetailScreen(
+    modifier: Modifier = Modifier,
+    isCollapsed: Boolean,
+    isLike: Boolean,
+    bottomSheetShow: Boolean,
+    onDismissRequest: () -> Unit,
+    detailUiState: DetailUiState,
+    userId: String,
+    listState: LazyListState,
+    onBack: () -> Unit,
+    onMoreMenu: () -> Unit,
+    onLikeChange: () -> Unit,
+    moveEdit: (String) -> Unit,
+    onDelete: (Post) -> Unit,
+    onChat: () -> Unit,
+) {
+    val configuration = LocalConfiguration.current
 
     Box(modifier = modifier) {
-        when (bottomSheetUiState) {
-            is BottomSheetUiState.Error -> {
-            }
-
-            BottomSheetUiState.Loading -> {
-                LoadingDialog()
-            }
-
-            BottomSheetUiState.Success -> {
-                Log.d("sjh", "1111")
-                onBack()
-            }
-
-            BottomSheetUiState.Init -> {}
-        }
-
         when (detailUiState) {
             is DetailUiState.Error -> {}
             DetailUiState.Loading -> {
@@ -134,128 +177,89 @@ fun BoardDetailRoute(
             }
 
             is DetailUiState.Success -> {
-                val (post, userInfo) = (detailUiState as DetailUiState.Success).pair
-                var isLike by remember {
-                    mutableStateOf(userInfo.likePosts.contains(post.key))
-                }
+                val (post, writerInfo) = detailUiState.pair
                 CommonModalBottomSheet(
                     showSheet = bottomSheetShow,
                     dragHandle = {
                         BottomSheetDefaults.DragHandle(color = Color.LightGray)
                     },
                     containerColor = backgroundColor,
-                    onDismissRequest = {
-                        bottomSheetShow = false
-                    }) {
-
+                    onDismissRequest = onDismissRequest
+                ) {
                     BottomSheetMoreMenu(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(backgroundColor),
                         moveEdit = {
                             moveEdit(post.key)
-                            bottomSheetShow = false
                         },
-                        onDelete = {
-                            detailViewModel.deletePost(post)
-                            bottomSheetShow = false
-                        })
+                        onDelete = { onDelete(post) }
+                    )
                 }
-
-                BoardDetailScreen(
+                DetailCollapsedTopBar(
+                    modifier = Modifier
+                        .zIndex(1f)
+                        .fillMaxWidth()
+                        .height(COLLAPSED_TOP_BAR_HEIGHT),
                     isCollapsed = isCollapsed,
                     isLike = isLike,
-                    listState = listState,
-                    onBack = onBack,
-                    post = post,
-                    userInfo = userInfo,
-                    onMoreMenu = {
-                        bottomSheetShow = true
-                    },
-                    onLikeChange = {
-                        isLike = !isLike
-                        detailViewModel.updateLikeCount(isLike, userInfo, post)
-                    },
-                    onChat = onChat
+                    isWriter = userId == writerInfo.id,
+                    onLikeChange = onLikeChange,
+                    onMoreMenu = onMoreMenu,
+                    onBack = onBack
                 )
+                LazyColumn(
+                    modifier = Modifier
+                        .background(backgroundColor)
+                        .fillMaxSize(), state = listState
+                ) {
+                    item {
+                        //확장된 상태 탑바
+                        DetailExpendedTopBar(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(EXPANDED_TOP_BAR_HEIGHT),
+                            images = post.images
+                        )
+                    }
+                    item {
+                        DetailWriterProfile(
+                            profileImageUrl = writerInfo.profileImageUrl,
+                            nickName = writerInfo.nickName ?: "닉네임이 없어요",
+                            readCount = post.readCount,
+                            postCount = writerInfo.postCount
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.fillMaxWidth(),
+                            thickness = 1.dp,
+                            color = Color.Gray
+                        )
+                        DetailTitle(
+                            modifier = Modifier.padding(10.dp),
+                            title = post.title ?: ""
+                        )
+                        DetailContent(
+                            Modifier
+                                .padding(10.dp)
+                                .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT),
+                            content = post.content ?: ""
+                        )
+                        DetailRequestChat(
+                            modifier = Modifier
+                                .size(100.dp, 60.dp)
+                                .padding(10.dp)
+                                .background(carrot, RoundedCornerShape(5.dp)),
+                            onClick = onChat
+                        )
+                    }
+                }
+
             }
+
+            DetailUiState.Init -> {}
         }
     }
-}
 
-@Composable
-fun BoardDetailScreen(
-    isCollapsed: Boolean,
-    isLike: Boolean,
-    userInfo: UserInfo,
-    post: Post,
-    listState: LazyListState,
-    onBack: () -> Unit,
-    onMoreMenu: () -> Unit,
-    onLikeChange: () -> Unit,
-    onChat: () -> Unit,
-) {
-    val configuration = LocalConfiguration.current
-
-    DetailCollapsedTopBar(
-        modifier = Modifier
-            .zIndex(1f)
-            .fillMaxWidth()
-            .height(COLLAPSED_TOP_BAR_HEIGHT),
-        isCollapsed = isCollapsed,
-        isLike = isLike,
-        isWriter = userInfo.id == post.writerId,
-        onLikeChange = onLikeChange,
-        onMoreMenu = onMoreMenu,
-        onBack = onBack
-    )
-    LazyColumn(
-        modifier = Modifier
-            .background(backgroundColor)
-            .fillMaxSize(), state = listState
-    ) {
-        item {
-            //확장된 상태 탑바
-            DetailExpendedTopBar(
-                Modifier
-                    .fillMaxWidth()
-                    .height(EXPANDED_TOP_BAR_HEIGHT),
-                images = post.images
-            )
-        }
-        item {
-
-            DetailWriterProfile(
-                profileImageUrl = userInfo.profileImageUrl,
-                nickName = userInfo.nickName ?: "닉네임이 없어요",
-                readCount = post.readCount,
-                postCount = userInfo.postCount
-            )
-            HorizontalDivider(
-                modifier = Modifier.fillMaxWidth(),
-                thickness = 1.dp,
-                color = Color.Gray
-            )
-            DetailTitle(
-                modifier = Modifier.padding(10.dp),
-                title = post.title ?: ""
-            )
-            DetailContent(
-                Modifier
-                    .padding(10.dp)
-                    .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT),
-                content = post.content ?: ""
-            )
-            DetailRequestChat(
-                modifier = Modifier
-                    .size(100.dp, 60.dp)
-                    .padding(10.dp)
-                    .background(carrot, RoundedCornerShape(5.dp)),
-                onClick = onChat
-            )
-
-        }
-    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -329,6 +333,16 @@ fun DetailCollapsedTopBar(
         }
     }
 
+    val collapseBackgroundColor by remember(isCollapsed) {
+        derivedStateOf {
+            if (isCollapsed) {
+                backgroundColor
+            } else {
+                Color.Transparent
+            }
+        }
+    }
+
     val likeColor by remember(isLike, isCollapsed) {
         derivedStateOf {
             if (isLike) {
@@ -342,7 +356,7 @@ fun DetailCollapsedTopBar(
     }
 
     Row(
-        modifier = modifier,
+        modifier = modifier.background(collapseBackgroundColor),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {

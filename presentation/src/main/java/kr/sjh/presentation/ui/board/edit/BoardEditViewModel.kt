@@ -46,6 +46,10 @@ class BoardEditViewModel @Inject constructor(
 
     var content by mutableStateOf("")
 
+    init {
+        Log.d("sjh", "$postKey")
+    }
+
     val post: StateFlow<Post> = readPostUseCase(postKey.toString()).map {
         title = it.title ?: ""
         content = it.content ?: ""
