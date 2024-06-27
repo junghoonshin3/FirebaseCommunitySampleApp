@@ -5,9 +5,12 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.vector.ImageVector
 import kr.sjh.presentation.R
 
+@Stable
 sealed class BottomNavItem(
     val title: String, val iconResource: Int, val screen: Screen
 ) {

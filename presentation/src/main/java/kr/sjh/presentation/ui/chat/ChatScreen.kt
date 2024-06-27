@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
 import com.skydoves.landscapist.glide.GlideImage
-import kr.sjh.domain.model.UserInfo
+import kr.sjh.domain.model.UserModel
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.backgroundColor
 
@@ -30,7 +30,7 @@ fun ChatRoute() {
 }
 
 @Composable
-fun ChatScreen(navController: NavController, userInfo: UserInfo?, modifier: Modifier = Modifier) {
+fun ChatScreen(navController: NavController, userModel: UserModel?, modifier: Modifier = Modifier) {
     Surface(modifier = modifier) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(2) {
@@ -40,7 +40,7 @@ fun ChatScreen(navController: NavController, userInfo: UserInfo?, modifier: Modi
                         .height(100.dp)
                         .padding(10.dp),
                     profileUrl = null,
-                    nickname = userInfo?.nickName,
+                    nickname = userModel?.nickName,
                     onClick = {
 
                     }

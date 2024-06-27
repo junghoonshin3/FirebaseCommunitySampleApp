@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="kakao_native_app_key">
-        61366bf8be9e09d21c9fea4686576ac1</string>
-    <string name="kakao_redirection_scheme">
-        kakao61366bf8be9e09d21c9fea4686576ac1
-    </string>
+    <string name="WEB_CLIENT_ID">
+       935576421003-297e5uherl7bf0k6kf2jdnc9607lj6pf.apps.googleusercontent.com</string>
 </resources>

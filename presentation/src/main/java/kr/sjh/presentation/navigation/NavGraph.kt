@@ -1,41 +1,46 @@
 package kr.sjh.presentation.navigation
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.bumptech.glide.Glide
+import androidx.navigation.navArgument
 import com.bumptech.glide.request.RequestOptions
+import com.google.gson.ExclusionStrategy
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.TypeAdapter
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonWriter
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.glide.GlideImage
-import kr.sjh.domain.error.NotFoundUser
+import kr.sjh.domain.model.PostModel
 import kr.sjh.presentation.ui.board.detail.BoardDetailRoute
 import kr.sjh.presentation.ui.board.edit.BoardEditRoute
 import kr.sjh.presentation.ui.board.write.BoardWriteRoute
 import kr.sjh.presentation.ui.login.LoginActivity
 import kr.sjh.presentation.ui.login.LoginRoute
-import kr.sjh.presentation.ui.login.detail.LoginDetailScreen
+import kr.sjh.presentation.ui.login.detail.LoginDetailRoute
+import kr.sjh.presentation.ui.main.MainActivity
 import kr.sjh.presentation.ui.main.MainScreen
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
@@ -43,51 +48,43 @@ import kr.sjh.presentation.ui.theme.carrot
 @Composable
 fun LoginNavGraph(
     modifier: Modifier,
-    navController: NavHostController = rememberNavController()
+    startScreen: String,
+    navController: NavHostController = rememberNavController(),
 ) {
     val activity = LocalContext.current as LoginActivity
     NavHost(
         navController = navController,
         modifier = modifier,
         route = Graph.LoginGraph.route,
-        startDestination = LoginRouteScreen.Login.route
+        startDestination = startScreen
     ) {
-        composable(route = LoginRouteScreen.Login.route) {
+        composable(route = LoginRouteScreen.Login.route) { backStackEntry ->
             LoginRoute(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black),
-                onLogin = { userInfo, throwable ->
-                    if (userInfo != null) {
-                        activity.startActivity(
-                            Intent(Intent.ACTION_VIEW, "petory://main".toUri())
-                                .putExtra("userInfo", userInfo)
-                        )
-                        activity.finish()
-                    } else if (throwable != null) {
-                        when (throwable) {
-                            is NotFoundUser -> {
-                                navController.navigate(LoginRouteScreen.Detail.route)
-                            }
-
-                            else -> {
-
-                            }
-                        }
-                    }
-
-
+                navigateToLoginDetail = {
+                    navController.navigate(LoginRouteScreen.Detail.route)
+                },
+                navigateToMain = {
+                    activity.startActivity(Intent(Intent.ACTION_VIEW, "petory://main".toUri()))
+                    activity.finish()
                 }
             )
         }
-        composable(route = LoginRouteScreen.Detail.route) {
-            LoginDetailScreen(modifier = Modifier.fillMaxSize(),
-                onComplete = {
+        composable(
+            route = LoginRouteScreen.Detail.route
+        ) {
+
+            LoginDetailRoute(
+                modifier = Modifier.fillMaxSize(),
+                navigateToMain = {
                     activity.startActivity(
                         Intent(Intent.ACTION_VIEW, "petory://main".toUri())
-                            .putExtra("userInfo", it)
                     )
-                }, onBack = {
+                    activity.finish()
+                },
+                onBack = {
                     navController.popBackStack(LoginRouteScreen.Login.route, false)
                 })
         }
@@ -100,6 +97,7 @@ fun MainNavGraph(
 ) {
     val mainNavController = rememberNavController()
     val detailNavController = rememberNavController()
+    val activity = LocalContext.current as MainActivity
     NavHost(
         modifier = modifier,
         navController = detailNavController,
@@ -115,6 +113,14 @@ fun MainNavGraph(
                     detailNavController.navigate(BoardRouteScreen.Write.route)
                 }, moveBoardDetail = {
                     detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=$it")
+                }, navigateToLogin = {
+                    activity.startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            "petory://login".toUri()
+                        )
+                    )
+                    activity.finish()
                 })
         }
 
@@ -131,11 +137,11 @@ fun MainNavGraph(
                     )
                 },
                 onChat = { /*TODO*/ },
-                moveEdit = {
+                onEdit = {
                     detailNavController.navigate("${BoardRouteScreen.Edit.route}?postKey=$it")
                 })
         }
-        composable(route = "${BoardRouteScreen.Edit.route}?postKey={postKey}") {
+        composable(route = "${BoardRouteScreen.Edit.route}?postKey={postKey}") { backStackEntry ->
             BoardEditRoute(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -144,6 +150,9 @@ fun MainNavGraph(
                         BoardRouteScreen.Detail.route,
                         inclusive = false
                     )
+                },
+                navigateToDetail = {
+                    detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=$it")
                 }
             )
         }
@@ -159,8 +168,9 @@ fun MainNavGraph(
                         inclusive = false,
                     )
                 },
-                onComplete = {
-                    detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=${it}")
+                navigateToDetail = { postKey ->
+                    Log.d("sjh", "??????????")
+                    detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=${postKey}")
                 })
         }
 
@@ -230,6 +240,20 @@ fun BottomNavigation(
         }
     }
 
+}
+
+class UrlTypeAdapter : TypeAdapter<String>() {
+    override fun write(out: JsonWriter, value: String?) {
+        if (value == null) {
+            out.nullValue()
+            return
+        }
+        out.value(value)
+    }
+
+    override fun read(`in`: JsonReader): String {
+        return `in`.nextString()
+    }
 }
 
 

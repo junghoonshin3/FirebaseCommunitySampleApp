@@ -1,25 +1,16 @@
 package kr.sjh.presentation.ui.board.write
 
-import android.net.Uri
 import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -27,15 +18,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -43,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -51,62 +39,45 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import kr.sjh.presentation.R
-import kr.sjh.presentation.ui.board.image.UploadImages
+import kr.sjh.presentation.ui.board.image.SelectedImages
 import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.BoardPicture
 import kr.sjh.presentation.ui.common.ContentTextField
 import kr.sjh.presentation.ui.common.LoadingDialog
-import kr.sjh.presentation.ui.login.LoginViewModel
-import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
-import kr.sjh.presentation.utill.getActivity
 
 @Composable
 fun BoardWriteRoute(
     modifier: Modifier = Modifier,
     boardWriteViewModel: BoardWriteViewModel = hiltViewModel(),
-    mainViewModel: MainViewModel = hiltViewModel(getActivity()),
     onBack: () -> Unit,
-    onComplete: (String) -> Unit
+    navigateToDetail: (String) -> Unit
 ) {
-    var selectedImages = remember {
-        mutableStateListOf<Uri>()
-    }
-
     val scrollState = rememberScrollState()
-
-    val userInfo by mainViewModel.userInfo.collectAsStateWithLifecycle()
-
-    val uiState by boardWriteViewModel.uiState.collectAsStateWithLifecycle()
 
     val snackBarState = remember { SnackbarHostState() }
 
     val coroutineScope = rememberCoroutineScope()
 
+    val writeUiState by boardWriteViewModel.writeUiState.collectAsStateWithLifecycle()
+
     BoardWriteScreen(
         modifier = modifier,
         onPost = {
-            boardWriteViewModel.createPost(userInfo?.id.toString(), selectedImages)
+            boardWriteViewModel.addPost(writeUiState.post)
         },
-        uiState = uiState,
         snackBarState = snackBarState,
-        selectedImages = selectedImages,
+        writeUiState = writeUiState,
         onBack = onBack,
         scrollState = scrollState,
-        title = boardWriteViewModel.title,
-        content = boardWriteViewModel.content,
         updateContent = {
             boardWriteViewModel.updateContent(it)
         },
@@ -114,7 +85,7 @@ fun BoardWriteRoute(
             boardWriteViewModel.updateTitle(it)
         },
         onPhoto = {
-            if ((selectedImages.size + it.size) > 3) {
+            if ((writeUiState.post.images.size + it.size) > 3) {
                 coroutineScope.launch {
                     snackBarState.showSnackbar(
                         "사진은 최대 3장까지 첨부 할 수 있어요",
@@ -124,9 +95,12 @@ fun BoardWriteRoute(
                 }
                 return@BoardWriteScreen
             }
-            selectedImages.addAll(it)
+            boardWriteViewModel.setSelectedImages(it)
         },
-        onComplete = onComplete
+        onDelete = {
+            boardWriteViewModel.removeSelectedImages(it)
+        },
+        navigateToDetail = navigateToDetail
     )
 
 
@@ -135,35 +109,28 @@ fun BoardWriteRoute(
 @Composable
 fun BoardWriteScreen(
     modifier: Modifier = Modifier,
-    title: String,
-    content: String,
-    uiState: WriteUiState,
+    writeUiState: WriteUiState,
     snackBarState: SnackbarHostState,
-    selectedImages: MutableList<Uri>,
     scrollState: ScrollState,
     updateContent: (String) -> Unit,
     updateTitle: (String) -> Unit,
-    onPhoto: (List<Uri>) -> Unit,
-    onComplete: (String) -> Unit,
+    onPhoto: (List<String>) -> Unit,
+    navigateToDetail: (String) -> Unit,
+    onDelete: (String) -> Unit,
     onPost: () -> Unit,
     onBack: () -> Unit,
 ) {
-
-    when (uiState) {
-        is WriteUiState.Error -> {
-            uiState.throwable.printStackTrace()
-        }
-
-        WriteUiState.Loading -> {
-            LoadingDialog()
-        }
-
-        is WriteUiState.Success -> {
-            onComplete(uiState.postKey)
-        }
-
-        WriteUiState.Init -> {}
+    if (writeUiState.loading) {
+        LoadingDialog()
     }
+
+    if (writeUiState.completedPostKey.isNotBlank()) {
+        LaunchedEffect(key1 = writeUiState.completedPostKey, block = {
+            navigateToDetail(writeUiState.completedPostKey)
+        })
+    }
+
+
     Box(
         modifier = modifier.background(backgroundColor),
     ) {
@@ -183,18 +150,16 @@ fun BoardWriteScreen(
                 onClick = onPost
             )
             BoardWriteBody(
-                selectedImages = selectedImages,
+                selectedImages = writeUiState.post.images,
                 modifier = Modifier
                     .weight(1f)
                     .padding(5.dp),
-                title = title,
-                content = content,
+                title = writeUiState.post.title,
+                content = writeUiState.post.content,
                 updateContent = updateContent,
                 updateTitle = updateTitle,
                 scrollState = scrollState,
-                onDelete = {
-                    selectedImages.removeAt(selectedImages.indexOf(it))
-                }
+                onDelete = onDelete
             )
             BoardPicture(
                 modifier = Modifier
@@ -204,7 +169,10 @@ fun BoardWriteScreen(
                 onPhoto = onPhoto
             )
         }
-        SnackbarHost(hostState = snackBarState, modifier = Modifier.align(Alignment.BottomCenter))
+        SnackbarHost(
+            hostState = snackBarState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
@@ -229,12 +197,12 @@ fun BoardWriteWarning(
 @Composable
 fun BoardWriteBody(
     modifier: Modifier = Modifier,
-    selectedImages: List<Uri>,
+    selectedImages: List<String>,
     title: String,
     updateTitle: (String) -> Unit,
     content: String,
     updateContent: (String) -> Unit,
-    onDelete: (Uri) -> Unit,
+    onDelete: (String) -> Unit,
     scrollState: ScrollState
 ) {
     val focusManager = LocalFocusManager.current
@@ -266,11 +234,11 @@ fun BoardWriteBody(
             }
         )
         if (selectedImages.isNotEmpty()) {
-            UploadImages(
+            SelectedImages(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp),
-                uris = selectedImages,
+                imageUrls = selectedImages,
                 onDelete = onDelete
             )
         }
@@ -329,40 +297,5 @@ fun BoardWriteBody(
             )
 
         )
-    }
-}
-
-
-@Composable
-fun BoardWritePicture(modifier: Modifier, onPhoto: (List<Uri>) -> Unit) {
-    val multiplePhotoPickerLauncher = // 갤러리에서 사진 가져오기
-        rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris: List<Uri> ->
-            onPhoto(uris)
-        }
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            modifier = Modifier
-                .wrapContentSize()
-                .background(backgroundColor, RoundedCornerShape(10.dp))
-                .clickable {
-                    multiplePhotoPickerLauncher.launch(
-                        PickVisualMediaRequest(
-                            ActivityResultContracts.PickVisualMedia.ImageOnly
-                        )
-                    )
-                },
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                tint = Color.White,
-                painter = painterResource(id = R.drawable.baseline_photo_camera_24),
-                contentDescription = "",
-            )
-            Text(text = "사진", color = Color.White)
-        }
     }
 }

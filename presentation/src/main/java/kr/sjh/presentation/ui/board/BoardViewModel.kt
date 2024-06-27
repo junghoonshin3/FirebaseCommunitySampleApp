@@ -3,53 +3,48 @@ package kr.sjh.presentation.ui.board
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kr.sjh.domain.usecase.board.ReadPostsUseCase
-import kr.sjh.domain.usecase.board.UpdatePostUseCase
-import kr.sjh.domain.model.Post
+import kr.sjh.domain.ResultState
+import kr.sjh.domain.model.PostModel
+import kr.sjh.domain.usecase.board.GetPostsUseCase
 import javax.inject.Inject
 
 sealed interface BoardUiState {
     data object Init : BoardUiState
-    data class Success(val list: List<Post>) : BoardUiState
+    data class Success(val posts: List<PostModel>) : BoardUiState
     data object Loading : BoardUiState
     data class Error(val throwable: Throwable) : BoardUiState
 }
 
 @HiltViewModel
 class BoardViewModel @Inject constructor(
-    private val readPostsUseCase: ReadPostsUseCase,
-    private val updatePostUseCase: UpdatePostUseCase
+    private val postsUseCase: GetPostsUseCase
 ) : ViewModel() {
 
-    val posts: StateFlow<BoardUiState> =
-        readPostsUseCase()
-            .map<List<Post>, BoardUiState>(BoardUiState::Success)
-            .onStart {
-                emit(BoardUiState.Loading)
-            }
-            .catch {
-                emit(BoardUiState.Error(it))
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = BoardUiState.Init
-            )
+    private val _postUiState = MutableStateFlow<BoardUiState>(BoardUiState.Init)
+    val postUiState = _postUiState.asStateFlow()
 
-    fun postReadCount(post: Post) {
+    fun getPosts() {
         viewModelScope.launch {
-            updatePostUseCase(
-                post.copy(
-                    readCount = post.readCount.plus(1)
-                )
-            )
+            postsUseCase().collect {
+                when (it) {
+                    is ResultState.Failure -> {
+                        _postUiState.value = BoardUiState.Error(it.throwable)
+                    }
+
+                    ResultState.Loading -> {
+                        _postUiState.value = BoardUiState.Loading
+                    }
+
+                    is ResultState.Success -> {
+                        _postUiState.value = BoardUiState.Success(it.data)
+                    }
+                }
+            }
         }
     }
+
+
 }

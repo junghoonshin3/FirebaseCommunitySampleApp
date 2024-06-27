@@ -1,7 +1,10 @@
 package kr.sjh.presentation.utill
 
-import com.kakao.sdk.user.model.User
-import kr.sjh.domain.model.UserInfo
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.sp
 import java.util.concurrent.TimeUnit
 
 fun calculationTime(createDateTime: Long): String {
@@ -38,13 +41,4 @@ fun calculationTime(createDateTime: Long): String {
         }
     }
     return value
-}
-
-fun User.toUserInfo(): UserInfo {
-    return UserInfo(
-        email = kakaoAccount?.email,
-        nickName = kakaoAccount?.profile?.nickname,
-        id = id.toString(),
-        profileImageUrl = kakaoAccount?.profile?.profileImageUrl,
-    )
 }

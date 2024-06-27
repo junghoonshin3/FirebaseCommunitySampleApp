@@ -22,10 +22,11 @@ import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.backgroundColor
 
 @Composable
-fun BoardPicture(modifier: Modifier, onPhoto: (List<Uri>) -> Unit) {
+fun BoardPicture(modifier: Modifier, onPhoto: (List<String>) -> Unit) {
     val multiplePhotoPickerLauncher = // 갤러리에서 사진 가져오기
         rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris: List<Uri> ->
-            onPhoto(uris)
+
+            onPhoto(uris.map { it.toString() })
         }
     Row(
         modifier = modifier,

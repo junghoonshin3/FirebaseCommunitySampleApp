@@ -1,108 +1,74 @@
 package kr.sjh.presentation.ui.login
 
 import android.content.Context
-import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kakao.sdk.user.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kr.sjh.domain.usecase.login.firebase.CreateUserUseCase
-import kr.sjh.domain.usecase.login.firebase.DeleteUserUseCase
-import kr.sjh.domain.usecase.login.firebase.ReadUserUseCase
-import kr.sjh.domain.usecase.login.firebase.UpdateUserUseCase
-import kr.sjh.domain.usecase.login.kakao.KaKaoLogOutUseCase
-import kr.sjh.domain.usecase.login.kakao.KaKaoLoginUseCase
-import kr.sjh.domain.usecase.login.kakao.KaKaoMeUseCase
-import kr.sjh.domain.usecase.login.kakao.KaKaoExistAccessToken
-import kr.sjh.domain.model.UserInfo
-import kr.sjh.presentation.utill.toUserInfo
+import kr.sjh.domain.ResultState
+import kr.sjh.domain.model.CredentialModel
+import kr.sjh.domain.usecase.auth.firebase.AuthSignInUseCase
+import kr.sjh.presentation.helper.GoogleLoginHelper
 import javax.inject.Inject
 
-sealed interface LoginUiState {
+sealed class LoginUiState {
+    data object LoginToDetail : LoginUiState()
+    data object LoginToMain : LoginUiState()
+    data class Error(val throwable: Throwable) : LoginUiState()
+    data object Init : LoginUiState()
 
-    data object Init : LoginUiState
-    data object Loading : LoginUiState
-
-    data object Success : LoginUiState
-
-    data class Error(val throwable: Throwable) : LoginUiState
-
+    data object Loading : LoginUiState()
 }
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val kaKaLoginUseCase: KaKaoLoginUseCase,
-    private val kaKaoMeUseCase: KaKaoMeUseCase,
-    private val kaKaoLogOutUseCase: KaKaoLogOutUseCase,
-    private val kaKaoExistAccessToken: KaKaoExistAccessToken,
-    private val readUserUseCase: ReadUserUseCase,
-    private val deleteUserUseCase: DeleteUserUseCase,
-    private val createUserUseCase: CreateUserUseCase,
-    private val updateUserUseCase: UpdateUserUseCase,
+    private val signInUseCase: AuthSignInUseCase,
+    private val loginHelper: GoogleLoginHelper,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    var userInfo by mutableStateOf<UserInfo?>(null)
-    fun kaKaoLogin(context: Context, onResult: (UserInfo?, Throwable?) -> Unit) {
+    private val _loginUiState = MutableStateFlow<LoginUiState>(LoginUiState.Init)
+    val loginUiState = _loginUiState.asStateFlow()
+
+    fun signIn(activityContext: Context) {
         viewModelScope.launch {
-            kaKaLoginUseCase(context).mapCatching { authToken ->
-                //카카오 로그인 성공 및 카카오 사용자 정보 가져오기
-                kaKaoMeUseCase().getOrThrow()
-            }.mapCatching { user ->
-                //파이어 베이스 db에서 계정정보 읽어오기
-                userInfo = user.toUserInfo()
-                readUserUseCase(user.id.toString()).getOrThrow()
-            }.onSuccess {
-                // 성공시 상태변경 및 유저정보
-                userInfo = it
-                onResult(it, null)
-            }
-                .onFailure {
-                    onResult(null, it)
+            try {
+                val googleIdTokenCredential =
+                    loginHelper.requestGoogleLogin(activityContext = activityContext)
+                googleIdTokenCredential?.let {
+                    signInUseCase(
+                        CredentialModel(
+                            googleIdTokenCredential.idToken
+                        )
+                    ).collect {
+                        when (it) {
+                            is ResultState.Failure -> {
+                                it.throwable.printStackTrace()
+                                _loginUiState.value = LoginUiState.Error(it.throwable)
+                            }
+
+                            ResultState.Loading -> {
+                                _loginUiState.value = LoginUiState.Loading
+                            }
+
+                            is ResultState.Success -> {
+                                if (it.data) {
+                                    _loginUiState.value = LoginUiState.LoginToMain
+                                } else {
+                                    _loginUiState.value = LoginUiState.LoginToDetail
+                                }
+
+                            }
+                        }
+                    }
                 }
-        }
-    }
 
-    fun hasToken(context: Context, onResult: (UserInfo?, Throwable?) -> Unit) {
-        viewModelScope.launch {
-            kaKaoExistAccessToken(context).mapCatching {
-                //토큰 유효성 체크 성공(필요 시 토큰 갱신됨)
-                Log.d("sjh", "authToken : ${it.id}")
-                //카카오 계정정보 가져오기
-                kaKaoMeUseCase().getOrThrow()
-            }.mapCatching { user ->
-                readUserUseCase(user.id.toString()).getOrThrow()
-            }.onSuccess {
-                onResult(it, null)
-            }.onFailure {
-                onResult(null, it)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
-
-    fun createUser(nickName: String, onResult: (UserInfo?, Throwable?) -> Unit) {
-        viewModelScope.launch {
-            userInfo?.let {
-                createUserUseCase(it.apply {
-                    this.nickName = nickName
-                }).onSuccess {
-                    userInfo = it
-                    onResult(it, null)
-                }.onFailure {
-                    onResult(null, it)
-                }
-            }
-
-        }
-    }
-
-    fun updateUser() {
-
-    }
-
 }

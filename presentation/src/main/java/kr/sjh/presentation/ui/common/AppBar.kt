@@ -24,7 +24,7 @@ fun AppTopBar(
     modifier: Modifier = Modifier,
     title: String,
     buttonTitle: String,
-    backIcon: ImageVector,
+    backIcon: ImageVector? = null,
     onBack: () -> Unit,
     onClick: () -> Unit
 ) {
@@ -34,16 +34,18 @@ fun AppTopBar(
                 .align(Alignment.CenterStart)
                 .size(45.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .clickable {
+                .clickable(enabled = backIcon != null) {
                     onBack()
                 },
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                imageVector = backIcon,
-                colorFilter = ColorFilter.tint(Color.White),
-                contentDescription = "Back"
-            )
+            if (backIcon != null) {
+                Image(
+                    imageVector = backIcon,
+                    colorFilter = ColorFilter.tint(Color.White),
+                    contentDescription = "Back"
+                )
+            }
         }
 
         Text(

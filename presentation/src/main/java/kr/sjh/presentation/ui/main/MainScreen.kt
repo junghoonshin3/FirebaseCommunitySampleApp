@@ -6,6 +6,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -17,6 +18,7 @@ import kr.sjh.presentation.navigation.BottomNavigation
 import kr.sjh.presentation.navigation.ChatRouteScreen
 import kr.sjh.presentation.navigation.MyPageRouteScreen
 import kr.sjh.presentation.ui.board.BoardRoute
+import kr.sjh.presentation.ui.mypage.MyPageRoute
 import kr.sjh.presentation.utill.getActivity
 
 @Composable
@@ -25,18 +27,22 @@ fun MainScreen(
     navController: NavHostController,
     viewModel: MainViewModel = hiltViewModel(getActivity()),
     moveBoardDetail: (String) -> Unit,
+    navigateToLogin: () -> Unit,
     moveBoardWrite: () -> Unit,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+
     val currentRoute = navBackStackEntry?.destination?.route
-    val userInfo by viewModel.userInfo.collectAsStateWithLifecycle()
+
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+
     Scaffold(
         modifier = modifier,
         bottomBar = {
             BottomNavigation(
                 navController = navController,
                 currentRoute = currentRoute,
-                imageUrl = userInfo?.profileImageUrl
+                imageUrl = currentUser?.profileImageUrl
             )
         }) { paddingValue ->
         NavHost(
@@ -50,15 +56,16 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValue),
-                    moveBoardDetail = moveBoardDetail,
-                    moveBoardWrite = moveBoardWrite
+                    navigateToBoardDetail = moveBoardDetail,
+                    navigateToBoardWrite = moveBoardWrite
                 )
             }
             composable(route = ChatRouteScreen.Chat.route) {
 
+
             }
             composable(route = MyPageRouteScreen.MyPage.route) {
-
+                MyPageRoute(modifier = Modifier.fillMaxSize(), navigateToLogin = navigateToLogin)
             }
         }
     }

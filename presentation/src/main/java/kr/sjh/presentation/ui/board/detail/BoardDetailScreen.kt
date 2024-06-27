@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.board.detail
 
+import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -17,12 +18,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,9 +29,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -65,8 +61,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.skydoves.landscapist.glide.GlideImage
-import kr.sjh.domain.model.Post
-import kr.sjh.domain.model.UserInfo
+import kr.sjh.domain.model.AuthUserModel
+import kr.sjh.domain.model.PostModel
+import kr.sjh.domain.model.UserModel
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.bottomsheet.CommonModalBottomSheet
 import kr.sjh.presentation.ui.common.LoadingDialog
@@ -74,6 +71,7 @@ import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.getActivity
+import kr.sjh.presentation.utill.jumpingDotTransition
 import kotlin.math.absoluteValue
 
 
@@ -85,10 +83,8 @@ fun BoardDetailRoute(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onChat: () -> Unit,
-    moveEdit: (String) -> Unit,
-    detailViewModel: BoardDetailViewModel = hiltViewModel(),
-    mainViewModel: MainViewModel = hiltViewModel(getActivity())
-
+    onEdit: (String) -> Unit,
+    detailViewModel: BoardDetailViewModel = hiltViewModel()
 ) {
     val listState = rememberLazyListState()
 
@@ -105,70 +101,71 @@ fun BoardDetailRoute(
         }
     }
 
-    val detailUiState by detailViewModel.detailUiState.collectAsStateWithLifecycle()
+    val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
+
+    val bottomSheetUiState by detailViewModel.bottomSheetUiState.collectAsStateWithLifecycle()
+
+    val currentUser = detailViewModel.currentUser
 
     var bottomSheetShow by remember {
         mutableStateOf(false)
     }
-    val userInfo by mainViewModel.userInfo.collectAsStateWithLifecycle()
 
-    var isLike by remember {
-        mutableStateOf(userInfo?.likePosts?.contains(detailViewModel.postKey) ?: false)
-    }
+    val configuration = LocalConfiguration.current
 
     BoardDetailScreen(
         modifier = modifier,
         isCollapsed = isCollapsed,
-        isLike = isLike,
+        currentUser = currentUser,
         listState = listState,
         bottomSheetShow = bottomSheetShow,
         detailUiState = detailUiState,
+        bottomSheetUiState = bottomSheetUiState,
         onBack = onBack,
-        userId = userInfo?.id.toString(),
+        configuration = configuration,
         onMoreMenu = {
             bottomSheetShow = true
         },
         onLikeChange = {
-            isLike = !isLike
-//            detailViewModel.updateLikeCount(isLike, userInfo, post)
         },
         onChat = onChat,
         onDismissRequest = {
             bottomSheetShow = false
         },
-        moveEdit = {
-            moveEdit(it)
+        onDeleteCompleted = {
+            bottomSheetShow = false
+            onBack()
+        },
+        onEdit = {
+            onEdit(it)
             bottomSheetShow = false
         },
         onDelete = {
-            detailViewModel.deletePost(it)
-            bottomSheetShow = false
-            onBack()
+            detailViewModel.deletePost()
         }
     )
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoardDetailScreen(
     modifier: Modifier = Modifier,
     isCollapsed: Boolean,
-    isLike: Boolean,
+    currentUser: AuthUserModel?,
+    configuration: Configuration,
     bottomSheetShow: Boolean,
     onDismissRequest: () -> Unit,
+    onDeleteCompleted: () -> Unit,
     detailUiState: DetailUiState,
-    userId: String,
+    bottomSheetUiState: DetailBottomSheetUiState,
     listState: LazyListState,
     onBack: () -> Unit,
     onMoreMenu: () -> Unit,
     onLikeChange: () -> Unit,
-    moveEdit: (String) -> Unit,
-    onDelete: (Post) -> Unit,
+    onEdit: (String) -> Unit,
+    onDelete: () -> Unit,
     onChat: () -> Unit,
 ) {
-    val configuration = LocalConfiguration.current
-
     Box(modifier = modifier) {
         when (detailUiState) {
             is DetailUiState.Error -> {}
@@ -177,33 +174,23 @@ fun BoardDetailScreen(
             }
 
             is DetailUiState.Success -> {
-                val (post, writerInfo) = detailUiState.pair
-                CommonModalBottomSheet(
-                    showSheet = bottomSheetShow,
-                    dragHandle = {
-                        BottomSheetDefaults.DragHandle(color = Color.LightGray)
-                    },
-                    containerColor = backgroundColor,
-                    onDismissRequest = onDismissRequest
-                ) {
-                    BottomSheetMoreMenu(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(backgroundColor),
-                        moveEdit = {
-                            moveEdit(post.key)
-                        },
-                        onDelete = { onDelete(post) }
-                    )
-                }
+                val (post, writerUser) = detailUiState.data
+                BoardDetailBottomSheet(
+                    bottomSheetUiState = bottomSheetUiState,
+                    bottomSheetShow = bottomSheetShow,
+                    onDismissRequest = onDismissRequest,
+                    onEdit = { onEdit(post.postKey) },
+                    onDelete = onDelete,
+                    onDeleteCompleted = onDeleteCompleted
+                )
                 DetailCollapsedTopBar(
                     modifier = Modifier
                         .zIndex(1f)
                         .fillMaxWidth()
                         .height(COLLAPSED_TOP_BAR_HEIGHT),
                     isCollapsed = isCollapsed,
-                    isLike = isLike,
-                    isWriter = userId == writerInfo.id,
+                    isLike = false,
+                    isWriter = currentUser?.uid == writerUser.uid,
                     onLikeChange = onLikeChange,
                     onMoreMenu = onMoreMenu,
                     onBack = onBack
@@ -224,10 +211,10 @@ fun BoardDetailScreen(
                     }
                     item {
                         DetailWriterProfile(
-                            profileImageUrl = writerInfo.profileImageUrl,
-                            nickName = writerInfo.nickName ?: "닉네임이 없어요",
+                            profileImageUrl = writerUser.profileImageUrl,
+                            nickName = writerUser.nickName ?: "닉네임이 없어요",
                             readCount = post.readCount,
-                            postCount = writerInfo.postCount
+                            postCount = writerUser.myPosts.size
                         )
                         HorizontalDivider(
                             modifier = Modifier.fillMaxWidth(),
@@ -240,6 +227,7 @@ fun BoardDetailScreen(
                         )
                         DetailContent(
                             Modifier
+                                .fillMaxWidth()
                                 .padding(10.dp)
                                 .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT),
                             content = post.content ?: ""
@@ -448,27 +436,6 @@ fun Indicator(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-private fun Modifier.jumpingDotTransition(pagerState: PagerState, jumpScale: Float) =
-    graphicsLayer {
-        val pageOffset = pagerState.currentPageOffsetFraction
-        val scrollPosition = pagerState.currentPage + pageOffset
-        translationX =
-            scrollPosition * (size.width + 8.dp.roundToPx()) // 8.dp - spacing between dots
-
-        val scale: Float
-        val targetScale = jumpScale - 1f
-
-        scale = if (pageOffset.absoluteValue < .5) {
-            1.0f + (pageOffset.absoluteValue * 2) * targetScale;
-        } else {
-            jumpScale + ((1 - (pageOffset.absoluteValue * 2)) * targetScale);
-        }
-
-        scaleX = scale
-        scaleY = scale
-    }
-
 @Composable
 fun DetailWriterProfile(
     profileImageUrl: String?,
@@ -543,5 +510,45 @@ fun DetailRequestChat(modifier: Modifier = Modifier, onClick: () -> Unit) {
         ) {
             Text(fontSize = 15.sp, color = Color.White, text = "채팅하기")
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BoardDetailBottomSheet(
+    bottomSheetUiState: DetailBottomSheetUiState,
+    bottomSheetShow: Boolean,
+    onDismissRequest: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onDeleteCompleted: () -> Unit
+) {
+    when (bottomSheetUiState) {
+        is DetailBottomSheetUiState.Error -> {}
+        DetailBottomSheetUiState.Init -> {}
+        DetailBottomSheetUiState.Loading -> {
+            LoadingDialog()
+        }
+
+        DetailBottomSheetUiState.Success -> {
+            onDeleteCompleted()
+        }
+    }
+
+    CommonModalBottomSheet(
+        showSheet = bottomSheetShow,
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(color = Color.LightGray)
+        },
+        containerColor = backgroundColor,
+        onDismissRequest = onDismissRequest
+    ) {
+        BottomSheetMoreMenu(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(backgroundColor),
+            onEdit = onEdit,
+            onDelete = onDelete
+        )
     }
 }

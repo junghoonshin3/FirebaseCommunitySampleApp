@@ -9,21 +9,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,7 +39,6 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.glide.GlideImage
-import kr.sjh.domain.model.Post
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.backgroundColor
@@ -52,17 +48,21 @@ import kr.sjh.presentation.utill.calculationTime
 @Composable
 fun BoardRoute(
     modifier: Modifier = Modifier,
-    moveBoardDetail: (String) -> Unit,
-    moveBoardWrite: () -> Unit,
+    navigateToBoardDetail: (String) -> Unit,
+    navigateToBoardWrite: () -> Unit,
     boardViewModel: BoardViewModel = hiltViewModel()
 ) {
-    val boardUiState by boardViewModel.posts.collectAsStateWithLifecycle(BoardUiState.Loading)
+    val boardUiState by boardViewModel.postUiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(key1 = Unit, block = {
+        boardViewModel.getPosts()
+    })
 
     BoardScreen(
         modifier = modifier,
         boardUiState = boardUiState,
-        moveBoardDetail = moveBoardDetail,
-        moveBoardWrite = moveBoardWrite
+        navigateToBoardDetail = navigateToBoardDetail,
+        navigateToBoardWrite = navigateToBoardWrite
     )
 }
 
@@ -70,8 +70,8 @@ fun BoardRoute(
 fun BoardScreen(
     modifier: Modifier = Modifier,
     boardUiState: BoardUiState,
-    moveBoardDetail: (String) -> Unit,
-    moveBoardWrite: () -> Unit
+    navigateToBoardDetail: (String) -> Unit,
+    navigateToBoardWrite: () -> Unit
 ) {
     Box(modifier = modifier.background(backgroundColor)) {
         when (boardUiState) {
@@ -99,9 +99,9 @@ fun BoardScreen(
                             tint = Color.White
                         )
                     },
-                    onClick = moveBoardWrite
+                    onClick = navigateToBoardWrite
                 )
-                if (boardUiState.list.isEmpty()) {
+                if (boardUiState.posts.isEmpty()) {
                     Text(
                         text = "텅! 글쓰기를 해볼까요?",
                         fontSize = 30.sp,
@@ -118,21 +118,21 @@ fun BoardScreen(
                         .padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    itemsIndexed(boardUiState.list) { index, post ->
+                    itemsIndexed(boardUiState.posts) { index, post ->
                         PostItem(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    moveBoardDetail(post.key)
+                                    navigateToBoardDetail(post.postKey)
                                 },
-                            title = post.title ?: "",
-                            nickname = post.nickName ?: "",
-                            createAt = post.createdAt ?: 0,
+                            title = post.title,
+                            nickname = post.nickName,
+                            createAt = post.timeStamp ?: 0,
                             readCount = post.readCount,
                             likeCount = post.likeCount,
                             images = post.images
                         )
-                        if (index < boardUiState.list.size - 1)
+                        if (index < boardUiState.posts.size - 1)
                             HorizontalDivider(
                                 Modifier
                                     .fillMaxWidth()
