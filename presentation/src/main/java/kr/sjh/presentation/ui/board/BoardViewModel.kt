@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.board
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -9,6 +10,7 @@ import kotlinx.coroutines.launch
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.PostModel
 import kr.sjh.domain.usecase.board.GetPostsUseCase
+import kr.sjh.domain.usecase.board.UpdatePostCountUseCase
 import javax.inject.Inject
 
 sealed interface BoardUiState {
@@ -20,7 +22,8 @@ sealed interface BoardUiState {
 
 @HiltViewModel
 class BoardViewModel @Inject constructor(
-    private val postsUseCase: GetPostsUseCase
+    private val postsUseCase: GetPostsUseCase,
+    private val updatePostCountUseCase: UpdatePostCountUseCase
 ) : ViewModel() {
 
     private val _postUiState = MutableStateFlow<BoardUiState>(BoardUiState.Init)
@@ -44,6 +47,27 @@ class BoardViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun updatePostCount(postKey: String) {
+        viewModelScope.launch {
+            updatePostCountUseCase(postKey).collect {
+                when (it) {
+                    is ResultState.Failure -> {
+                        it.throwable.printStackTrace()
+                    }
+
+                    ResultState.Loading -> {
+
+                    }
+
+                    is ResultState.Success -> {
+                        Log.d("sjh", "Success")
+                    }
+                }
+            }
+        }
+
     }
 
 

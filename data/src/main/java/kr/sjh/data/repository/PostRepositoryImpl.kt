@@ -2,6 +2,7 @@ package kr.sjh.data.repository
 
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -180,30 +181,67 @@ class PostRepositoryImpl @Inject constructor(
 
             val existingImages = items.map { it.downloadUrl.await().toString() }
 
+            // 삭제할 이미지 필터링 및 삭제
             items.filter { it.downloadUrl.await().toString() !in postModel.images }
                 .map {
                     it.delete().await()
                 }
 
-            val newImages = postModel.images.filter { it !in existingImages }
-            newImages.map {
-                val uri = Uri.parse(it)
-                val newImageRef = storageRef.child(uri.lastPathSegment ?: "new_image.jpg")
-                newImageRef.putFile(uri).await()
-            }
+            // 새롭게 추가된 이미지 필터링 및 업로드
+            postModel.images.filter { it !in existingImages }
+                .map {
+                    val uri = it.toUri()
+                    val newImageRef = storageRef.child(uri.lastPathSegment ?: "new_image.jpg")
+                    newImageRef.putFile(uri).await()
+                }
 
             val postRef =
                 fireStore.collection(Constants.FirebaseCollectionPosts).document(postModel.postKey)
-            postRef.set(postModel)
-                .addOnSuccessListener {
-                    trySend(ResultState.Success(Unit))
-                }
+
+            postRef.update(
+                mapOf(
+                    "title" to postModel.title,
+                    "content" to postModel.content,
+                    "images" to storageRef.listAll().await().items.map {
+                        it.downloadUrl.await().toString()
+                    }
+                )
+            ).addOnSuccessListener {
+                trySend(ResultState.Success(Unit))
+            }
                 .addOnFailureListener {
                     trySend(ResultState.Failure(it))
                 }
+//
         } catch (e: Exception) {
             trySend(ResultState.Failure(e))
         }
+        awaitClose {
+            close()
+        }
+    }
+
+    override fun updateReadCount(postKey: String): Flow<ResultState<Unit>> = callbackFlow {
+        trySend(ResultState.Loading)
+        try {
+            val postRef =
+                fireStore.collection(Constants.FirebaseCollectionPosts).document(postKey)
+            fireStore.runTransaction { transaction ->
+                val snapshot = transaction.get(postRef)
+                val newReadCount = snapshot.getLong("readCount")?.plus(1)
+                transaction.update(
+                    postRef, "readCount", newReadCount
+                )
+            }.addOnSuccessListener {
+                trySend(ResultState.Success(Unit))
+            }.addOnFailureListener {
+                trySend(ResultState.Failure(it))
+            }
+
+        } catch (e: Exception) {
+            trySend(ResultState.Failure(e))
+        }
+
         awaitClose {
             close()
         }

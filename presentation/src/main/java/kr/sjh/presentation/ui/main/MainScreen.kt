@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.main
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -18,6 +19,7 @@ import kr.sjh.presentation.navigation.BottomNavigation
 import kr.sjh.presentation.navigation.ChatRouteScreen
 import kr.sjh.presentation.navigation.MyPageRouteScreen
 import kr.sjh.presentation.ui.board.BoardRoute
+import kr.sjh.presentation.ui.board.BoardViewModel
 import kr.sjh.presentation.ui.mypage.MyPageRoute
 import kr.sjh.presentation.utill.getActivity
 
@@ -30,6 +32,9 @@ fun MainScreen(
     navigateToLogin: () -> Unit,
     moveBoardWrite: () -> Unit,
 ) {
+
+    Log.d("sjh", "mainScreen")
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
 
     val currentRoute = navBackStackEntry?.destination?.route
@@ -52,12 +57,17 @@ fun MainScreen(
             startDestination = BoardRouteScreen.Board.route
         ) {
             composable(route = BoardRouteScreen.Board.route) {
+                val boardViewModel: BoardViewModel = hiltViewModel()
                 BoardRoute(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValue),
-                    navigateToBoardDetail = moveBoardDetail,
-                    navigateToBoardWrite = moveBoardWrite
+                    navigateToBoardDetail = {
+                        boardViewModel.updatePostCount(it)
+                        moveBoardDetail(it)
+                    },
+                    navigateToBoardWrite = moveBoardWrite,
+                    boardViewModel = boardViewModel
                 )
             }
             composable(route = ChatRouteScreen.Chat.route) {

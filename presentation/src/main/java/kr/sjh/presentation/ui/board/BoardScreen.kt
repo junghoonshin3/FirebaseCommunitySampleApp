@@ -123,6 +123,7 @@ fun BoardScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
+                                    
                                     navigateToBoardDetail(post.postKey)
                                 },
                             title = post.title,
