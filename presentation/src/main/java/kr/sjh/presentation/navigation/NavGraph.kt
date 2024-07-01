@@ -1,39 +1,32 @@
 package kr.sjh.presentation.navigation
 
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.bumptech.glide.request.RequestOptions
-import com.google.gson.ExclusionStrategy
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.TypeAdapter
-import com.google.gson.stream.JsonReader
-import com.google.gson.stream.JsonWriter
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.glide.GlideImage
-import kr.sjh.domain.model.PostModel
+import kotlinx.collections.immutable.persistentListOf
 import kr.sjh.presentation.ui.board.detail.BoardDetailRoute
 import kr.sjh.presentation.ui.board.edit.BoardEditRoute
 import kr.sjh.presentation.ui.board.write.BoardWriteRoute
@@ -42,8 +35,10 @@ import kr.sjh.presentation.ui.login.LoginRoute
 import kr.sjh.presentation.ui.login.detail.LoginDetailRoute
 import kr.sjh.presentation.ui.main.MainActivity
 import kr.sjh.presentation.ui.main.MainScreen
+import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.getActivity
 
 @Composable
 fun LoginNavGraph(
@@ -94,13 +89,13 @@ fun LoginNavGraph(
 @Composable
 fun MainNavGraph(
     modifier: Modifier,
+    mainNavController: NavHostController = rememberNavController(),
+    rootNavController: NavHostController = rememberNavController(),
+    activity: MainActivity = LocalContext.current as MainActivity
 ) {
-    val mainNavController = rememberNavController()
-    val detailNavController = rememberNavController()
-    val activity = LocalContext.current as MainActivity
     NavHost(
         modifier = modifier,
-        navController = detailNavController,
+        navController = rootNavController,
         startDestination = Graph.MainGraph.route
     ) {
 
@@ -110,9 +105,9 @@ fun MainNavGraph(
                     .fillMaxSize(),
                 navController = mainNavController,
                 moveBoardWrite = {
-                    detailNavController.navigate(BoardRouteScreen.Write.route)
+                    rootNavController.navigate(BoardRouteScreen.Write.route)
                 }, moveBoardDetail = {
-                    detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=$it")
+                    rootNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=$it")
                 }, navigateToLogin = {
                     activity.startActivity(
                         Intent(
@@ -131,14 +126,14 @@ fun MainNavGraph(
                 modifier = Modifier
                     .fillMaxSize(),
                 onBack = {
-                    detailNavController.popBackStack(
+                    rootNavController.popBackStack(
                         Graph.MainGraph.route,
                         inclusive = false,
                     )
                 },
                 onChat = { /*TODO*/ },
                 onEdit = {
-                    detailNavController.navigate("${BoardRouteScreen.Edit.route}?postKey=$it")
+                    rootNavController.navigate("${BoardRouteScreen.Edit.route}?postKey=$it")
                 })
         }
         composable(route = "${BoardRouteScreen.Edit.route}?postKey={postKey}") { backStackEntry ->
@@ -146,13 +141,13 @@ fun MainNavGraph(
                 modifier = Modifier
                     .fillMaxSize(),
                 onBack = {
-                    detailNavController.popBackStack(
+                    rootNavController.popBackStack(
                         BoardRouteScreen.Detail.route,
                         inclusive = false
                     )
                 },
                 navigateToDetail = {
-                    detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=$it")
+                    rootNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=$it")
                 }
             )
         }
@@ -163,14 +158,13 @@ fun MainNavGraph(
                 modifier = Modifier
                     .fillMaxSize(),
                 onBack = {
-                    detailNavController.popBackStack(
+                    rootNavController.popBackStack(
                         Graph.MainGraph.route,
                         inclusive = false,
                     )
                 },
                 navigateToDetail = { postKey ->
-                    Log.d("sjh", "??????????")
-                    detailNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=${postKey}")
+                    rootNavController.navigate("${BoardRouteScreen.Detail.route}?postKey=${postKey}")
                 })
         }
 
@@ -182,11 +176,12 @@ fun MainNavGraph(
 
 @Composable
 fun BottomNavigation(
-    navController: NavHostController,
+    onNavChange: (String) -> Unit,
     currentRoute: String?,
     imageUrl: String?
 ) {
-    val navItems = listOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
+    val navItems = persistentListOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
+
     NavigationBar(containerColor = backgroundColor) {
         navItems.forEach { item ->
             NavigationBarItem(
@@ -201,13 +196,7 @@ fun BottomNavigation(
                 },
                 selected = currentRoute == item.screen.route,
                 onClick = {
-                    navController.navigate(item.screen.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    onNavChange(item.screen.route)
                 },
                 icon = {
                     GlideImage(
@@ -239,21 +228,5 @@ fun BottomNavigation(
             )
         }
     }
-
 }
-
-class UrlTypeAdapter : TypeAdapter<String>() {
-    override fun write(out: JsonWriter, value: String?) {
-        if (value == null) {
-            out.nullValue()
-            return
-        }
-        out.value(value)
-    }
-
-    override fun read(`in`: JsonReader): String {
-        return `in`.nextString()
-    }
-}
-
 

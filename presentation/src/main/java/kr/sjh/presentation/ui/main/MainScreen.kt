@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,26 +28,34 @@ import kr.sjh.presentation.utill.getActivity
 fun MainScreen(
     modifier: Modifier = Modifier,
     navController: NavHostController,
-    viewModel: MainViewModel = hiltViewModel(getActivity()),
+    mainViewModel: MainViewModel = hiltViewModel(getActivity()),
     moveBoardDetail: (String) -> Unit,
     navigateToLogin: () -> Unit,
     moveBoardWrite: () -> Unit,
 ) {
-
     Log.d("sjh", "mainScreen")
-
     val navBackStackEntry by navController.currentBackStackEntryAsState()
 
-    val currentRoute = navBackStackEntry?.destination?.route
+    val currentRoute: () -> String? = {
+        navBackStackEntry?.destination?.route
+    }
 
-    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val currentUser by mainViewModel.currentUser.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
             BottomNavigation(
-                navController = navController,
-                currentRoute = currentRoute,
+                onNavChange = {
+                    navController.navigate(it) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                currentRoute = currentRoute(),
                 imageUrl = currentUser?.profileImageUrl
             )
         }) { paddingValue ->
@@ -57,17 +66,12 @@ fun MainScreen(
             startDestination = BoardRouteScreen.Board.route
         ) {
             composable(route = BoardRouteScreen.Board.route) {
-                val boardViewModel: BoardViewModel = hiltViewModel()
                 BoardRoute(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValue),
-                    navigateToBoardDetail = {
-                        boardViewModel.updatePostCount(it)
-                        moveBoardDetail(it)
-                    },
+                    navigateToBoardDetail = moveBoardDetail,
                     navigateToBoardWrite = moveBoardWrite,
-                    boardViewModel = boardViewModel
                 )
             }
             composable(route = ChatRouteScreen.Chat.route) {

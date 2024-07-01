@@ -113,7 +113,7 @@ private fun SplashScreen(
         contentAlignment = Alignment.Center
     ) {
         Logo(
-            modifier = Modifier.size(300.dp)
+            modifier = Modifier.size(192.dp)
         )
     }
 }

@@ -15,8 +15,10 @@ sealed class BottomNavItem(
     val title: String, val iconResource: Int, val screen: Screen
 ) {
     data object Chat : BottomNavItem("채팅", R.drawable.baseline_chat_24, ChatRouteScreen.Chat)
+
     data object Board :
         BottomNavItem("글 목록", R.drawable.baseline_format_list_numbered_24, BoardRouteScreen.Board)
+
 
     data object MyPage :
         BottomNavItem("내 정보", R.drawable.baseline_person_24, MyPageRouteScreen.MyPage)

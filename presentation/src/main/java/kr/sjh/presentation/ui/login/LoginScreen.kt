@@ -22,10 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kr.sjh.presentation.R
@@ -116,11 +119,17 @@ private fun LoginScreen(
 @Composable
 fun Logo(modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Image(
-            painter = painterResource(id = R.mipmap.app_icon_foreground),
-            modifier = modifier,
-            contentDescription = ""
-        )
+        ContextCompat.getDrawable(
+            LocalContext.current,
+            R.mipmap.ic_launcher
+        )?.toBitmap()?.asImageBitmap()?.let {
+            Image(
+                bitmap = it,
+                modifier = modifier,
+                contentDescription = ""
+            )
+        }
+
     }
 }
 

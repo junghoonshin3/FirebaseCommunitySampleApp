@@ -10,7 +10,7 @@
     <style name="Theme.PickUp.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/black</item>
         <item name="windowSplashScreenAnimatedIcon">
-            @mipmap/app_icon
+            @mipmap/ic_launcher
         </item>
         <item name="postSplashScreenTheme">@style/Theme.PickUp</item>
     </style>

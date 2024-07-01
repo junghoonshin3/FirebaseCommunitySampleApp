@@ -61,7 +61,10 @@ fun BoardRoute(
     BoardScreen(
         modifier = modifier,
         boardUiState = boardUiState,
-        navigateToBoardDetail = navigateToBoardDetail,
+        navigateToBoardDetail = {
+            boardViewModel.updatePostCount(it)
+            navigateToBoardDetail(it)
+        },
         navigateToBoardWrite = navigateToBoardWrite
     )
 }
@@ -123,7 +126,7 @@ fun BoardScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    
+
                                     navigateToBoardDetail(post.postKey)
                                 },
                             title = post.title,

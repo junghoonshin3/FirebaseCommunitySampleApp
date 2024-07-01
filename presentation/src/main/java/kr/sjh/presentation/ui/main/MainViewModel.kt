@@ -17,7 +17,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
     val TAG = MainViewModel::class.java.simpleName
