@@ -49,7 +49,9 @@ fun CommonModalBottomSheet(
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     if (showSheet) {
         ModalBottomSheet(
-            onDismissRequest, modifier, sheetState,
+            onDismissRequest,
+            modifier,
+            sheetState,
             shape = shape,
             containerColor = containerColor,
             contentColor = contentColor,

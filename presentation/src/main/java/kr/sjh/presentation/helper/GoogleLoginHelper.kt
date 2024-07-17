@@ -29,7 +29,6 @@ class GoogleLoginHelper @Inject constructor(
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
             .build()
-        Log.d("sjh", "$request")
         runCatching {
             val credential = credentialManager.getCredential(
                 context = activityContext,
@@ -41,7 +40,6 @@ class GoogleLoginHelper @Inject constructor(
                     if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                         val googleIdTokenCredential = GoogleIdTokenCredential
                             .createFrom(credential.data)
-                        Log.d("sjh", googleIdTokenCredential.idToken)
                         googleIdTokenCredential
                     } else {
                         null

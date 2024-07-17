@@ -1,7 +1,7 @@
 package kr.sjh.data.model
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ServerTimestamp
-import java.util.Date
 
 data class PostEntity(
     val writerUid: String = "",
@@ -9,8 +9,8 @@ data class PostEntity(
     var title: String = "",
     var content: String = "",
     var nickName: String = "",
-    val timeStamp: Long = Date().time,
+    @ServerTimestamp val timeStamp: Timestamp? = null,
     var readCount: Int = 0,
     var likeCount: Int = 0,
-    val images: List<String> = listOf()
+    val images: List<String> = listOf(),
 )

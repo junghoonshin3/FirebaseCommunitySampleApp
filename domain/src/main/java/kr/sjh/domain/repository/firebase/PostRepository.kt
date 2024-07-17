@@ -12,5 +12,4 @@ interface PostRepository {
     suspend fun removePost(postKey: String): Flow<ResultState<Unit>>
     suspend fun updatePost(postModel: PostModel): Flow<ResultState<Unit>>
     fun updateReadCount(postKey: String): Flow<ResultState<Unit>>
-
 }

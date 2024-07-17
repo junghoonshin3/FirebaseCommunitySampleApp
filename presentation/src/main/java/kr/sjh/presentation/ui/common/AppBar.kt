@@ -13,20 +13,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kr.sjh.presentation.utill.clickableSingle
 
 @Composable
 fun AppTopBar(
     modifier: Modifier = Modifier,
     title: String,
-    buttonTitle: String,
+    buttonTitle: String? = null,
     backIcon: ImageVector? = null,
     onBack: () -> Unit,
-    onClick: () -> Unit
+    onClick: (() -> Unit)? = null
 ) {
     Box(modifier = modifier) {
         Box(
@@ -34,10 +34,9 @@ fun AppTopBar(
                 .align(Alignment.CenterStart)
                 .size(45.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .clickable(enabled = backIcon != null) {
+                .clickableSingle(enabled = backIcon != null) {
                     onBack()
-                },
-            contentAlignment = Alignment.Center
+                }, contentAlignment = Alignment.Center
         ) {
             if (backIcon != null) {
                 Image(
@@ -49,8 +48,7 @@ fun AppTopBar(
         }
 
         Text(
-            modifier = Modifier
-                .align(Alignment.Center),
+            modifier = Modifier.align(Alignment.Center),
             textAlign = TextAlign.Center,
             text = title,
             color = Color.White,
@@ -62,17 +60,19 @@ fun AppTopBar(
                 .align(Alignment.CenterEnd)
                 .size(45.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .clickable {
-                    onClick()
-                },
-            contentAlignment = Alignment.Center
+                .clickable(enabled = buttonTitle != null) {
+                    onClick?.invoke()
+                }, contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = buttonTitle,
-                color = Color.White,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Normal
-            )
+            buttonTitle?.let {
+                Text(
+                    text = buttonTitle,
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+
         }
     }
 }

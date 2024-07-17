@@ -37,7 +37,9 @@ fun ContentTextField(
     parentScrollState: ScrollState? = null
 ) {
     val coroutineScope = rememberCoroutineScope()
+
     var prevHeight by remember { mutableIntStateOf(0) }
+
     Box(
         modifier = modifier
             .padding(10.dp),

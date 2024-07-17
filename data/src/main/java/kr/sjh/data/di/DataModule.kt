@@ -14,11 +14,13 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kr.sjh.data.repository.AuthRepositoryImpl
+import kr.sjh.data.repository.ChatRepositoryImpl
 import kr.sjh.data.repository.PostRepositoryImpl
 import kr.sjh.data.repository.UserRepositoryImpl
 import kr.sjh.data.repository.preferences.DataStoreRepositoryImpl
 import kr.sjh.data.utils.FileUtil
 import kr.sjh.domain.repository.firebase.AuthRepository
+import kr.sjh.domain.repository.firebase.ChatRepository
 import kr.sjh.domain.repository.firebase.PostRepository
 import kr.sjh.domain.repository.firebase.UserRepository
 import kr.sjh.domain.repository.preferences.DataStoreRepository
@@ -60,9 +62,7 @@ class DataModule {
     @Provides
     @Singleton
     fun provideAuthRepository(
-        auth: FirebaseAuth,
-        userRepository: UserRepository,
-        @ApplicationContext context: Context
+        auth: FirebaseAuth, userRepository: UserRepository
     ): AuthRepository {
         return AuthRepositoryImpl(
             auth,
@@ -80,11 +80,7 @@ class DataModule {
         @ApplicationContext context: Context
     ): UserRepository {
         return UserRepositoryImpl(
-            fireStore,
-            auth,
-            storage,
-            fileUtil,
-            context
+            fireStore, auth, storage, fileUtil, context
         )
     }
 
@@ -95,6 +91,16 @@ class DataModule {
     ): DataStoreRepository {
         return DataStoreRepositoryImpl(
             applicationContext
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        fireStore: FirebaseFirestore
+    ): ChatRepository {
+        return ChatRepositoryImpl(
+            fireStore
         )
     }
 }

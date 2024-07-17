@@ -1,6 +1,7 @@
 package kr.sjh.data.repository
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await

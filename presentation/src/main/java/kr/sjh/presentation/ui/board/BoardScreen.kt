@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,12 +45,14 @@ import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.calculationTime
+import java.util.Date
 
 @Composable
 fun BoardRoute(
     modifier: Modifier = Modifier,
     navigateToBoardDetail: (String) -> Unit,
     navigateToBoardWrite: () -> Unit,
+    bottomBar: @Composable () -> Unit,
     boardViewModel: BoardViewModel = hiltViewModel()
 ) {
     val boardUiState by boardViewModel.postUiState.collectAsStateWithLifecycle()
@@ -57,16 +60,18 @@ fun BoardRoute(
     LaunchedEffect(key1 = Unit, block = {
         boardViewModel.getPosts()
     })
+    Scaffold(bottomBar = bottomBar) {
+        BoardScreen(
+            modifier = modifier.padding(it),
+            boardUiState = boardUiState,
+            navigateToBoardDetail = {
+                boardViewModel.updatePostCount(it)
+                navigateToBoardDetail(it)
+            },
+            navigateToBoardWrite = navigateToBoardWrite
+        )
+    }
 
-    BoardScreen(
-        modifier = modifier,
-        boardUiState = boardUiState,
-        navigateToBoardDetail = {
-            boardViewModel.updatePostCount(it)
-            navigateToBoardDetail(it)
-        },
-        navigateToBoardWrite = navigateToBoardWrite
-    )
 }
 
 @Composable
@@ -126,12 +131,11 @@ fun BoardScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-
                                     navigateToBoardDetail(post.postKey)
                                 },
                             title = post.title,
                             nickname = post.nickName,
-                            createAt = post.timeStamp ?: 0,
+                            createAt = post.timeStamp?.time ?: Date().time,
                             readCount = post.readCount,
                             likeCount = post.likeCount,
                             images = post.images

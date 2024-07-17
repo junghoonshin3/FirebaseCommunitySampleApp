@@ -1,11 +1,16 @@
 package kr.sjh.data.mapper
 
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FieldValue
+import kr.sjh.data.model.ChatMessageEntity
 import kr.sjh.data.model.PostEntity
 import kr.sjh.data.model.UserEntity
 import kr.sjh.domain.model.AuthUserModel
+import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.model.PostModel
 import kr.sjh.domain.model.UserModel
+import java.util.Date
 
 fun PostModel.toPostEntity(): PostEntity {
     return PostEntity(
@@ -20,26 +25,6 @@ fun PostModel.toPostEntity(): PostEntity {
     )
 }
 
-fun UserModel.toUserEntity(): UserEntity {
-    return UserEntity(
-        uid = uid,
-        nickName = nickName,
-        profileImageUrl = profileImageUrl,
-        likePosts = likePosts,
-        myPosts = myPosts
-    )
-}
-
-fun UserEntity.toUserModel(): UserModel {
-    return UserModel(
-        uid = uid,
-        nickName = nickName,
-        profileImageUrl = profileImageUrl,
-        likePosts = likePosts,
-        myPosts = myPosts
-    )
-}
-
 fun PostEntity.toPostModel(): PostModel {
     return PostModel(
         writerUid = writerUid,
@@ -49,14 +34,57 @@ fun PostEntity.toPostModel(): PostModel {
         nickName = nickName,
         readCount = readCount,
         likeCount = likeCount,
-        timeStamp = timeStamp,
+        timeStamp = timeStamp?.toDate() ?: Date(),
         images = images
     )
 }
+
+fun UserModel.toUserEntity(): UserEntity {
+    return UserEntity(
+        uid = uid,
+        nickName = nickName,
+        profileImageUrl = profileImageUrl,
+        likePosts = likePosts,
+        myPosts = myPosts,
+        role = role,
+        myChats = myChats
+    )
+}
+
+fun UserEntity.toUserModel(): UserModel {
+    return UserModel(
+        uid = uid,
+        nickName = nickName,
+        profileImageUrl = profileImageUrl,
+        likePosts = likePosts,
+        myPosts = myPosts,
+        role = role,
+        myChats = myChats
+    )
+}
+
 
 fun FirebaseUser.toAuthUserModel() = AuthUserModel(
     email = email ?: "email is not exist",
     profileImageUrl = photoUrl.toString(),
     uid = uid,
-    nickName = displayName ?: "Unknown User"
+    nickName = displayName ?: "Unknown User",
 )
+
+fun ChatMessageModel.toChatMessageEntity() = ChatMessageEntity(
+    messageId = messageId,
+    senderUid = senderUid,
+    receiverUid = receiverUid,
+    profileImageUrl = profileImageUrl,
+    message = message,
+)
+
+fun ChatMessageEntity.toChatMessageModel() = ChatMessageModel(
+    messageId = messageId,
+    senderUid = senderUid,
+    receiverUid = receiverUid,
+    profileImageUrl = profileImageUrl,
+    message = message,
+    timeStamp = timeStamp
+)
+

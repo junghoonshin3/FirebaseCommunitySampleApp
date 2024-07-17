@@ -1,41 +1,21 @@
 package kr.sjh.presentation.navigation
 
-import androidx.compose.runtime.Stable
 
-@Stable
-sealed class Graph(val route: String) {
-    data object LoginGraph : Graph("loginGraph")
-    data object MainGraph : Graph("mainGraph")
+sealed class RootScreen(val route: String) {
+    data object Board : RootScreen("board_root")
+    data object Chat : RootScreen("chat_root")
+    data object MyPage : RootScreen("mypage_root")
 }
 
-@Stable
-sealed class Screen(val route: String)
+sealed class LeafScreen(val route: String) {
+    data object Login : LeafScreen("login_screen")
+    data object LoginDetail : LeafScreen("login_detail_screen")
+    data object Board : LeafScreen("board_screen")
+    data object BoardWrite : LeafScreen("board_write_screen")
+    data object BoardEdit : LeafScreen("board_edit_screen")
+    data object BoardDetail : LeafScreen("board_detail_screen")
+    data object Chat : LeafScreen("chat_screen")
 
-@Stable
-sealed class LoginRouteScreen(route: String) : Screen(route) {
-    data object Login : LoginRouteScreen("login")
-
-    data object Detail : LoginRouteScreen("login_detail")
-}
-
-@Stable
-sealed class BoardRouteScreen(route: String) : Screen(route) {
-    data object Board : BoardRouteScreen("board")
-    data object Detail : BoardRouteScreen("board_detail")
-
-    data object Write : BoardRouteScreen("board_write")
-
-    data object Edit : BoardRouteScreen("board_edit")
-}
-
-@Stable
-sealed class ChatRouteScreen(route: String) : Screen(route) {
-    data object Chat : ChatRouteScreen("chat")
-    data object Detail : ChatRouteScreen("chat_detail")
-}
-
-@Stable
-sealed class MyPageRouteScreen(route: String) : Screen(route) {
-    data object MyPage : MyPageRouteScreen("myPage")
-    data object Detail : MyPageRouteScreen("myPage_detail")
+    data object ChatDetail : LeafScreen("chat_detail_screen")
+    data object MyPage : LeafScreen("mypage_screen")
 }

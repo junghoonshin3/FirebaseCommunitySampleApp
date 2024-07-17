@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,15 +21,12 @@ import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import kr.sjh.presentation.navigation.Graph
-import kr.sjh.presentation.navigation.LoginRouteScreen
+import kr.sjh.presentation.navigation.LeafScreen
 import kr.sjh.presentation.ui.login.Logo
 
 @AndroidEntryPoint
 class AuthActivity : ComponentActivity() {
 
-
-    val TAG = "AuthActivity"
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -47,7 +43,7 @@ class AuthActivity : ComponentActivity() {
                         Intent(Intent.ACTION_VIEW, "petory://login".toUri())
                             .putExtra(
                                 "screenName",
-                                LoginRouteScreen.Login.route
+                                LeafScreen.Login.route
                             )
                     )
                     finish()
@@ -61,7 +57,7 @@ class AuthActivity : ComponentActivity() {
                         Intent(Intent.ACTION_VIEW, "petory://login".toUri())
                             .putExtra(
                                 "screenName",
-                                LoginRouteScreen.Detail.route
+                                LeafScreen.LoginDetail.route
                             )
                     )
                     finish()

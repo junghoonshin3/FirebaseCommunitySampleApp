@@ -71,7 +71,7 @@ private fun LoginScreen(
 
     when (loginUiState) {
         is LoginUiState.Error -> {
-            loginUiState.throwable.printStackTrace()
+            //사용자 벤 먹은경우 팝업창 노출 필요
         }
 
         LoginUiState.Init -> {}

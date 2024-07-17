@@ -149,6 +149,7 @@ fun BoardWriteScreen(
                 backIcon = Icons.Default.ArrowBack,
                 onClick = onPost
             )
+
             BoardWriteBody(
                 selectedImages = writeUiState.post.images,
                 modifier = Modifier
@@ -161,6 +162,7 @@ fun BoardWriteScreen(
                 scrollState = scrollState,
                 onDelete = onDelete
             )
+
             BoardPicture(
                 modifier = Modifier
                     .padding(5.dp)

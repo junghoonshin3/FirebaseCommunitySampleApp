@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.main
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,16 +18,15 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
-    val TAG = MainViewModel::class.java.simpleName
 
-    val currentUser: StateFlow<UserModel?> =
+    val currentUser: StateFlow<UserModel> =
         getCurrentUserUseCase()
             .filterIsInstance<ResultState.Success<UserModel>>()
             .map { it.data }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
-                null
+                UserModel()
             )
 
 }

@@ -27,7 +27,6 @@ sealed class LoginUiState {
 class LoginViewModel @Inject constructor(
     private val signInUseCase: AuthSignInUseCase,
     private val loginHelper: GoogleLoginHelper,
-    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _loginUiState = MutableStateFlow<LoginUiState>(LoginUiState.Init)
@@ -46,7 +45,6 @@ class LoginViewModel @Inject constructor(
                     ).collect {
                         when (it) {
                             is ResultState.Failure -> {
-                                it.throwable.printStackTrace()
                                 _loginUiState.value = LoginUiState.Error(it.throwable)
                             }
 

@@ -4,7 +4,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kr.sjh.domain.repository.firebase.AuthRepository
 import kr.sjh.domain.repository.firebase.PostRepository
 import kr.sjh.domain.usecase.board.AddPostUseCase
 import kr.sjh.domain.usecase.board.GetPostUseCase

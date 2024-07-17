@@ -1,8 +1,6 @@
 package kr.sjh.domain.model
 
 import androidx.compose.runtime.Stable
-import java.io.Serializable
-import java.net.URI
 import java.util.Date
 import java.util.UUID
 
@@ -13,7 +11,7 @@ data class PostModel(
     val title: String = "",
     val content: String = "",
     val nickName: String = "",
-    val timeStamp: Long = Date().time,
+    val timeStamp: Date = Date(),
     val readCount: Int = 0,
     val likeCount: Int = 0,
     val images: List<String> = listOf()

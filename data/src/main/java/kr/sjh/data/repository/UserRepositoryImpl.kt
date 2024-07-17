@@ -4,7 +4,9 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +17,7 @@ import kr.sjh.data.mapper.toUserEntity
 import kr.sjh.data.mapper.toUserModel
 import kr.sjh.data.model.UserEntity
 import kr.sjh.data.utils.Constants
+import kr.sjh.data.utils.Constants.FirebaseCollectionUsers
 import kr.sjh.data.utils.FileUtil
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.exception.FirebaseAuthCustomException
@@ -37,23 +40,20 @@ class UserRepositoryImpl @Inject constructor(
     override fun getCurrentUser(): Flow<ResultState<UserModel>> = callbackFlow {
         val uid = auth.currentUser?.uid
         uid?.let {
-            fireStore.collection(Constants.FirebaseCollectionUsers)
-                .document(uid)
-                .get()
-                .addOnSuccessListener {
-                    if (it.exists()) {
-                        val userEntity = it.toObject(UserEntity::class.java)
-                        if (userEntity != null) {
-                            trySend(ResultState.Success(data = userEntity.toUserModel()))
-                        } else {
-                            trySend(ResultState.Failure(Exception("UserModel 객체만드는데 실패함")))
-                        }
+            fireStore.collection(FirebaseCollectionUsers).document(uid).get().addOnSuccessListener {
+                if (it.exists()) {
+                    val userEntity = it.toObject(UserEntity::class.java)
+                    if (userEntity != null) {
+                        trySend(ResultState.Success(data = userEntity.toUserModel()))
                     } else {
-                        trySend(ResultState.Failure(Exception("시용자가 없는디요?")))
+                        trySend(ResultState.Failure(Exception("UserModel 객체만드는데 실패함")))
                     }
-                }.addOnFailureListener { exception ->
-                    trySend(ResultState.Failure(exception))
+                } else {
+                    trySend(ResultState.Failure(Exception("시용자가 없는디요?")))
                 }
+            }.addOnFailureListener { exception ->
+                trySend(ResultState.Failure(exception))
+            }
         }
         awaitClose {
             close()
@@ -64,10 +64,8 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getUser(uid: String): Flow<ResultState<UserModel>> = flow {
         emit(ResultState.Loading)
         try {
-            val user = fireStore.collection(Constants.FirebaseCollectionUsers)
-                .document(uid)
-                .get()
-                .await().toObject(UserModel::class.java) ?: return@flow emit(
+            val user = fireStore.collection(FirebaseCollectionUsers).document(uid).get().await()
+                .toObject(UserModel::class.java) ?: return@flow emit(
                 ResultState.Failure(
                     UserNotFoundInUsers()
                 )
@@ -81,10 +79,8 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun isUserExist(uid: String): Flow<ResultState<Boolean>> = flow {
         emit(ResultState.Loading)
         try {
-            val isExist = fireStore.collection(Constants.FirebaseCollectionUsers)
-                .document(uid)
-                .get()
-                .await().exists()
+            val isExist =
+                fireStore.collection(FirebaseCollectionUsers).document(uid).get().await().exists()
             emit(ResultState.Success(isExist))
         } catch (e: Exception) {
             emit(ResultState.Failure(e))
@@ -96,13 +92,9 @@ class UserRepositoryImpl @Inject constructor(
         try {
             val uid = auth.currentUser?.uid
             uid?.let {
-                Log.d("sjh", "before >>>>>>>>>>>>>>>> :${userModel.profileImageUrl}")
                 val imageUrl = saveProfilePictureInStorage(uid, userModel.profileImageUrl!!)
-                Log.d("sjh", "after >>>>>>>>>>>>>> :$imageUrl")
-                fireStore.collection(Constants.FirebaseCollectionUsers)
-                    .document(it)
-                    .set(userModel.copy(profileImageUrl = imageUrl).toUserEntity())
-                    .await()
+                fireStore.collection(FirebaseCollectionUsers).document(it)
+                    .set(userModel.copy(profileImageUrl = imageUrl).toUserEntity()).await()
                 emit(ResultState.Success(Unit))
             }
         } catch (e: Exception) {
@@ -118,8 +110,7 @@ class UserRepositoryImpl @Inject constructor(
             val imageUri = Uri.parse(profilePicture)
             val reSizedImageUri = fileUtil.run {
                 if (!fileUtil.isLocalUri(imageUri)) {
-                    val downloadImageUri =
-                        fileUtil.downloadImageFromUrl(context, profilePicture)
+                    val downloadImageUri = fileUtil.downloadImageFromUrl(context, profilePicture)
                     resizeImage(context, uid, downloadImageUri, 100, 100)
                 } else {
                     resizeImage(context, uid, imageUri, 100, 100)
@@ -131,5 +122,35 @@ class UserRepositoryImpl @Inject constructor(
             e.printStackTrace()
             throw e
         }
+    }
+
+    override fun hideUser(uid: String): Flow<ResultState<Unit>> = callbackFlow {
+        try {
+            trySend(ResultState.Loading)
+            auth.currentUser?.uid?.let {
+                fireStore.collection(FirebaseCollectionUsers).document(it)
+                    .update("banUsers", FieldValue.arrayUnion(uid)).addOnSuccessListener {
+                        trySend(ResultState.Success(Unit))
+                    }.addOnFailureListener { error ->
+                        trySend(ResultState.Failure(error))
+                    }
+            }
+        } catch (e: Exception) {
+            trySend(ResultState.Failure(e))
+        }
+        awaitClose {
+            close()
+        }
+    }
+
+    override fun banUser(uid: String): Flow<ResultState<Unit>> = flow {
+        try {
+            fireStore.collection("bans").document("ban-users").set(mapOf(uid to true), SetOptions.merge())
+                .await()
+            emit(ResultState.Success(Unit))
+        } catch (e: Exception) {
+            emit(ResultState.Failure(e))
+        }
+
     }
 }
