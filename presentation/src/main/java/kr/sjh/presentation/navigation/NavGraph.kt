@@ -141,8 +141,8 @@ fun MainNavGraph(
             ) {
                 BoardDetailRoute(modifier = Modifier.fillMaxSize(), onBack = {
                     navController.popBackStack(LeafScreen.Board.route, false)
-                }, onChat = { senderUid, receiverUid ->
-                    navController.navigate("${LeafScreen.ChatDetail.route}?senderUid=$senderUid&receiverUid=$receiverUid")
+                }, onChat = { roomId ->
+                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId")
                 }, onEdit = {
                     navController.navigate("${LeafScreen.BoardEdit.route}?postKey=$it")
                 })
@@ -151,12 +151,12 @@ fun MainNavGraph(
 
         navigation(route = RootScreen.Chat.route, startDestination = LeafScreen.Chat.route) {
             composable(route = LeafScreen.Chat.route) {
-                ChatRoute(bottomBar = bottomBar, navigateToDetail = {
-                    navController.navigate(LeafScreen.ChatDetail.route)
+                ChatRoute(bottomBar = bottomBar, navigateToDetail = { roomId ->
+                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=${roomId}")
                 })
             }
 
-            composable(route = "${LeafScreen.ChatDetail.route}?senderUid={senderUid}&receiverUid={receiverUid}") {
+            composable(route = "${LeafScreen.ChatDetail.route}?roomId={roomId}") {
                 ChatDetailRoute(onBack = {
                     navController.navigateUp()
                 })

@@ -70,7 +70,6 @@ fun ChatDetailRoute(
 
     val currentUser by mainViewModel.currentUser.collectAsStateWithLifecycle()
 
-
     ChatDetailScreen(
         messageUiState = messageUiState,
         currentUser = currentUser,
@@ -89,13 +88,15 @@ fun ChatDetailScreen(
     onBack: () -> Unit,
     text: String,
     onTextChanged: (String) -> Unit,
-    sendMessage: () -> Unit,
+    sendMessage: (() -> Unit) -> Unit,
     nextMessages: (limit: Long) -> Unit
 ) {
 
     val lazyListState = rememberLazyListState()
 
     val newText by rememberUpdatedState(newValue = text)
+
+    val coroutineScope = rememberCoroutineScope()
 
     val isLoadMore = remember {
         derivedStateOf {
@@ -135,16 +136,20 @@ fun ChatDetailScreen(
             messages = messageUiState.messages,
             currentUid = currentUser.uid
         )
-        InputMessage(
-            modifier = Modifier
-                .imePadding()
-                .fillMaxWidth()
-                .heightIn(max = 100.dp, min = 80.dp)
-                .padding(5.dp),
+        InputMessage(modifier = Modifier
+            .imePadding()
+            .fillMaxWidth()
+            .heightIn(max = 100.dp, min = 80.dp)
+            .padding(5.dp),
             text = newText,
             onTextChanged = onTextChanged,
-            sendMessage = sendMessage
-        )
+            sendMessage = {
+                sendMessage {
+                    coroutineScope.launch {
+                        lazyListState.animateScrollToItem(0)
+                    }
+                }
+            })
     }
 }
 

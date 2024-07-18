@@ -14,10 +14,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.ChatMessageModel
+import kr.sjh.domain.usecase.auth.firebase.GetAuthCurrentUserUseCase
 import kr.sjh.domain.usecase.chat.GetInitialMessagesUseCase
 import kr.sjh.domain.usecase.chat.GetNextMessagesUseCase
 import kr.sjh.domain.usecase.chat.SendMessageUseCase
 import kr.sjh.domain.util.generateUniqueChatKey
+import kr.sjh.domain.util.getReceiverUid
 import javax.inject.Inject
 
 data class MessageUiState(
@@ -31,29 +33,26 @@ class ChatDetailViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getInitialMessagesUseCase: GetInitialMessagesUseCase,
     private val getNextMessagesUseCase: GetNextMessagesUseCase,
+    private val getAuthCurrentUserUseCase: GetAuthCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase
 ) : ViewModel() {
 
-    private val senderUid = savedStateHandle.get<String>("senderUid")
+    private val roomId = savedStateHandle.get<String>("roomId").toString()
 
-    private val receiverUid = savedStateHandle.get<String>("receiverUid")
+    private val uid = getAuthCurrentUserUseCase()?.uid.toString()
 
     var message by mutableStateOf(savedStateHandle["message"] ?: "")
 
-    private val _messageUiState = MutableStateFlow<MessageUiState>(MessageUiState())
+    private val _messageUiState = MutableStateFlow(MessageUiState())
     val messageUiState = _messageUiState.asStateFlow()
 
-    private lateinit var roomId: String
-
     init {
-        if (!senderUid.isNullOrEmpty() && !receiverUid.isNullOrEmpty()) {
-            roomId = generateUniqueChatKey(senderUid, receiverUid)
-            getInitialMessages()
-        }
+        getInitialMessages()
     }
 
     private fun getInitialMessages(limit: Long = 20) {
         viewModelScope.launch {
+            Log.d("sjh", "roomId: ${roomId}")
             getInitialMessagesUseCase(roomId = roomId, limit).collect { result ->
                 when (result) {
                     is ResultState.Failure -> {
@@ -76,7 +75,7 @@ class ChatDetailViewModel @Inject constructor(
                         _messageUiState.update {
                             it.copy(
                                 isLoading = false,
-                                messages = it.messages + result.data,
+                                messages = (it.messages + result.data).sortedByDescending { message -> message.timeStamp },
                             )
                         }
                     }
@@ -131,13 +130,11 @@ class ChatDetailViewModel @Inject constructor(
         this.message = message
     }
 
-    fun sendMessage() {
+    fun sendMessage(onSuccess: () -> Unit) {
         if (message.isNotEmpty()) {
             viewModelScope.launch {
                 val newMessage = ChatMessageModel(
-                    senderUid = senderUid!!,
-                    receiverUid = receiverUid!!,
-                    message = message,
+                    senderUid = uid, receiverUid = getReceiverUid(roomId, uid), message = message
                 )
 
                 sendMessageUseCase(newMessage).collect { result ->
@@ -151,7 +148,7 @@ class ChatDetailViewModel @Inject constructor(
                         }
 
                         is ResultState.Success -> {
-
+                            onSuccess()
                         }
                     }
                 }

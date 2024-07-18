@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -36,13 +37,17 @@ import kr.sjh.presentation.ui.theme.backgroundColor
 @Composable
 fun ChatRoute(bottomBar: @Composable () -> Unit, navigateToDetail: (String) -> Unit) {
     val mainViewModel: MainViewModel = hiltViewModel()
+    val chatListViewModel: ChatListViewModel = hiltViewModel()
     val userModel by mainViewModel.currentUser.collectAsStateWithLifecycle()
+    val chatRoomUiState by chatListViewModel.chatRooms.collectAsStateWithLifecycle()
+
     Scaffold(bottomBar = bottomBar) {
         ChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(it),
             userModel = userModel,
+            chatRoomUiState = chatRoomUiState,
             navigateToDetail = navigateToDetail
         )
     }
@@ -51,20 +56,23 @@ fun ChatRoute(bottomBar: @Composable () -> Unit, navigateToDetail: (String) -> U
 
 @Composable
 private fun ChatScreen(
-    userModel: UserModel, modifier: Modifier = Modifier, navigateToDetail: (String) -> Unit
+    userModel: UserModel,
+    modifier: Modifier = Modifier,
+    chatRoomUiState: ChatRoomUiState,
+    navigateToDetail: (String) -> Unit
 ) {
     Surface(modifier = modifier, color = backgroundColor) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(5) {
-                ChatList(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp)
-                        .padding(10.dp),
+            items(chatRoomUiState.rooms) {
+                ChatList(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .padding(10.dp),
                     profileUrl = userModel.profileImageUrl,
                     nickname = userModel.nickName,
-                    onClick = navigateToDetail
-                )
+                    recentMessage = it.message,
+                    timeStamp = it.timeStamp?.toString() ?: "",
+                    onClick = { navigateToDetail(it.roomId) })
             }
         }
     }
@@ -72,10 +80,15 @@ private fun ChatScreen(
 
 @Composable
 fun ChatList(
-    modifier: Modifier = Modifier, profileUrl: String?, nickname: String?, onClick: (String) -> Unit
+    modifier: Modifier = Modifier,
+    profileUrl: String?,
+    nickname: String?,
+    recentMessage: String = "",
+    timeStamp: String = "",
+    onClick: () -> Unit
 ) {
     Row(modifier = modifier.clickable {
-        onClick("")
+        onClick()
     }, verticalAlignment = Alignment.CenterVertically) {
         GlideImage(modifier = Modifier.clip(CircleShape), requestOptions = {
             RequestOptions().override(200, 200).centerInside().circleCrop()
@@ -91,7 +104,8 @@ fun ChatList(
             verticalArrangement = Arrangement.Center
         ) {
             Text(color = Color.White, fontSize = 18.sp, text = nickname ?: "이름없음")
-            Text(color = Color.White, fontSize = 20.sp, text = "안녕하세요.")
+            Text(color = Color.White, fontSize = 20.sp, text = recentMessage)
+            Text(color = Color.White, fontSize = 16.sp, text = timeStamp)
         }
 
     }

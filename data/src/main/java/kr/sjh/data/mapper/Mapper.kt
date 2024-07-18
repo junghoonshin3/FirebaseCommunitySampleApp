@@ -4,10 +4,12 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import kr.sjh.data.model.ChatMessageEntity
+import kr.sjh.data.model.ChatRoomEntity
 import kr.sjh.data.model.PostEntity
 import kr.sjh.data.model.UserEntity
 import kr.sjh.domain.model.AuthUserModel
 import kr.sjh.domain.model.ChatMessageModel
+import kr.sjh.domain.model.ChatRoomModel
 import kr.sjh.domain.model.PostModel
 import kr.sjh.domain.model.UserModel
 import java.util.Date
@@ -88,3 +90,6 @@ fun ChatMessageEntity.toChatMessageModel() = ChatMessageModel(
     timeStamp = timeStamp
 )
 
+fun ChatRoomEntity.toChatRoomModel() = ChatRoomModel(
+    roomId = roomId, message = message, timeStamp = timeStamp
+)

@@ -63,6 +63,7 @@ import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.toPersistentList
 import kr.sjh.domain.constant.Role
 import kr.sjh.domain.model.UserModel
+import kr.sjh.domain.util.generateUniqueChatKey
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.bottomsheet.CommonModalBottomSheet
 import kr.sjh.presentation.ui.common.LoadingDialog
@@ -80,7 +81,7 @@ val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    onChat: (String, String) -> Unit,
+    onChat: (String) -> Unit,
     onEdit: (String) -> Unit,
     detailViewModel: BoardDetailViewModel = hiltViewModel(),
     mainViewModel: MainViewModel = hiltViewModel(getActivity())
@@ -167,7 +168,7 @@ fun BoardDetailScreen(
     onLikeChange: () -> Unit,
     onEdit: (String) -> Unit,
     onDelete: () -> Unit,
-    onChat: (String, String) -> Unit,
+    onChat: (String) -> Unit,
     onHide: (String) -> Unit,
     onBan: (String) -> Unit
 ) {
@@ -253,7 +254,12 @@ fun BoardDetailScreen(
                                 .padding(10.dp)
                                 .background(carrot, RoundedCornerShape(5.dp)),
                             onChat = {
-                                onChat(currentUser?.uid.toString(), writerUser.uid)
+                                onChat(
+                                    generateUniqueChatKey(
+                                        currentUser?.uid.toString(),
+                                        writerUser.uid
+                                    )
+                                )
                             }
                         )
                     }

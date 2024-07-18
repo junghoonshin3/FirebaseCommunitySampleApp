@@ -120,13 +120,10 @@ private fun LoginScreen(
 fun Logo(modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         ContextCompat.getDrawable(
-            LocalContext.current,
-            R.mipmap.ic_launcher
+            LocalContext.current, R.mipmap.ic_launcher
         )?.toBitmap()?.asImageBitmap()?.let {
             Image(
-                bitmap = it,
-                modifier = modifier,
-                contentDescription = ""
+                bitmap = it, modifier = modifier, contentDescription = ""
             )
         }
 
@@ -135,12 +132,10 @@ fun Logo(modifier: Modifier = Modifier) {
 
 @Composable
 fun LoginButton(modifier: Modifier = Modifier, context: Context, onClick: (Context) -> Unit) {
-    Row(
-        modifier = modifier
-            .clickable { onClick(context) }
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = modifier
+        .clickable { onClick(context) }
+        .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
         Image(
             painter = painterResource(id = R.drawable.android_light_rd_na),
             contentDescription = "GoogleLogo"

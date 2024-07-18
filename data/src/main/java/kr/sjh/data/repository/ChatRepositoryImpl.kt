@@ -4,10 +4,12 @@ import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -15,7 +17,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import kr.sjh.data.mapper.toChatMessageEntity
 import kr.sjh.data.mapper.toChatMessageModel
+import kr.sjh.data.mapper.toChatRoomModel
 import kr.sjh.data.model.ChatMessageEntity
+import kr.sjh.data.model.ChatRoomEntity
 import kr.sjh.data.model.UserEntity
 import kr.sjh.data.utils.Constants
 import kr.sjh.domain.ResultState
@@ -66,7 +70,6 @@ class ChatRepositoryImpl @Inject constructor(
             }
         awaitClose {
             listener.remove()
-            close()
         }
     }
 
@@ -126,8 +129,11 @@ class ChatRepositoryImpl @Inject constructor(
             // 최근메세지 내용 갱신
             val recentMessage =
                 chatMessagesDoc.get().await().toObject(ChatMessageEntity::class.java)
-            chatDoc.set(ChatRoomModel(recentMessage?.message.toString(), recentMessage?.timeStamp))
-                .await()
+            chatDoc.set(
+                ChatRoomEntity(
+                    roomId, recentMessage?.message.toString(), recentMessage?.timeStamp
+                )
+            ).await()
             emit(ResultState.Success(Unit))
         } catch (e: Exception) {
             e.printStackTrace()
@@ -135,12 +141,36 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getChatRooms(uid: String): Flow<ResultState<List<ChatMessageModel>>> =
-        callbackFlow {
+    override fun getChatRooms(uid: String): Flow<ResultState<List<ChatRoomModel>>> = callbackFlow {
+        val userEntity =
+            firebase.collection(Constants.FirebaseCollectionUsers).document(uid).get().await()
+                .toObject<UserEntity>()
+        val myChats = userEntity?.myChats ?: emptyList()
+        val listeners = myChats.map { roomId ->
+            firebase.collection(Constants.FirebaseCollectionChats)
+                .whereIn(FieldPath.documentId(), myChats).addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        trySend(ResultState.Failure(error))
+                        return@addSnapshotListener
+                    }
 
-            awaitClose {
-                close()
-            }
+                    if (snapshot != null && !snapshot.isEmpty) {
+                        val chatRooms = snapshot.toObjects(ChatRoomEntity::class.java).map {
+                            it.toChatRoomModel()
+                        }
+                        Log.d("sjh", "chatRooms : ${chatRooms.size}")
+                        trySend(ResultState.Success(chatRooms))
+                    } else {
+                        Log.d("sjh", "Chat room deleted: $roomId")
+                        // ... 삭제된 chatRoom에 대한 처리 ...
+                    }
+                }
         }
+
+        awaitClose {
+            listeners.forEach { it.remove() }
+            close()
+        }
+    }
 
 }
