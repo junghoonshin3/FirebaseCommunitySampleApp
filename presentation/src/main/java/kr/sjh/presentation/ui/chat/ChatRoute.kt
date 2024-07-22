@@ -39,7 +39,9 @@ import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.utill.calculationTime
 
 @Composable
-fun ChatRoute(bottomBar: @Composable () -> Unit, navigateToDetail: (String) -> Unit) {
+fun ChatRoute(
+    bottomBar: @Composable () -> Unit, navigateToDetail: (String, String, String) -> Unit
+) {
     val chatViewModel: ChatViewModel = hiltViewModel()
     val chatRoomUiState by chatViewModel.chatRooms.collectAsStateWithLifecycle()
     Scaffold(bottomBar = bottomBar) {
@@ -58,7 +60,7 @@ fun ChatRoute(bottomBar: @Composable () -> Unit, navigateToDetail: (String) -> U
 private fun ChatScreen(
     modifier: Modifier = Modifier,
     chatRoomUiState: ChatRoomUiState,
-    navigateToDetail: (String) -> Unit
+    navigateToDetail: (String, String, String) -> Unit
 ) {
     Surface(modifier = modifier, color = backgroundColor) {
         if (chatRoomUiState.rooms.isEmpty()) {
@@ -84,7 +86,13 @@ private fun ChatScreen(
                     timeStamp = calculationTime(room.timeStamp!!.time),
                     nickname = if (isInviter) room.invitee.nickName else room.inviter.nickName,
                     profileUrl = if (isInviter) room.invitee.profileImageUrl else room.inviter.profileImageUrl,
-                    onClick = { navigateToDetail(room.roomId) })
+                    onClick = {
+                        navigateToDetail(
+                            room.roomId,
+                            if (isInviter) room.invitee.nickName else room.inviter.nickName,
+                            if (isInviter) room.invitee.profileImageUrl else room.inviter.profileImageUrl
+                        )
+                    })
             }
         }
     }

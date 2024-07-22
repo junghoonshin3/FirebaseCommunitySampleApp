@@ -39,6 +39,7 @@ dependencies {
     implementation(project(":domain"))
     //Dagger-Hilt
     implementation(DaggerHilt.daggerHilt)
+    testImplementation(TestImplementation.jUnit)
     kapt(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
 

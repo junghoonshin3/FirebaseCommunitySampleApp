@@ -81,7 +81,7 @@ val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    onChat: (String) -> Unit,
+    onChat: (String, String, String) -> Unit,
     onEdit: (String) -> Unit,
     detailViewModel: BoardDetailViewModel = hiltViewModel(),
     mainViewModel: MainViewModel = hiltViewModel(getActivity())
@@ -168,7 +168,7 @@ fun BoardDetailScreen(
     onLikeChange: () -> Unit,
     onEdit: (String) -> Unit,
     onDelete: () -> Unit,
-    onChat: (String) -> Unit,
+    onChat: (String, String, String) -> Unit,
     onHide: (String) -> Unit,
     onBan: (String) -> Unit
 ) {
@@ -256,7 +256,8 @@ fun BoardDetailScreen(
                                 onChat(
                                     generateUniqueChatKey(
                                         currentUser?.uid.toString(), writerUser.uid
-                                    )
+                                    ), writerUser.nickName, writerUser.profileImageUrl
+
                                 )
                             })
                         }

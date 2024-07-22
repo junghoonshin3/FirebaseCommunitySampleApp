@@ -24,6 +24,8 @@ import javax.inject.Inject
 
 data class MessageUiState(
     val messages: List<ChatMessageModel> = emptyList(),
+    val nickName: String = "",
+    val profileImageUrl: String = "",
     val isLoading: Boolean = false,
     val throwable: Throwable? = null
 )
@@ -38,6 +40,10 @@ class ChatDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val roomId = savedStateHandle.get<String>("roomId").toString()
+
+    private val nickName = savedStateHandle.get<String>("nickName").toString()
+
+    private val profileImageUrl = savedStateHandle.get<String>("profileImageUrl").toString()
 
     private val uid = getAuthCurrentUserUseCase()?.uid.toString()
 
@@ -73,13 +79,14 @@ class ChatDetailViewModel @Inject constructor(
                     }
 
                     is ResultState.Success -> {
-                        Log.d("getInitialMessages", "${result.data}")
                         _messageUiState.update {
                             val newMessages = it.messages.toMutableList()
                             newMessages.add(0, result.data)
                             it.copy(
                                 isLoading = false,
                                 messages = newMessages,
+                                nickName = nickName,
+                                profileImageUrl = profileImageUrl
                             )
                         }
                     }

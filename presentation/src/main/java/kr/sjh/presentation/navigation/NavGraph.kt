@@ -60,19 +60,18 @@ fun LoginNavGraph(
         composable(
             route = LeafScreen.Login.route
         ) {
-            LoginRoute(
-                navigateToMain = {
-                    activity.startActivity(
-                        Intent(Intent.ACTION_VIEW, "petory://main".toUri())
-                    )
-                    activity.finish()
-                }, navigateToLoginDetail = {
-                    navController.navigate(LeafScreen.LoginDetail.route) {
-                        popUpTo(LeafScreen.Login.route) {
-                            inclusive = true
-                        }
+            LoginRoute(navigateToMain = {
+                activity.startActivity(
+                    Intent(Intent.ACTION_VIEW, "petory://main".toUri())
+                )
+                activity.finish()
+            }, navigateToLoginDetail = {
+                navController.navigate(LeafScreen.LoginDetail.route) {
+                    popUpTo(LeafScreen.Login.route) {
+                        inclusive = true
                     }
-                })
+                }
+            })
         }
         composable(
             route = LeafScreen.LoginDetail.route
@@ -150,8 +149,8 @@ fun MainNavGraph(
             ) {
                 BoardDetailRoute(modifier = Modifier.fillMaxSize(), onBack = {
                     navController.popBackStack(LeafScreen.Board.route, false)
-                }, onChat = { roomId ->
-                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId")
+                }, onChat = { roomId, nickName, profileImageUrl ->
+                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=$profileImageUrl")
                 }, onEdit = {
                     navController.navigate("${LeafScreen.BoardEdit.route}?postKey=$it")
                 })
@@ -160,14 +159,14 @@ fun MainNavGraph(
 
         navigation(route = RootScreen.Chat.route, startDestination = LeafScreen.Chat.route) {
             composable(route = LeafScreen.Chat.route) {
-                ChatRoute(bottomBar = bottomBar, navigateToDetail = { roomId ->
-                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=${roomId}")
-                })
+                ChatRoute(bottomBar = bottomBar,
+                    navigateToDetail = { roomId, nickName, profileImageUrl ->
+                        navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=$profileImageUrl")
+                    })
             }
 
-            composable(route = "${LeafScreen.ChatDetail.route}?roomId={roomId}") {
-                ChatDetailRoute(
-                    onBack = {
+            composable(route = "${LeafScreen.ChatDetail.route}?roomId={roomId}&nickName={nickName}&profileImageUrl={profileImageUrl}") {
+                ChatDetailRoute(onBack = {
                     navController.navigateUp()
                 })
             }

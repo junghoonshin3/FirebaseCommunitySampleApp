@@ -124,7 +124,7 @@ fun ChatDetailScreen(
                 .padding(5.dp)
                 .fillMaxWidth()
                 .height(60.dp),
-            title = "상대 닉네임",
+            title = messageUiState.nickName,
             backIcon = Icons.Default.ArrowBack,
             onBack = onBack
         )
