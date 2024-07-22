@@ -1,7 +1,6 @@
 package kr.sjh.presentation.navigation
 
 import android.content.Intent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -37,6 +36,7 @@ import kr.sjh.presentation.ui.chat.ChatDetailRoute
 import kr.sjh.presentation.ui.chat.ChatRoute
 import kr.sjh.presentation.ui.login.LoginActivity
 import kr.sjh.presentation.ui.login.LoginRoute
+import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.login.detail.LoginDetailRoute
 import kr.sjh.presentation.ui.main.MainActivity
 import kr.sjh.presentation.ui.main.MainViewModel
@@ -53,32 +53,41 @@ fun LoginNavGraph(
     navController: NavHostController = rememberNavController(),
 ) {
     val activity = LocalContext.current as LoginActivity
+
     NavHost(
         navController = navController, modifier = modifier, startDestination = startScreen
     ) {
-        composable(route = LeafScreen.Login.route) { backStackEntry ->
-            LoginRoute(modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
-                navigateToLoginDetail = {
-                    navController.navigate(LeafScreen.LoginDetail.route)
-                },
+        composable(
+            route = LeafScreen.Login.route
+        ) {
+            LoginRoute(
                 navigateToMain = {
-                    activity.startActivity(Intent(Intent.ACTION_VIEW, "petory://main".toUri()))
+                    activity.startActivity(
+                        Intent(Intent.ACTION_VIEW, "petory://main".toUri())
+                    )
                     activity.finish()
+                }, navigateToLoginDetail = {
+                    navController.navigate(LeafScreen.LoginDetail.route) {
+                        popUpTo(LeafScreen.Login.route) {
+                            inclusive = true
+                        }
+                    }
                 })
         }
         composable(
             route = LeafScreen.LoginDetail.route
         ) {
-
-            LoginDetailRoute(modifier = Modifier.fillMaxSize(), navigateToMain = {
+            LoginDetailRoute(navigateToMain = {
                 activity.startActivity(
                     Intent(Intent.ACTION_VIEW, "petory://main".toUri())
                 )
                 activity.finish()
             }, onBack = {
-                navController.popBackStack(LeafScreen.Login.route, false)
+                navController.navigate(LeafScreen.Login.route) {
+                    popUpTo(LeafScreen.LoginDetail.route) {
+                        inclusive = true
+                    }
+                }
             })
         }
     }
@@ -157,11 +166,13 @@ fun MainNavGraph(
             }
 
             composable(route = "${LeafScreen.ChatDetail.route}?roomId={roomId}") {
-                ChatDetailRoute(onBack = {
+                ChatDetailRoute(
+                    onBack = {
                     navController.navigateUp()
                 })
             }
         }
+
         navigation(route = RootScreen.MyPage.route, startDestination = LeafScreen.MyPage.route) {
             composable(route = LeafScreen.MyPage.route) {
                 MyPageRoute(modifier = Modifier.fillMaxSize(), bottomBar = bottomBar, logOut = {

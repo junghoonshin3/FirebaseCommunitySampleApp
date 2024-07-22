@@ -33,7 +33,7 @@ class ChatDetailViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getInitialMessagesUseCase: GetInitialMessagesUseCase,
     private val getNextMessagesUseCase: GetNextMessagesUseCase,
-    private val getAuthCurrentUserUseCase: GetAuthCurrentUserUseCase,
+    getAuthCurrentUserUseCase: GetAuthCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase
 ) : ViewModel() {
 
@@ -52,8 +52,9 @@ class ChatDetailViewModel @Inject constructor(
 
     private fun getInitialMessages(limit: Long = 20) {
         viewModelScope.launch {
-            Log.d("sjh", "roomId: ${roomId}")
-            getInitialMessagesUseCase(roomId = roomId, limit).collect { result ->
+            getInitialMessagesUseCase(
+                roomId = roomId, limit = limit
+            ).collect { result ->
                 when (result) {
                     is ResultState.Failure -> {
                         _messageUiState.update {
@@ -72,10 +73,13 @@ class ChatDetailViewModel @Inject constructor(
                     }
 
                     is ResultState.Success -> {
+                        Log.d("getInitialMessages", "${result.data}")
                         _messageUiState.update {
+                            val newMessages = it.messages.toMutableList()
+                            newMessages.add(0, result.data)
                             it.copy(
                                 isLoading = false,
-                                messages = (it.messages + result.data).sortedByDescending { message -> message.timeStamp },
+                                messages = newMessages,
                             )
                         }
                     }
@@ -110,7 +114,7 @@ class ChatDetailViewModel @Inject constructor(
                     }
 
                     is ResultState.Success -> {
-                        Log.d("getNextMessages", "Success")
+                        Log.d("getNextMessages", "Success > ${result.data}")
                         _messageUiState.update {
                             it.copy(
                                 isLoading = false,

@@ -2,13 +2,12 @@ package kr.sjh.data.repository
 
 import android.util.Log
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
-import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.ServerTimestamp
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -17,79 +16,84 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import kr.sjh.data.mapper.toChatMessageEntity
 import kr.sjh.data.mapper.toChatMessageModel
-import kr.sjh.data.mapper.toChatRoomModel
 import kr.sjh.data.model.ChatMessageEntity
-import kr.sjh.data.model.ChatRoomEntity
 import kr.sjh.data.model.UserEntity
 import kr.sjh.data.utils.Constants
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.model.ChatRoomModel
-import kr.sjh.domain.model.UserModel
 import kr.sjh.domain.repository.firebase.ChatRepository
 import kr.sjh.domain.util.generateUniqueChatKey
 import java.util.Date
 import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
-    private val firebase: FirebaseFirestore
+    private val firebase: FirebaseFirestore, private val auth: FirebaseAuth
 ) : ChatRepository {
 
     override fun getInitialMessages(
-        roomId: String, limit: Long
+        roomId: String, size: Long
     ): Flow<ResultState<ChatMessageModel>> = callbackFlow {
-        val listener = firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
-            .collection(Constants.FirebaseCollectionChatMessages)
-            .orderBy("timeStamp", Query.Direction.DESCENDING).limit(limit)
-            .addSnapshotListener { value, error ->
-                if (error != null) {
-                    trySend(ResultState.Failure(error))
-                }
-                if (value != null) {
-                    if (!value.isEmpty) {
-                        value.documentChanges.map { dc ->
-                            when (dc.type) {
-                                DocumentChange.Type.ADDED -> {
-                                    val message =
-                                        dc.document.toObject(ChatMessageEntity::class.java)
-                                            .toChatMessageModel()
-                                    trySend(ResultState.Success(message))
-                                }
+        auth.currentUser?.uid?.let {
+            val listener = firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
+                .collection(Constants.FirebaseCollectionChatMessages)
+                .orderBy("timeStamp", Query.Direction.ASCENDING).limitToLast(size)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        error.printStackTrace()
+                        trySend(ResultState.Failure(error))
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        if (!snapshot.isEmpty) {
+                            Log.d(
+                                "sjh", "snapshot.documentChanges : ${snapshot.documentChanges.size}"
+                            )
+                            snapshot.documentChanges.map { dc ->
+                                when (dc.type) {
+                                    DocumentChange.Type.ADDED -> {
+                                        val message =
+                                            dc.document.toObject(ChatMessageEntity::class.java)
+                                                .toChatMessageModel()
+                                        trySend(ResultState.Success(message))
+                                    }
 
-                                DocumentChange.Type.MODIFIED -> {
+                                    DocumentChange.Type.MODIFIED -> {
 
-                                }
+                                    }
 
-                                DocumentChange.Type.REMOVED -> {
+                                    DocumentChange.Type.REMOVED -> {
 
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+            awaitClose {
+                listener.remove()
+                close()
             }
-        awaitClose {
-            listener.remove()
         }
     }
 
     override fun getNextMessages(
-        roomId: String, limit: Long, fromTime: Long
+        roomId: String, size: Long, fromTime: Long
     ): Flow<ResultState<List<ChatMessageModel>>> = callbackFlow {
 
         // fromTime을 Timestamp 객체로 변환
         val timestamp = Timestamp(fromTime / 1000, (fromTime % 1000 * 1000000).toInt())
-
+        Log.d("sjh", "${timestamp.toDate()}")
         firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
             .collection(Constants.FirebaseCollectionChatMessages)
             .whereLessThan("timeStamp", timestamp).orderBy("timeStamp", Query.Direction.DESCENDING)
-            .limit(limit).get().addOnSuccessListener { snapshot ->
+            .limit(size).get().addOnSuccessListener { snapshot ->
                 if (!snapshot.isEmpty) {
                     val messages = snapshot.toObjects(ChatMessageEntity::class.java).map {
                         it.toChatMessageModel()
                     }
                     trySend(ResultState.Success(messages))
-                    // 마지막 문서 업데이트
                 } else {
                     trySend(ResultState.Success(emptyList()))
                 }
@@ -103,74 +107,111 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun sendMessage(
-        chatMessageModel: ChatMessageModel
+        message: ChatMessageModel
     ): Flow<ResultState<Unit>> = flow {
         try {
-            val roomId =
-                generateUniqueChatKey(chatMessageModel.senderUid, chatMessageModel.receiverUid)
-            val sendDoc = firebase.collection(Constants.FirebaseCollectionUsers)
-                .document(chatMessageModel.senderUid)
-            val receiveDoc = firebase.collection(Constants.FirebaseCollectionUsers)
-                .document(chatMessageModel.receiverUid)
-            val chatMessagesDoc =
-                firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
-                    .collection(Constants.FirebaseCollectionChatMessages).document()
-            val chatDoc = firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
+            auth.currentUser?.uid?.let { uid ->
+                val roomId = generateUniqueChatKey(uid, message.receiverUid)
+                val chatsDoc =
+                    firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
+                val messagesDoc =
+                    firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
+                        .collection(Constants.FirebaseCollectionChatMessages).document()
 
-            firebase.runTransaction { transaction ->
-                transaction.update(sendDoc, "myChats", FieldValue.arrayUnion(roomId))
-                transaction.update(receiveDoc, "myChats", FieldValue.arrayUnion(roomId))
-                transaction.set(
-                    chatMessagesDoc,
-                    chatMessageModel.toChatMessageEntity().copy(messageId = chatMessagesDoc.id)
-                )
-            }.await()
-
-            // 최근메세지 내용 갱신
-            val recentMessage =
-                chatMessagesDoc.get().await().toObject(ChatMessageEntity::class.java)
-            chatDoc.set(
-                ChatRoomEntity(
-                    roomId, recentMessage?.message.toString(), recentMessage?.timeStamp
-                )
-            ).await()
-            emit(ResultState.Success(Unit))
+                val isRoomExist = chatsDoc.get().await().exists()
+                if (!isRoomExist) {
+                    createChatRoom(roomId, uid, message.receiverUid)
+                }
+                val msgEntity = message.copy(messageId = messagesDoc.id).toChatMessageEntity()
+                messagesDoc.set(msgEntity).await()
+                val recentMessage =
+                    messagesDoc.get().await().toObject(ChatMessageEntity::class.java)
+                updateRecentMessage(roomId, recentMessage?.message!!, recentMessage.timeStamp!!)
+                emit(ResultState.Success(Unit))
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             emit(ResultState.Failure(e))
         }
     }
 
-    override fun getChatRooms(uid: String): Flow<ResultState<List<ChatRoomModel>>> = callbackFlow {
-        val userEntity =
-            firebase.collection(Constants.FirebaseCollectionUsers).document(uid).get().await()
-                .toObject<UserEntity>()
-        val myChats = userEntity?.myChats ?: emptyList()
-        val listeners = myChats.map { roomId ->
-            firebase.collection(Constants.FirebaseCollectionChats)
-                .whereIn(FieldPath.documentId(), myChats).addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        trySend(ResultState.Failure(error))
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshot != null && !snapshot.isEmpty) {
-                        val chatRooms = snapshot.toObjects(ChatRoomEntity::class.java).map {
-                            it.toChatRoomModel()
+    override fun getChatRooms(): Flow<ResultState<List<ChatRoomModel>>> = callbackFlow {
+        auth.currentUser?.uid?.let { uid ->
+            try {
+                val listener = firebase.collection(Constants.FirebaseCollectionChats)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            trySend(ResultState.Failure(error))
                         }
-                        Log.d("sjh", "chatRooms : ${chatRooms.size}")
-                        trySend(ResultState.Success(chatRooms))
-                    } else {
-                        Log.d("sjh", "Chat room deleted: $roomId")
-                        // ... 삭제된 chatRoom에 대한 처리 ...
-                    }
-                }
-        }
+                        if (snapshot != null && !snapshot.isEmpty) {
+                            val chatRooms = snapshot.documentChanges.filter { dc ->
+                                Log.d("sjh", "dc.document.id : ${dc.document.id}")
+                                Log.d("sjh", "filter  >>> ${dc.document.id.contains(uid)}")
+                                dc.document.id.contains(uid)
+                            }.map { dc ->
+                                val inviterMap = dc.document.data["inviter"] as? Map<*, *>
+                                val inviteeMap = dc.document.data["invitee"] as? Map<*, *>
+                                ChatRoomModel(
+                                    roomId = dc.document.id,
+                                    recentMessage = dc.document.data["recentMessage"] as String,
+                                    timeStamp = (dc.document.data["timeStamp"] as Timestamp).toDate(),
+                                    inviter = ChatRoomModel.Inviter(
+                                        uid = inviterMap!!["uid"] as String,
+                                        nickName = inviterMap["nickName"] as String,
+                                        profileImageUrl = inviterMap["profileImageUrl"] as String
+                                    ),
+                                    invitee = ChatRoomModel.Invitee(
+                                        uid = inviteeMap!!["uid"] as String,
+                                        nickName = inviteeMap["nickName"] as String,
+                                        profileImageUrl = inviteeMap["profileImageUrl"] as String
+                                    )
+                                )
+                            }
 
-        awaitClose {
-            listeners.forEach { it.remove() }
-            close()
+                            Log.d("sjh", "chatRooms : ${chatRooms.size}")
+                            trySend(ResultState.Success(chatRooms))
+                        }
+                    }
+                awaitClose {
+                    listener.remove()
+                    close()
+                }
+            } catch (e: Exception) {
+                trySend(ResultState.Failure(e))
+            }
         }
+    }
+
+    private suspend fun createChatRoom(
+        roomId: String, inviterUid: String, inviteeUid: String
+    ) {
+        val inviterDoc = firebase.collection(Constants.FirebaseCollectionUsers).document(inviterUid)
+        val inviteeDoc = firebase.collection(Constants.FirebaseCollectionUsers).document(inviteeUid)
+        val inviter = inviterDoc.get().await().toObject(UserEntity::class.java)
+        val invitee = inviteeDoc.get().await().toObject(UserEntity::class.java)
+        firebase.collection(Constants.FirebaseCollectionChats).document(roomId).set(
+            mapOf(
+                "inviter" to mapOf(
+                    "uid" to inviterUid,
+                    "profileImageUrl" to inviter?.profileImageUrl,
+                    "nickName" to inviter?.nickName
+                ), "invitee" to mapOf(
+                    "uid" to inviteeUid,
+                    "profileImageUrl" to invitee?.profileImageUrl,
+                    "nickName" to invitee?.nickName
+                ), "recentMessage" to "", "timeStamp" to FieldValue.serverTimestamp()
+            )
+        ).await()
+    }
+
+    private suspend fun updateRecentMessage(
+        roomId: String, message: String, timeStamp: Date
+    ) {
+        firebase.collection(Constants.FirebaseCollectionChats).document(roomId).update(
+            mapOf(
+                "recentMessage" to message, "timeStamp" to Timestamp(timeStamp)
+            )
+        ).await()
     }
 
 }

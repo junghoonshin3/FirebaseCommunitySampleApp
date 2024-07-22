@@ -1,10 +1,5 @@
 package kr.sjh.presentation.utill
 
-import android.content.Context
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.sp
 import java.util.concurrent.TimeUnit
 
 fun calculationTime(createDateTime: Long): String {

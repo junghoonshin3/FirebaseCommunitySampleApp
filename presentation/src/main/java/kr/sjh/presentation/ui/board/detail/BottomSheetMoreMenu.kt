@@ -34,7 +34,6 @@ fun BottomSheetMoreMenu(
         modifier = modifier, verticalArrangement = Arrangement.Center
     ) {
         itemsIndexed(items) { index, item ->
-            Log.d("sjh", item.toString())
             BottomSheetItem(
                 onClick = item.onClick,
                 title = item.title,

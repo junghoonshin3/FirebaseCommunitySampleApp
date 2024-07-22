@@ -13,34 +13,34 @@ import kr.sjh.presentation.R
 import javax.inject.Inject
 
 class GoogleLoginHelper @Inject constructor(
-    private val context: Context,
+    context: Context,
     private val credentialManager: CredentialManager
 ) {
 
+//    private val googleIdOption = GetGoogleIdOption.Builder()
+//        .setFilterByAuthorizedAccounts(true)
+//        .setServerClientId(context.resources.getString(R.string.WEB_CLIENT_ID))
+//        .setNonce(null)
+//        .build()
+
     private val googleIdOption: GetSignInWithGoogleOption =
         GetSignInWithGoogleOption.Builder(context.resources.getString(R.string.WEB_CLIENT_ID))
-//        .setServerClientId(context.resources.getString(R.string.WEB_CLIENT_ID))
-//        .setAutoSelectEnabled(true)
             .build()
 
     suspend fun requestGoogleLogin(
         activityContext: Context
-    ): GoogleIdTokenCredential? {
-        val request = GetCredentialRequest.Builder()
-            .addCredentialOption(googleIdOption)
-            .build()
-        runCatching {
+    ): Result<GoogleIdTokenCredential?> {
+        val request = GetCredentialRequest.Builder().addCredentialOption(googleIdOption).build()
+        Log.d("sjh", "requestGoogleLogin")
+        return runCatching {
             val credential = credentialManager.getCredential(
-                context = activityContext,
-                request = request
+                context = activityContext, request = request
             ).credential
 
-            return when (credential) {
+            when (credential) {
                 is CustomCredential -> {
                     if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                        val googleIdTokenCredential = GoogleIdTokenCredential
-                            .createFrom(credential.data)
-                        googleIdTokenCredential
+                        GoogleIdTokenCredential.createFrom(credential.data)
                     } else {
                         null
                     }
@@ -50,9 +50,6 @@ class GoogleLoginHelper @Inject constructor(
                     null
                 }
             }
-        }.onFailure {
-            it.printStackTrace()
         }
-            .getOrThrow()
     }
 }

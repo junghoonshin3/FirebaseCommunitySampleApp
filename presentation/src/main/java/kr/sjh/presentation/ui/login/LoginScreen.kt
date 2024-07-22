@@ -1,6 +1,6 @@
 package kr.sjh.presentation.ui.login
 
-import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,7 +18,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +35,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.Roboto_Medium
@@ -38,56 +45,48 @@ import kr.sjh.presentation.ui.theme.Roboto_Medium
 
 @Composable
 fun LoginRoute(
-    modifier: Modifier = Modifier,
-    loginViewModel: LoginViewModel = hiltViewModel(),
-    navigateToLoginDetail: () -> Unit,
-    navigateToMain: () -> Unit
+    viewModel: LoginViewModel = hiltViewModel(),
+    navigateToMain: () -> Unit,
+    navigateToLoginDetail: () -> Unit
 ) {
+    val activity = LocalContext.current as LoginActivity
 
-    val loginUiState by loginViewModel.loginUiState.collectAsStateWithLifecycle()
-
-    val context = LocalContext.current
+    val loginUiState by viewModel.loginUiState.collectAsStateWithLifecycle()
 
     LoginScreen(
-        context = context,
-        modifier = modifier,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
         loginUiState = loginUiState,
-        onLogin = loginViewModel::signIn,
+        navigateToMain = navigateToMain,
         navigateToLoginDetail = navigateToLoginDetail,
-        navigateToMain = navigateToMain
+        onLogin = {
+            viewModel.signIn(activity)
+        }
     )
-
 }
 
 @Composable
 private fun LoginScreen(
-    context: Context,
     modifier: Modifier = Modifier,
     loginUiState: LoginUiState,
-    onLogin: (Context) -> Unit,
+    navigateToMain: () -> Unit,
     navigateToLoginDetail: () -> Unit,
-    navigateToMain: () -> Unit
+    onLogin: () -> Unit,
 ) {
-
-    when (loginUiState) {
-        is LoginUiState.Error -> {
-            //사용자 벤 먹은경우 팝업창 노출 필요
-        }
-
-        LoginUiState.Init -> {}
-
-        is LoginUiState.LoginToDetail -> {
+    if (loginUiState.isLoading) {
+        LoadingDialog()
+    }
+    LaunchedEffect(key1 = loginUiState) {
+        if (loginUiState.destination == "loginToDetail") {
+            Log.d("sjh", "loginToDetail")
             navigateToLoginDetail()
-        }
-
-        LoginUiState.LoginToMain -> {
+        } else if (loginUiState.destination == "loginToMain") {
+            Log.d("sjh", "loginToMain")
             navigateToMain()
         }
-
-        LoginUiState.Loading -> {
-            LoadingDialog()
-        }
     }
+
 
     Column(
         modifier = modifier,
@@ -109,9 +108,7 @@ private fun LoginScreen(
                 .width(300.dp)
                 .clip(RoundedCornerShape(5.dp))
                 .border(1.dp, Color.LightGray)
-                .background(Color.White),
-            context = context,
-            onClick = onLogin
+                .background(Color.White), onClick = onLogin
         )
     }
 }
@@ -131,11 +128,12 @@ fun Logo(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun LoginButton(modifier: Modifier = Modifier, context: Context, onClick: (Context) -> Unit) {
+fun LoginButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(modifier = modifier
-        .clickable { onClick(context) }
-        .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically) {
+        .clickable {
+            onClick()
+        }
+        .padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Image(
             painter = painterResource(id = R.drawable.android_light_rd_na),
             contentDescription = "GoogleLogo"

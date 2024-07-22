@@ -5,6 +5,16 @@ import java.util.Date
 
 data class ChatRoomEntity(
     val roomId: String = "",
-    val message: String = "",
-    val timeStamp: Date? = null
-)
+    val recentMessage: String = "",
+    val timeStamp: Date? = null,
+    val inviter: Inviter = Inviter(),
+    val invitee: Invitee = Invitee()
+) {
+    data class Inviter(
+        val uid: String = "", val profileImageUrl: String = "", val nickName: String = ""
+    )
+
+    data class Invitee(
+        val uid: String = "", val profileImageUrl: String = "", val nickName: String = ""
+    )
+}

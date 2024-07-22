@@ -46,7 +46,7 @@ class UserRepositoryImpl @Inject constructor(
                     if (userEntity != null) {
                         trySend(ResultState.Success(data = userEntity.toUserModel()))
                     } else {
-                        trySend(ResultState.Failure(Exception("UserModel 객체만드는데 실패함")))
+                        trySend(ResultState.Failure(Exception("UserEntity 생성 실패!")))
                     }
                 } else {
                     trySend(ResultState.Failure(Exception("시용자가 없는디요?")))
@@ -145,7 +145,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override fun banUser(uid: String): Flow<ResultState<Unit>> = flow {
         try {
-            fireStore.collection("bans").document("ban-users").set(mapOf(uid to true), SetOptions.merge())
+            fireStore.collection("bans").document("ban-users")
+                .set(mapOf(uid to true), SetOptions.merge())
                 .await()
             emit(ResultState.Success(Unit))
         } catch (e: Exception) {

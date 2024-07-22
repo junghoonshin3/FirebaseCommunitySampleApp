@@ -48,8 +48,7 @@ fun UserModel.toUserEntity(): UserEntity {
         profileImageUrl = profileImageUrl,
         likePosts = likePosts,
         myPosts = myPosts,
-        role = role,
-        myChats = myChats
+        role = role
     )
 }
 
@@ -60,8 +59,7 @@ fun UserEntity.toUserModel(): UserModel {
         profileImageUrl = profileImageUrl,
         likePosts = likePosts,
         myPosts = myPosts,
-        role = role,
-        myChats = myChats
+        role = role
     )
 }
 
@@ -77,7 +75,6 @@ fun ChatMessageModel.toChatMessageEntity() = ChatMessageEntity(
     messageId = messageId,
     senderUid = senderUid,
     receiverUid = receiverUid,
-    profileImageUrl = profileImageUrl,
     message = message,
 )
 
@@ -85,11 +82,6 @@ fun ChatMessageEntity.toChatMessageModel() = ChatMessageModel(
     messageId = messageId,
     senderUid = senderUid,
     receiverUid = receiverUid,
-    profileImageUrl = profileImageUrl,
     message = message,
     timeStamp = timeStamp
-)
-
-fun ChatRoomEntity.toChatRoomModel() = ChatRoomModel(
-    roomId = roomId, message = message, timeStamp = timeStamp
 )

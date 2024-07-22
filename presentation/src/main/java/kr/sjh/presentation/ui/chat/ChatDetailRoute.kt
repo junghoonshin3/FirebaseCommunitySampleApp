@@ -179,7 +179,7 @@ fun Conversation(
                 modifier = Modifier.fillMaxWidth(),
                 isFirst = isFirst,
                 isSameSenderUid = isSameSenderUid,
-                profileImageUrl = item.profileImageUrl,
+                profileImageUrl = "",
                 message = item.message,
                 isMe = isMe
             )
@@ -206,10 +206,11 @@ fun ConversationItem(
         modifier = modifier,
         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start,
     ) {
-        if (isFirst || isSameSenderUid && !isMe) {
-            Profile(profileImageUrl)
-            Spacer(modifier = Modifier.height(10.dp))
-        }
+//        Log.d("sjh","profileImageUrl : $profileImageUrl")
+//        if (isFirst || isSameSenderUid && !isMe) {
+//            Profile(profileImageUrl)
+//            Spacer(modifier = Modifier.height(10.dp))
+//        }
         Row(
             modifier = Modifier
                 .widthIn(max = maxWidthDp)

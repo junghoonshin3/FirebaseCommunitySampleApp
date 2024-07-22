@@ -246,22 +246,20 @@ fun BoardDetailScreen(
                                 .fillMaxWidth()
                                 .padding(10.dp)
                                 .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT),
-                            content = post.content ?: ""
+                            content = post.content
                         )
-                        DetailRequestChat(
-                            modifier = Modifier
+                        if (currentUser?.uid != writerUser.uid) {
+                            DetailRequestChat(modifier = Modifier
                                 .size(100.dp, 60.dp)
                                 .padding(10.dp)
-                                .background(carrot, RoundedCornerShape(5.dp)),
-                            onChat = {
+                                .background(carrot, RoundedCornerShape(5.dp)), onChat = {
                                 onChat(
                                     generateUniqueChatKey(
-                                        currentUser?.uid.toString(),
-                                        writerUser.uid
+                                        currentUser?.uid.toString(), writerUser.uid
                                     )
                                 )
-                            }
-                        )
+                            })
+                        }
                     }
                 }
 
@@ -459,8 +457,7 @@ fun DetailWriterProfile(
                 profileImageUrl ?: R.drawable.baseline_face_24
             },
             requestOptions = {
-                RequestOptions().override(
-                    with(LocalDensity.current) { 80.dp.toPx() }.toInt(),
+                RequestOptions().override(with(LocalDensity.current) { 80.dp.toPx() }.toInt(),
                     with(LocalDensity.current) { 80.dp.toPx() }.toInt()
                 ).diskCacheStrategy(DiskCacheStrategy.ALL).circleCrop()
             },

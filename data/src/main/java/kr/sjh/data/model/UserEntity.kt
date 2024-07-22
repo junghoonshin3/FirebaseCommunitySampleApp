@@ -9,6 +9,5 @@ data class UserEntity(
     val likePosts: List<String> = emptyList(),
     val myPosts: List<String> = emptyList(),
     val role: String = Role.USER,
-    val myChats: List<String> = emptyList(),
     val banUsers: List<String> = emptyList(),
 )

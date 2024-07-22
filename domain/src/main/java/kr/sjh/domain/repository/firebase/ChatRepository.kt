@@ -6,11 +6,14 @@ import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.model.ChatRoomModel
 
 interface ChatRepository {
-    fun getInitialMessages(roomId: String, limit: Long): Flow<ResultState<ChatMessageModel>>
+    fun getInitialMessages(
+        roomId: String, size: Long
+    ): Flow<ResultState<ChatMessageModel>>
+
     fun getNextMessages(
-        roomId: String, limit: Long, fromTime: Long
+        roomId: String, size: Long, fromTime: Long
     ): Flow<ResultState<List<ChatMessageModel>>>
 
-    suspend fun sendMessage(chatMessageModel: ChatMessageModel): Flow<ResultState<Unit>>
-    fun getChatRooms(uid: String): Flow<ResultState<List<ChatRoomModel>>>
+    suspend fun sendMessage(message: ChatMessageModel): Flow<ResultState<Unit>>
+    fun getChatRooms(): Flow<ResultState<List<ChatRoomModel>>>
 }

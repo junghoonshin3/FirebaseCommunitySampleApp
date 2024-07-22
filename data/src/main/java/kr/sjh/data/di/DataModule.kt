@@ -62,11 +62,11 @@ class DataModule {
     @Provides
     @Singleton
     fun provideAuthRepository(
-        auth: FirebaseAuth, userRepository: UserRepository
+        auth: FirebaseAuth, fireStore: FirebaseFirestore
     ): AuthRepository {
         return AuthRepositoryImpl(
             auth,
-            userRepository,
+            fireStore,
         )
     }
 
@@ -97,10 +97,10 @@ class DataModule {
     @Provides
     @Singleton
     fun provideChatRepository(
-        fireStore: FirebaseFirestore
+        fireStore: FirebaseFirestore, fireAuth: FirebaseAuth
     ): ChatRepository {
         return ChatRepositoryImpl(
-            fireStore
+            fireStore, fireAuth
         )
     }
 }

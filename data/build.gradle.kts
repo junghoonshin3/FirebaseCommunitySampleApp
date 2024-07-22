@@ -42,7 +42,7 @@ dependencies {
     kapt(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
 
-    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
 
     // Firebase Storage
     implementation("com.google.firebase:firebase-storage-ktx")
