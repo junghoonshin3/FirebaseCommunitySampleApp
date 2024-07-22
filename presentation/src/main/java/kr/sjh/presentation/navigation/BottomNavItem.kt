@@ -1,16 +1,18 @@
 package kr.sjh.presentation.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.runtime.Stable
+import kr.sjh.presentation.R
 
+@Stable
 sealed class BottomNavItem(
-    val title: String, val icon: ImageVector, val mainScreenRoute: MainRouteScreen
+    val title: String, val iconResource: Int, val screen: RootScreen
 ) {
-    data object Chat : BottomNavItem("채팅", Icons.Default.Home, MainRouteScreen.Chat)
-    data object Board : BottomNavItem("글 목록", Icons.Default.List, MainRouteScreen.Board)
-    data object MyPage : BottomNavItem("내 정보", Icons.Default.AccountCircle, MainRouteScreen.MyPage)
+    data object Chat : BottomNavItem("채팅", R.drawable.baseline_chat_24, RootScreen.Chat)
+
+    data object Board :
+        BottomNavItem("글 목록", R.drawable.baseline_format_list_numbered_24, RootScreen.Board)
+
+
+    data object MyPage :
+        BottomNavItem("내 정보", R.drawable.baseline_person_24, RootScreen.MyPage)
 }

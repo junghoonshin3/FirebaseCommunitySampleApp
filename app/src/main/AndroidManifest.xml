@@ -21,34 +21,50 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/app_icon"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/app_icon"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.PickUp.Splash"
         tools:targetApi="31">
         <activity
-            android:name="kr.sjh.presentation.ui.MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:windowSoftInputMode="adjustResize">
+            android:name="kr.sjh.presentation.ui.auth.AuthActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
-            android:exported="true">
+            android:name="kr.sjh.presentation.ui.login.LoginActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PickUp"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <!-- Redirect URI: "kakao${NATIVE_APP_KEY}://oauth" -->
                 <data
-                    android:host="oauth"
-                    android:scheme="@string/kakao_redirection_scheme" />
+                    android:host="login"
+                    android:scheme="petory" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="kr.sjh.presentation.ui.main.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PickUp"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="main"
+                    android:scheme="petory" />
             </intent-filter>
         </activity>
     </application>

@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.board.edit
 
-import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,76 +9,153 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kr.sjh.domain.usecase.board.ReadPostUseCase
+import kr.sjh.domain.ResultState
+import kr.sjh.domain.model.PostModel
+import kr.sjh.domain.usecase.board.GetPostUseCase
 import kr.sjh.domain.usecase.board.UpdatePostUseCase
-import kr.sjh.domain.model.Post
 import javax.inject.Inject
 
-sealed interface BoardEditUiState {
-    data object Success : BoardEditUiState
+data class EditUiState(
+    val loading: Boolean = false,
+    val post: PostModel = PostModel(),
+    val isComplete: Boolean = false,
+    val error: Throwable? = null
+)
 
-    data class Error(val throwable: Throwable) : BoardEditUiState
-
-    data object Loading : BoardEditUiState
-
-    data object Init : BoardEditUiState
-}
 
 @HiltViewModel
 class BoardEditViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val updatePostUseCase: UpdatePostUseCase,
-    private val readPostUseCase: ReadPostUseCase,
-    private val savedStateHandle: SavedStateHandle
+    private val getPostUseCase: GetPostUseCase
 ) : ViewModel() {
 
-    private val postKey = savedStateHandle.get<String>("postKey")
+    val postKey: String? = savedStateHandle.get<String>("postKey")
 
-    var title by mutableStateOf("")
-
-    var content by mutableStateOf("")
-
-    val post: StateFlow<Post> = readPostUseCase(postKey.toString()).map {
-        title = it.title ?: ""
-        content = it.content ?: ""
-        it
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = Post()
-    )
-    private val _editUiState: MutableStateFlow<BoardEditUiState> =
-        MutableStateFlow(BoardEditUiState.Init)
+    private val _editUiState = MutableStateFlow(EditUiState())
     val editUiState = _editUiState.asStateFlow()
 
+    init {
+        Log.d("sjh", "${postKey}")
+        getPost()
+    }
+
+    private fun getPost() {
+        viewModelScope.launch {
+            postKey?.let {
+                getPostUseCase(it).collect { result ->
+                    when (result) {
+                        is ResultState.Failure -> {
+                            result.throwable.printStackTrace()
+                            _editUiState.update {
+                                it.copy(
+                                    loading = false,
+                                    error = result.throwable
+                                )
+                            }
+                        }
+
+                        ResultState.Loading -> {
+                            _editUiState.update {
+                                it.copy(
+                                    loading = true,
+                                )
+                            }
+                        }
+
+                        is ResultState.Success -> {
+                            Log.d("sjh", "${result.data.first}")
+                            _editUiState.update {
+                                it.copy(
+                                    loading = false,
+                                    post = result.data.first,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun updateTitle(title: String) {
-        this.title = title
+        _editUiState.update {
+            it.copy(
+                post = it.post.copy(title = title)
+            )
+        }
     }
 
     fun updateContent(content: String) {
-        this.content = content
+        _editUiState.update {
+            it.copy(
+                post = it.post.copy(content = content)
+            )
+        }
     }
 
-    fun updatePost(post: Post) {
-        viewModelScope.launch {
-            _editUiState.emit(BoardEditUiState.Loading)
-            updatePostUseCase(
-                post.copy(
-                    title = title,
-                    content = content,
+    fun setSelectedImages(images: List<String>) {
+        _editUiState.update {
+            val newImages = it.post.images.toMutableList()
+            newImages.addAll(images)
+            it.copy(
+                post = it.post.copy(images = newImages)
+            )
+        }
+    }
+
+    fun removeSelectedImage(image: String) {
+        _editUiState.update {
+            val newImages = it.post.images.toMutableList()
+            if (newImages.remove(image)) {
+                it.copy(
+                    post = it.post.copy(
+                        images = newImages
+                    )
                 )
-            ).onSuccess {
-                _editUiState.emit(BoardEditUiState.Success)
-            }.onFailure {
-                _editUiState.emit(BoardEditUiState.Error(it))
+            } else {
+                it
             }
+        }
+    }
+
+    fun updatePost(post: PostModel) {
+        viewModelScope.launch {
+            updatePostUseCase(post)
+                .collect { result ->
+                    when (result) {
+                        is ResultState.Failure -> {
+                            _editUiState.update {
+                                it.copy(
+                                    loading = false,
+                                    error = result.throwable
+                                )
+                            }
+                        }
+
+                        ResultState.Loading -> {
+                            _editUiState.update {
+                                it.copy(
+                                    loading = true
+                                )
+                            }
+                        }
+
+                        is ResultState.Success -> {
+                            postKey?.let { key ->
+                                _editUiState.update {
+                                    it.copy(
+                                        loading = false,
+                                        isComplete = true
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
         }
     }
 }

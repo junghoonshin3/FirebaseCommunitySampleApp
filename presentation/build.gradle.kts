@@ -4,6 +4,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
     id("com.google.devtools.ksp")
+
 }
 
 android {
@@ -41,7 +42,7 @@ android {
 
 dependencies {
 
-    api(project(":domain"))
+    implementation(project(":domain"))
     implementation(Deps.core)
     implementation(CoroutinesLifeCycleScope.lifeCycleRuntime)
     implementation(JetPackCompose.composeActivity)
@@ -50,7 +51,7 @@ dependencies {
     implementation(JetPackCompose.composeBom)
     implementation(JetPackCompose.composeUiToolingPreview)
     implementation(JetPackCompose.composeLifeCycle)
-    testImplementation(TestImplementation.junit)
+    testImplementation(TestImplementation.jUnit)
     androidTestImplementation(AndroidTestImplementation.junit)
     androidTestImplementation(AndroidTestImplementation.espressoCore)
     androidTestImplementation(AndroidTestImplementation.composeBom)
@@ -81,6 +82,22 @@ dependencies {
 
     //constraintLayout
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+
+
+    //Google Login - CredentialManager(인증 관리자)
+
+    implementation("androidx.credentials:credentials:1.3.0-beta02")
+
+    // optional - needed for credentials support from play services, for devices running
+    // Android 13 and below.
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0-beta02")
+
+    //구글 로그인 지원용
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
+
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
 
 
 }

@@ -1,228 +1,229 @@
 package kr.sjh.presentation.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.PaddingValues
+import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraphBuilder
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
+import com.bumptech.glide.request.RequestOptions
+import com.skydoves.landscapist.ImageOptions
+import com.skydoves.landscapist.glide.GlideImage
+import kotlinx.collections.immutable.persistentListOf
 import kr.sjh.presentation.ui.board.BoardRoute
 import kr.sjh.presentation.ui.board.detail.BoardDetailRoute
 import kr.sjh.presentation.ui.board.edit.BoardEditRoute
 import kr.sjh.presentation.ui.board.write.BoardWriteRoute
+import kr.sjh.presentation.ui.chat.ChatDetailRoute
+import kr.sjh.presentation.ui.chat.ChatRoute
+import kr.sjh.presentation.ui.login.LoginActivity
 import kr.sjh.presentation.ui.login.LoginRoute
-import kr.sjh.presentation.ui.login.detail.LoginDetailScreen
-import kr.sjh.presentation.ui.main.MainRoute
-import kr.sjh.presentation.ui.splash.SplashScreen
+import kr.sjh.presentation.ui.login.LoginViewModel
+import kr.sjh.presentation.ui.login.detail.LoginDetailRoute
+import kr.sjh.presentation.ui.main.MainActivity
+import kr.sjh.presentation.ui.main.MainViewModel
+import kr.sjh.presentation.ui.mypage.MyPageRoute
 import kr.sjh.presentation.ui.theme.backgroundColor
-import kr.sjh.presentation.utill.PickUpAppState
+import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.currentScreenAsState
+import kr.sjh.presentation.utill.navigateToRootScreen
 
-fun NavGraphBuilder.addNestedLoginGraph(
-    appState: PickUpAppState,
+@Composable
+fun LoginNavGraph(
+    modifier: Modifier,
+    startScreen: String,
+    navController: NavHostController = rememberNavController(),
 ) {
-    navigation(
-        startDestination = LoginRouteScreen.Login.route,
-        route = Graph.LoginGraph.route
+    val activity = LocalContext.current as LoginActivity
+
+    NavHost(
+        navController = navController, modifier = modifier, startDestination = startScreen
     ) {
-
-        composable(route = LoginRouteScreen.Login.route) {
-            LoginRoute(
-                appState = appState,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
-        composable(route = LoginRouteScreen.Detail.route) {
-            LoginDetailScreen(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(backgroundColor),
-                onBack = {
-                    appState.rootNavHostController.popBackStack(
-                        LoginRouteScreen.Login.route,
+        composable(
+            route = LeafScreen.Login.route
+        ) {
+            LoginRoute(navigateToMain = {
+                activity.startActivity(
+                    Intent(Intent.ACTION_VIEW, "petory://main".toUri())
+                )
+                activity.finish()
+            }, navigateToLoginDetail = {
+                navController.navigate(LeafScreen.LoginDetail.route) {
+                    popUpTo(LeafScreen.Login.route) {
                         inclusive = true
-                    )
-                },
-                onComplete = {
-                    appState.rootNavHostController.navigate(Graph.MainGraph.route) {
-                        popUpTo(LoginRouteScreen.Detail.route) {
-                            inclusive = true
-                        }
                     }
                 }
-            )
+            })
+        }
+        composable(
+            route = LeafScreen.LoginDetail.route
+        ) {
+            LoginDetailRoute(navigateToMain = {
+                activity.startActivity(
+                    Intent(Intent.ACTION_VIEW, "petory://main".toUri())
+                )
+                activity.finish()
+            }, onBack = {
+                navController.navigate(LeafScreen.Login.route) {
+                    popUpTo(LeafScreen.LoginDetail.route) {
+                        inclusive = true
+                    }
+                }
+            })
         }
     }
 }
-
 
 @Composable
 fun MainNavGraph(
     modifier: Modifier,
-    mainNavController: NavHostController,
-    moveBoardDetail: (String) -> Unit,
-    moveBoardWrite: () -> Unit,
-    paddingValues: PaddingValues
+    navController: NavHostController = rememberNavController(),
+    activity: MainActivity = LocalContext.current as MainActivity
 ) {
+    val mainViewModel: MainViewModel = hiltViewModel()
+
+    val user by mainViewModel.currentUser.collectAsStateWithLifecycle()
+
+    val currentSelectedScreen by navController.currentScreenAsState()
+
+    val bottomBar: @Composable () -> Unit by remember(currentSelectedScreen, user) {
+        mutableStateOf({
+            BottomNavigation(
+                currentSelectedScreen = currentSelectedScreen,
+                navController = navController,
+                profileImageUrl = user.profileImageUrl
+            )
+        })
+    }
+
     NavHost(
         modifier = modifier,
-        navController = mainNavController,
-        route = Graph.MainGraph.route,
-        startDestination = MainRouteScreen.Board.route
+        navController = navController,
+        startDestination = RootScreen.Board.route
     ) {
-        composable(route = MainRouteScreen.Board.route) {
-            BoardRoute(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                moveBoardDetail = moveBoardDetail,
-                moveBoardWrite = moveBoardWrite
-            )
-        }
-        composable(MainRouteScreen.Chat.route) {
-
-        }
-        composable(MainRouteScreen.MyPage.route) {
-        }
-    }
-}
-
-fun NavGraphBuilder.addNestedBoardGraph(
-    appState: PickUpAppState,
-) {
-    navigation(
-        startDestination = BoardRouteScreen.Detail.route,
-        route = Graph.BoardGraph.route
-    ) {
-        composable(route = "${BoardRouteScreen.Detail.route}?postKey={postKey}",
-            arguments = listOf(
-                navArgument("postKey") {
-                    type = NavType.StringType
-                    nullable = true
-                }
-            )) {
-            BoardDetailRoute(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(backgroundColor),
-                onBack = {
-                    appState.rootNavHostController.popBackStack(
-                        Graph.MainGraph.route,
-                        inclusive = false
-                    )
-                },
-                moveEdit = {
-                    appState.rootNavHostController.navigate("${BoardRouteScreen.Edit.route}?postKey=$it")
-                }
-            )
-        }
-
-        composable(route = BoardRouteScreen.Write.route) {
-            BoardWriteRoute(
-                modifier = Modifier.fillMaxSize(),
-                onBack = {
-                    appState.rootNavHostController.popBackStack(
-                        Graph.MainGraph.route,
-                        inclusive = false
-                    )
-                }
-            )
-        }
-        composable(route = "${BoardRouteScreen.Edit.route}?postKey={postKey}",
-            arguments = listOf(
-                navArgument("postKey") {
-                    type = NavType.StringType
-                }
-            )) {
-            BoardEditRoute(
-                modifier = Modifier.fillMaxSize(),
-                onBack = {
-                    appState.rootNavHostController.popBackStack(
-                        BoardRouteScreen.Detail.route,
-                        inclusive = false
-                    )
+        navigation(route = RootScreen.Board.route, startDestination = LeafScreen.Board.route) {
+            composable(route = LeafScreen.Board.route) {
+                BoardRoute(modifier = Modifier.fillMaxSize(), navigateToBoardDetail = {
+                    navController.navigate("${LeafScreen.BoardDetail.route}?postKey=$it")
+                }, navigateToBoardWrite = {
+                    navController.navigate("${LeafScreen.BoardWrite.route}?postKey=$it")
+                }, bottomBar = bottomBar
+                )
+            }
+            composable(route = "${LeafScreen.BoardEdit.route}?postKey={postKey}") { backStackEntry ->
+                BoardEditRoute(modifier = Modifier.fillMaxSize(), onBack = {
+                    navController.navigateUp()
+                }, navigateToDetail = {
+                    navController.navigate("${LeafScreen.BoardDetail.route}?postKey=$it")
                 })
+            }
+            composable(
+                route = LeafScreen.BoardWrite.route
+            ) {
+                BoardWriteRoute(modifier = Modifier.fillMaxSize(), onBack = {
+                    navController.popBackStack(LeafScreen.Board.route, false)
+                }, navigateToDetail = { postKey ->
+                    navController.navigate("${LeafScreen.BoardDetail.route}?postKey=${postKey}")
+                })
+            }
+            composable(
+                route = "${LeafScreen.BoardDetail.route}?postKey={postKey}"
+            ) {
+                BoardDetailRoute(modifier = Modifier.fillMaxSize(), onBack = {
+                    navController.popBackStack(LeafScreen.Board.route, false)
+                }, onChat = { roomId, nickName, profileImageUrl ->
+                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=$profileImageUrl")
+                }, onEdit = {
+                    navController.navigate("${LeafScreen.BoardEdit.route}?postKey=$it")
+                })
+            }
         }
-    }
-}
 
-fun NavGraphBuilder.addNestedChatGraph(
-    appState: PickUpAppState,
-) {
-    navigation(
-        startDestination = ChatRouteScreen.Detail.route,
-        route = Graph.ChatGraph.route
-    ) {
-        composable(route = ChatRouteScreen.Detail.route) {
+        navigation(route = RootScreen.Chat.route, startDestination = LeafScreen.Chat.route) {
+            composable(route = LeafScreen.Chat.route) {
+                ChatRoute(bottomBar = bottomBar,
+                    navigateToDetail = { roomId, nickName, profileImageUrl ->
+                        navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=$profileImageUrl")
+                    })
+            }
 
+            composable(route = "${LeafScreen.ChatDetail.route}?roomId={roomId}&nickName={nickName}&profileImageUrl={profileImageUrl}") {
+                ChatDetailRoute(onBack = {
+                    navController.navigateUp()
+                })
+            }
         }
-    }
-}
 
-fun NavGraphBuilder.addNestedMyPageGraph(
-    appState: PickUpAppState,
-) {
-    navigation(
-        startDestination = MyPageRouteScreen.Detail.route,
-        route = Graph.MyPageGraph.route
-    ) {
-        composable(route = MyPageRouteScreen.Detail.route) {
-
+        navigation(route = RootScreen.MyPage.route, startDestination = LeafScreen.MyPage.route) {
+            composable(route = LeafScreen.MyPage.route) {
+                MyPageRoute(modifier = Modifier.fillMaxSize(), bottomBar = bottomBar, logOut = {
+                    activity.startActivity(Intent(Intent.ACTION_VIEW, "petory://login".toUri()))
+                    activity.finish()
+                })
+            }
         }
+
+
     }
+
 }
 
 
 @Composable
-fun PickUpNavHost(
-    modifier: Modifier = Modifier,
-    appState: PickUpAppState,
-//    bottomSheetState: BottomSheetState = rememberBottomSheetStateHolder(Unit),
-    onKeepOnScreenCondition: () -> Unit
+fun BottomNavigation(
+    navController: NavController, currentSelectedScreen: RootScreen, profileImageUrl: String?
 ) {
-    val navController = appState.rootNavHostController
+    val navItems = persistentListOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
 
-    NavHost(
-        navController = navController,
-        startDestination = Graph.SplashGraph.route,
-        modifier = modifier.safeDrawingPadding()
-    ) {
-        composable(Graph.SplashGraph.route) {
-            SplashScreen(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black),
-                appState = appState,
-                onKeepOnScreenCondition = onKeepOnScreenCondition
-            )
+    NavigationBar(containerColor = backgroundColor) {
+        navItems.forEach { item ->
+            NavigationBarItem(colors = NavigationBarItemDefaults.colors(
+                indicatorColor = Color.Transparent,
+                selectedTextColor = carrot,
+                unselectedTextColor = Color.White,
+            ), alwaysShowLabel = true, label = {
+                Text(text = item.title, fontSize = 12.sp)
+            }, selected = currentSelectedScreen == item.screen, onClick = {
+                navController.navigateToRootScreen(item.screen)
+            }, icon = {
+                GlideImage(imageOptions = ImageOptions(
+                    colorFilter = if (item.screen == RootScreen.MyPage) {
+                        null
+                    } else if (currentSelectedScreen == item.screen) {
+                        ColorFilter.tint(carrot)
+                    } else {
+                        ColorFilter.tint(Color.White)
+                    }
+                ), requestOptions = {
+                    RequestOptions().override(60).circleCrop()
+                }, imageModel = {
+                    when (item.screen) {
+                        RootScreen.MyPage -> profileImageUrl
+                        else -> {
+                            item.iconResource
+                        }
+                    }
+                })
+            })
         }
-
-        addNestedLoginGraph(appState = appState)
-        composable(
-            route = Graph.MainGraph.route,
-        ) {
-            MainRoute(
-                modifier = Modifier.fillMaxSize(),
-                rootNavController = appState.rootNavHostController,
-                mainNavController = appState.mainNavHostController,
-            )
-        }
-        addNestedBoardGraph(appState)
-        addNestedChatGraph(appState)
-        addNestedMyPageGraph(appState)
     }
-
 }
-
 

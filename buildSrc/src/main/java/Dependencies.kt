@@ -1,7 +1,6 @@
 object Versions {
     const val hilt_navigation = "1.1.0-alpha01"
-    const val composeViewModel = "2.6.1"
-    const val composeNavigation = "2.7.6"
+    const val composeNavigation = "2.7.7"
     const val material3WindowSizeClass = "1.1.2"
     const val espressoCore = "3.5.1"
     const val core = "1.9.0"
@@ -9,8 +8,7 @@ object Versions {
     const val composeActivity = "1.8.2"
     const val composeUi = "1.6.6"
     const val toolingPreview = "1.5.4"
-    const val composeMaterial = "1.1.2"
-    const val juint = "4.13.2"
+    const val jUnit = "4.13.2"
     const val jUnit4 = "1.6.0"
     const val extJunit = "1.1.5"
     const val composeBom = "2023.03.00"
@@ -21,6 +19,10 @@ object Versions {
     const val hilt_version = "2.48"
     const val kakao_login = "2.19.0"
     const val compose_lifecycle = "2.6.0-alpha01"
+
+    //Coroutine
+    const val KOTLIN_COROUTINES = "1.6.4"
+    const val KOTLIN_COROUTINES_PLAY_SERVICES = "1.6.4"
 
 }
 
@@ -43,7 +45,7 @@ object JetPackCompose {
 }
 
 object TestImplementation {
-    const val junit = "junit:junit:${Versions.juint}"
+    const val jUnit = "junit:junit:${Versions.jUnit}"
 }
 
 object AndroidTestImplementation {
@@ -80,6 +82,8 @@ object DaggerHilt {
         "com.google.dagger:hilt-compiler:${Versions.hilt_version}"
 }
 
-object KaKao {
-    const val kakao_login = "com.kakao.sdk:v2-user:${Versions.kakao_login}"
+object Coroutines {
+    // Coroutines
+    const val kotlinxCoroutines =
+        "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.KOTLIN_COROUTINES}"
 }

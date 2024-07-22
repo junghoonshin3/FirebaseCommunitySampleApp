@@ -1,11 +1,9 @@
 package kr.sjh.domain.usecase.board
 
-import kr.sjh.domain.model.Post
-import kr.sjh.domain.repository.BoardRepository
-import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kr.sjh.domain.ResultState
+import kr.sjh.domain.model.PostModel
 
-class UpdatePostUseCase @Inject constructor(
-    private val boardRepository: BoardRepository
-) {
-    suspend operator fun invoke(post: Post) = boardRepository.updatePost(post)
+fun interface UpdatePostUseCase {
+    suspend operator fun invoke(postModel: PostModel): Flow<ResultState<Unit>>
 }

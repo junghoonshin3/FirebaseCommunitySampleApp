@@ -1,44 +1,21 @@
 package kr.sjh.presentation.navigation
 
-sealed class Graph(val route: String) {
-    data object SplashGraph : Graph("splashGraph")
-    data object LoginGraph : Graph("loginGraph")
-    data object MainGraph : Graph("mainGraph")
 
-    data object BoardGraph : Graph("boardGraph")
-
-    data object ChatGraph : Graph("chatGraph")
-
-    data object MyPageGraph : Graph("myPageGraph")
+sealed class RootScreen(val route: String) {
+    data object Board : RootScreen("board_root")
+    data object Chat : RootScreen("chat_root")
+    data object MyPage : RootScreen("mypage_root")
 }
 
-sealed class LoginRouteScreen(val route: String) {
-    data object Login : LoginRouteScreen("login")
+sealed class LeafScreen(val route: String) {
+    data object Login : LeafScreen("login_screen")
+    data object LoginDetail : LeafScreen("login_detail_screen")
+    data object Board : LeafScreen("board_screen")
+    data object BoardWrite : LeafScreen("board_write_screen")
+    data object BoardEdit : LeafScreen("board_edit_screen")
+    data object BoardDetail : LeafScreen("board_detail_screen")
+    data object Chat : LeafScreen("chat_screen")
 
-    data object Detail : LoginRouteScreen("detail")
-}
-
-sealed class MainRouteScreen(val route: String) {
-    data object Board : MainRouteScreen("board")
-
-    data object Chat : MainRouteScreen("chat")
-
-    data object MyPage : MainRouteScreen("myPage")
-}
-
-sealed class BoardRouteScreen(val route: String) {
-    data object Detail : BoardRouteScreen("board_detail")
-
-    data object Write : BoardRouteScreen("board_write")
-
-    data object Edit : BoardRouteScreen("board_edit")
-}
-
-sealed class ChatRouteScreen(val route: String) {
-    data object Detail : ChatRouteScreen("chat_detail")
-}
-
-sealed class MyPageRouteScreen(val route: String) {
-    data object Detail : MyPageRouteScreen("myPage_detail")
-
+    data object ChatDetail : LeafScreen("chat_detail_screen")
+    data object MyPage : LeafScreen("mypage_screen")
 }
