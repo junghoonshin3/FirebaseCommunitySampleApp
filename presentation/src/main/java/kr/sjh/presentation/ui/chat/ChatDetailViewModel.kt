@@ -1,17 +1,21 @@
 package kr.sjh.presentation.ui.chat
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.usecase.auth.firebase.GetAuthCurrentUserUseCase
@@ -20,6 +24,7 @@ import kr.sjh.domain.usecase.chat.GetNextMessagesUseCase
 import kr.sjh.domain.usecase.chat.SendMessageUseCase
 import kr.sjh.domain.util.generateUniqueChatKey
 import kr.sjh.domain.util.getReceiverUid
+import java.net.URLEncoder
 import javax.inject.Inject
 
 data class MessageUiState(
@@ -49,7 +54,11 @@ class ChatDetailViewModel @Inject constructor(
 
     var message by mutableStateOf(savedStateHandle["message"] ?: "")
 
-    private val _messageUiState = MutableStateFlow(MessageUiState())
+    private val _messageUiState = MutableStateFlow(
+        MessageUiState(
+            nickName = nickName, profileImageUrl = profileImageUrl
+        )
+    )
     val messageUiState = _messageUiState.asStateFlow()
 
     init {
@@ -83,10 +92,7 @@ class ChatDetailViewModel @Inject constructor(
                             val newMessages = it.messages.toMutableList()
                             newMessages.add(0, result.data)
                             it.copy(
-                                isLoading = false,
-                                messages = newMessages,
-                                nickName = nickName,
-                                profileImageUrl = profileImageUrl
+                                isLoading = false, messages = newMessages
                             )
                         }
                     }
@@ -97,39 +103,39 @@ class ChatDetailViewModel @Inject constructor(
 
     fun getNextMessages(limit: Long = 10) {
         viewModelScope.launch {
-            getNextMessagesUseCase(
-                roomId = roomId,
-                limit = limit,
-                fromTime = messageUiState.value.messages.last().timeStamp!!.time
-            ).collect { result ->
-                when (result) {
-                    is ResultState.Failure -> {
-                        Log.d("sjh", "Failure")
-                        _messageUiState.update {
-                            it.copy(
-                                isLoading = false, throwable = result.throwable
-                            )
-                        }
-                    }
-
-                    ResultState.Loading -> {
-                        _messageUiState.update {
-                            it.copy(
-                                isLoading = true, throwable = null
-                            )
-                        }
-                    }
-
-                    is ResultState.Success -> {
-                        Log.d("getNextMessages", "Success > ${result.data}")
-                        _messageUiState.update {
-                            it.copy(
-                                isLoading = false,
-                                messages = it.messages + result.data,
-                                throwable = null
-                            )
+            messageUiState.value.messages.last().timeStamp?.let { timeStamp ->
+                getNextMessagesUseCase(
+                    roomId = roomId, limit = limit, fromTime = timeStamp.time
+                ).collect { result ->
+                    when (result) {
+                        is ResultState.Failure -> {
+                            Log.d("sjh", "Failure")
+                            _messageUiState.update {
+                                it.copy(
+                                    isLoading = false, throwable = result.throwable
+                                )
+                            }
                         }
 
+                        ResultState.Loading -> {
+                            _messageUiState.update {
+                                it.copy(
+                                    isLoading = true, throwable = null
+                                )
+                            }
+                        }
+
+                        is ResultState.Success -> {
+                            Log.d("getNextMessages", "Success > ${result.data}")
+                            _messageUiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    messages = it.messages + result.data,
+                                    throwable = null
+                                )
+                            }
+
+                        }
                     }
                 }
             }
@@ -147,7 +153,6 @@ class ChatDetailViewModel @Inject constructor(
                 val newMessage = ChatMessageModel(
                     senderUid = uid, receiverUid = getReceiverUid(roomId, uid), message = message
                 )
-
                 sendMessageUseCase(newMessage).collect { result ->
                     when (result) {
                         is ResultState.Failure -> {

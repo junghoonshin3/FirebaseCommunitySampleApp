@@ -140,7 +140,7 @@ fun BoardScreen(
                             likeCount = post.likeCount,
                             images = post.images
                         )
-                        if (index < boardUiState.posts.size - 1)
+                        if (index < boardUiState.posts.lastIndex)
                             HorizontalDivider(
                                 Modifier
                                     .fillMaxWidth()

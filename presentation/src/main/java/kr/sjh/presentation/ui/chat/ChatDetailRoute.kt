@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.chat
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,6 +58,8 @@ import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.PurpleGrey80
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.getActivity
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @Composable
 fun ChatDetailRoute(
@@ -126,7 +127,8 @@ fun ChatDetailScreen(
                 .height(60.dp),
             title = messageUiState.nickName,
             backIcon = Icons.Default.ArrowBack,
-            onBack = onBack
+            onBack = onBack,
+            profileImageUrl = messageUiState.profileImageUrl
         )
         Conversation(
             modifier = Modifier
@@ -134,7 +136,7 @@ fun ChatDetailScreen(
                 .weight(1f),
             lazyListState = lazyListState,
             messages = messageUiState.messages,
-            currentUid = currentUser.uid
+            currentUid = currentUser.uid,
         )
         InputMessage(modifier = Modifier
             .imePadding()
@@ -170,18 +172,10 @@ fun Conversation(
         contentPadding = PaddingValues(10.dp),
         reverseLayout = true
     ) {
-
         itemsIndexed(conversations, key = { _, item -> item.messageId }) { index, item ->
             val isMe = item.senderUid == currentUid
-            val isFirst = index == 0 && !isMe
-            val isSameSenderUid = index > 0 && conversations[index - 1].senderUid != item.senderUid
             ConversationItem(
-                modifier = Modifier.fillMaxWidth(),
-                isFirst = isFirst,
-                isSameSenderUid = isSameSenderUid,
-                profileImageUrl = "",
-                message = item.message,
-                isMe = isMe
+                modifier = Modifier.fillMaxWidth(), isMe = isMe, chatMessage = item
             )
         }
     }
@@ -193,25 +187,34 @@ fun Conversation(
 @Composable
 fun ConversationItem(
     modifier: Modifier,
-    isFirst: Boolean,
-    isSameSenderUid: Boolean,
     isMe: Boolean,
-    profileImageUrl: String,
-    message: String
+    chatMessage: ChatMessageModel,
 ) {
-
     val maxWidthDp = LocalConfiguration.current.screenWidthDp.dp * 2 / 3
+    val dateFormat = SimpleDateFormat("HH:mm")
 
-    Column(
+    Row(
         modifier = modifier,
-        horizontalAlignment = if (isMe) Alignment.End else Alignment.Start,
+        horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom // 텍스트 정렬을 위해 Alignment.Bottom으로 변경
     ) {
-//        Log.d("sjh","profileImageUrl : $profileImageUrl")
-//        if (isFirst || isSameSenderUid && !isMe) {
-//            Profile(profileImageUrl)
-//            Spacer(modifier = Modifier.height(10.dp))
-//        }
-        Row(
+        // when 문을 사용하여 isMe에 따라 UI를 다르게 표시
+        MessageBubbleWithTime(
+            isMe = isMe,
+            message = chatMessage.message,
+            timestamp = chatMessage.timeStamp,
+            dateFormat = dateFormat,
+            maxWidthDp = maxWidthDp
+        )
+    }
+}
+
+@Composable
+fun MessageBubbleWithTime(
+    isMe: Boolean, message: String, timestamp: Date?, dateFormat: SimpleDateFormat, maxWidthDp: Dp
+) {
+    Column { // 컬럼을 사용하여 메시지 거품과 시간을 배치
+        Box(
             modifier = Modifier
                 .widthIn(max = maxWidthDp)
                 .clip(
@@ -223,25 +226,29 @@ fun ConversationItem(
                     )
                 )
                 .background(if (isMe) carrot else PurpleGrey80)
-                .padding(16.dp)
+                .padding(10.dp)
         ) {
-
+            Text(text = message)
+        }
+        timestamp?.let { // 시간 표시
             Text(
-                text = message
+                text = dateFormat.format(it),
+                color = Color.White,
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(if (isMe) Alignment.End else Alignment.Start) // 시간 텍스트에 패딩 추가
             )
         }
     }
 }
 
 @Composable
-fun Profile(imageUrl: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-        GlideImage(requestOptions = {
-            RequestOptions().override(100).circleCrop()
-        }, imageModel = {
-            imageUrl
-        })
-    }
+fun Profile(modifier: Modifier = Modifier, imageUrl: String) {
+    GlideImage(modifier = modifier, requestOptions = {
+        RequestOptions().override(70).circleCrop()
+    }, imageModel = {
+        imageUrl
+    })
 }
 
 @Composable

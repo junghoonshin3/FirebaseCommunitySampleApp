@@ -4,11 +4,10 @@ import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.DocumentChange.Type.*
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.ServerTimestamp
-import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -25,6 +24,8 @@ import kr.sjh.domain.model.ChatRoomModel
 import kr.sjh.domain.repository.firebase.ChatRepository
 import kr.sjh.domain.util.generateUniqueChatKey
 import java.util.Date
+import java.util.GregorianCalendar
+import java.util.TimeZone
 import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
@@ -35,46 +36,47 @@ class ChatRepositoryImpl @Inject constructor(
         roomId: String, size: Long
     ): Flow<ResultState<ChatMessageModel>> = callbackFlow {
         auth.currentUser?.uid?.let {
-            val listener = firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
+            firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
                 .collection(Constants.FirebaseCollectionChatMessages)
                 .orderBy("timeStamp", Query.Direction.ASCENDING).limitToLast(size)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
-                        error.printStackTrace()
                         trySend(ResultState.Failure(error))
                         return@addSnapshotListener
                     }
-                    if (snapshot != null) {
-                        if (!snapshot.isEmpty) {
-                            Log.d(
-                                "sjh", "snapshot.documentChanges : ${snapshot.documentChanges.size}"
-                            )
-                            snapshot.documentChanges.map { dc ->
-                                when (dc.type) {
-                                    DocumentChange.Type.ADDED -> {
+                    if (snapshot != null && !snapshot.isEmpty) {
+                        snapshot.metadata.hasPendingWrites()
+                        snapshot.documentChanges.forEach { dc ->
+                            when (dc.type) {
+                                ADDED -> {
+                                    // 로컬에 변경사항이 있는지 체크
+                                    if (!snapshot.metadata.hasPendingWrites()) {
                                         val message =
                                             dc.document.toObject(ChatMessageEntity::class.java)
                                                 .toChatMessageModel()
+                                        Log.d("ADDED", "${message.timeStamp?.time}")
                                         trySend(ResultState.Success(message))
                                     }
+                                }
 
-                                    DocumentChange.Type.MODIFIED -> {
+                                MODIFIED -> {
+                                    // 백엔드에 데이터가 쓰기 처리된 후의 메세지 데이터
+                                    val message =
+                                        dc.document.toObject(ChatMessageEntity::class.java)
+                                            .toChatMessageModel()
+                                    trySend(ResultState.Success(message))
+                                }
 
-                                    }
-
-                                    DocumentChange.Type.REMOVED -> {
-
-                                    }
+                                REMOVED -> {
+                                    Log.d("REMOVED", "")
                                 }
                             }
                         }
                     }
                 }
-
-            awaitClose {
-                listener.remove()
-                close()
-            }
+        }
+        awaitClose {
+            close()
         }
     }
 
@@ -110,23 +112,34 @@ class ChatRepositoryImpl @Inject constructor(
         message: ChatMessageModel
     ): Flow<ResultState<Unit>> = flow {
         try {
+            emit(ResultState.Loading)
             auth.currentUser?.uid?.let { uid ->
                 val roomId = generateUniqueChatKey(uid, message.receiverUid)
                 val chatsDoc =
                     firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
-                val messagesDoc =
-                    firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
-                        .collection(Constants.FirebaseCollectionChatMessages).document()
+                val messagesCollection =
+                    chatsDoc.collection(Constants.FirebaseCollectionChatMessages)
+                val messagesDoc = messagesCollection.document()
 
                 val isRoomExist = chatsDoc.get().await().exists()
                 if (!isRoomExist) {
                     createChatRoom(roomId, uid, message.receiverUid)
                 }
-                val msgEntity = message.copy(messageId = messagesDoc.id).toChatMessageEntity()
+
+                val msgEntity = message.copy(
+                    messageId = messagesDoc.id,
+                ).toChatMessageEntity()
+
                 messagesDoc.set(msgEntity).await()
+
                 val recentMessage =
-                    messagesDoc.get().await().toObject(ChatMessageEntity::class.java)
-                updateRecentMessage(roomId, recentMessage?.message!!, recentMessage.timeStamp!!)
+                    messagesCollection.orderBy("timeStamp", Query.Direction.DESCENDING).limit(1)
+                        .get().await().documents.first().toObject(ChatMessageEntity::class.java)
+                        ?.toChatMessageModel()
+
+                recentMessage?.let {
+                    updateRecentMessage(roomId, recentMessage.message, recentMessage.timeStamp)
+                }
                 emit(ResultState.Success(Unit))
             }
         } catch (e: Exception) {
@@ -154,7 +167,7 @@ class ChatRepositoryImpl @Inject constructor(
                                 ChatRoomModel(
                                     roomId = dc.document.id,
                                     recentMessage = dc.document.data["recentMessage"] as String,
-                                    timeStamp = (dc.document.data["timeStamp"] as Timestamp).toDate(),
+                                    timeStamp = (dc.document.data["timeStamp"] as? Timestamp)?.toDate(),
                                     inviter = ChatRoomModel.Inviter(
                                         uid = inviterMap!!["uid"] as String,
                                         nickName = inviterMap["nickName"] as String,
@@ -205,13 +218,15 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     private suspend fun updateRecentMessage(
-        roomId: String, message: String, timeStamp: Date
+        roomId: String, message: String, timeStamp: Date?
     ) {
-        firebase.collection(Constants.FirebaseCollectionChats).document(roomId).update(
-            mapOf(
-                "recentMessage" to message, "timeStamp" to Timestamp(timeStamp)
-            )
-        ).await()
-    }
+        timeStamp?.let {
+            firebase.collection(Constants.FirebaseCollectionChats).document(roomId).update(
+                mapOf(
+                    "recentMessage" to message, "timeStamp" to Timestamp(it)
+                )
+            ).await()
+        }
 
+    }
 }

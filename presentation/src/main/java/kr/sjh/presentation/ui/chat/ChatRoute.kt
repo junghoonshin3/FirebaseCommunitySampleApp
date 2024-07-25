@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,6 +39,7 @@ import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.utill.calculationTime
+import kr.sjh.presentation.utill.clickableSingle
 
 @Composable
 fun ChatRoute(
@@ -76,23 +79,36 @@ private fun ChatScreen(
             }
         }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(chatRoomUiState.rooms) { room ->
+            itemsIndexed(chatRoomUiState.rooms) { index, room ->
                 val isInviter = chatRoomUiState.uid == room.inviter.uid
-                ChatRoom(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .padding(10.dp),
+                val partnerNickName =
+                    if (isInviter) room.invitee.nickName else room.inviter.nickName
+                val partnerProfileImageUrl =
+                    if (isInviter) room.invitee.profileImageUrl else room.inviter.profileImageUrl
+                ChatRoom(
+                    modifier = Modifier
+                        .clickableSingle {
+                            navigateToDetail(
+                                room.roomId, partnerNickName, partnerProfileImageUrl
+                            )
+                        }
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .padding(10.dp),
                     recentMessage = room.recentMessage,
                     timeStamp = calculationTime(room.timeStamp!!.time),
-                    nickname = if (isInviter) room.invitee.nickName else room.inviter.nickName,
-                    profileUrl = if (isInviter) room.invitee.profileImageUrl else room.inviter.profileImageUrl,
-                    onClick = {
-                        navigateToDetail(
-                            room.roomId,
-                            if (isInviter) room.invitee.nickName else room.inviter.nickName,
-                            if (isInviter) room.invitee.profileImageUrl else room.inviter.profileImageUrl
-                        )
-                    })
+                    nickname = partnerNickName,
+                    profileUrl = partnerProfileImageUrl,
+                )
+                if (chatRoomUiState.rooms.lastIndex > index) {
+                    HorizontalDivider(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp),
+                        thickness = 1.dp,
+                        color = Color.LightGray
+                    )
+                }
             }
         }
     }
@@ -105,11 +121,8 @@ fun ChatRoom(
     nickname: String?,
     recentMessage: String = "",
     timeStamp: String = "",
-    onClick: () -> Unit
 ) {
-    Row(modifier = modifier.clickable {
-        onClick()
-    }, verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         GlideImage(modifier = Modifier.clip(CircleShape), requestOptions = {
             RequestOptions().override(200, 200).centerInside().circleCrop()
         }, imageModel = {

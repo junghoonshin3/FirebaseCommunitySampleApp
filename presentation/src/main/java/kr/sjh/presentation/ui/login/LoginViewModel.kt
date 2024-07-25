@@ -47,6 +47,7 @@ class LoginViewModel @Inject constructor(
                     ).collect { result ->
                         when (result) {
                             is ResultState.Failure -> {
+                                result.throwable.printStackTrace()
                                 _loginUiState.update {
                                     it.copy(
                                         isLoading = false,

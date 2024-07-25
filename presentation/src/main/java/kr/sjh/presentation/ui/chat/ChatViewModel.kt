@@ -43,8 +43,7 @@ class ChatViewModel @Inject constructor(
                     is ResultState.Success -> {
                         _chatRooms.update {
                             it.copy(
-                                uid = authCurrentUserUseCase()?.uid.toString(),
-                                rooms = result.data
+                                uid = authCurrentUserUseCase()?.uid.toString(), rooms = result.data
                             )
                         }
                     }

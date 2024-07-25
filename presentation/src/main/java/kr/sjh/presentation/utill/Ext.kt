@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -39,6 +40,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kr.sjh.presentation.navigation.RootScreen
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -122,22 +125,6 @@ fun NavController.currentScreenAsState(): State<RootScreen> {
     return selectedItem
 }
 
-@Stable
-@Composable
-fun NavController.currentRouteAsState(): State<String?> {
-    val selectedItem = remember { mutableStateOf<String?>(null) }
-    DisposableEffect(this) {
-        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
-            selectedItem.value = destination.route
-        }
-        addOnDestinationChangedListener(listener)
-
-        onDispose {
-            removeOnDestinationChangedListener(listener)
-        }
-    }
-    return selectedItem
-}
 
 fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
     navigate(rootScreen.route) {
@@ -179,3 +166,7 @@ fun Modifier.clickableSingle(
         }
     }
 })
+
+fun String.toEncodingURL(): String {
+    return URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
+}

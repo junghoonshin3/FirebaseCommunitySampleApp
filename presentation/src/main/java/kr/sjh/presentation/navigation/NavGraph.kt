@@ -28,6 +28,8 @@ import com.bumptech.glide.request.RequestOptions
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.glide.GlideImage
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kr.sjh.presentation.ui.board.BoardRoute
 import kr.sjh.presentation.ui.board.detail.BoardDetailRoute
 import kr.sjh.presentation.ui.board.edit.BoardEditRoute
@@ -45,6 +47,9 @@ import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.currentScreenAsState
 import kr.sjh.presentation.utill.navigateToRootScreen
+import kr.sjh.presentation.utill.toEncodingURL
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun LoginNavGraph(
@@ -150,7 +155,8 @@ fun MainNavGraph(
                 BoardDetailRoute(modifier = Modifier.fillMaxSize(), onBack = {
                     navController.popBackStack(LeafScreen.Board.route, false)
                 }, onChat = { roomId, nickName, profileImageUrl ->
-                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=$profileImageUrl")
+
+                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}")
                 }, onEdit = {
                     navController.navigate("${LeafScreen.BoardEdit.route}?postKey=$it")
                 })
@@ -159,9 +165,10 @@ fun MainNavGraph(
 
         navigation(route = RootScreen.Chat.route, startDestination = LeafScreen.Chat.route) {
             composable(route = LeafScreen.Chat.route) {
-                ChatRoute(bottomBar = bottomBar,
+                ChatRoute(
+                    bottomBar = bottomBar,
                     navigateToDetail = { roomId, nickName, profileImageUrl ->
-                        navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=$profileImageUrl")
+                        navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}")
                     })
             }
 

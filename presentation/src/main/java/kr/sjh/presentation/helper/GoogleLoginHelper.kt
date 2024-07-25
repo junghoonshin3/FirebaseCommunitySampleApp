@@ -16,13 +16,6 @@ class GoogleLoginHelper @Inject constructor(
     context: Context,
     private val credentialManager: CredentialManager
 ) {
-
-//    private val googleIdOption = GetGoogleIdOption.Builder()
-//        .setFilterByAuthorizedAccounts(true)
-//        .setServerClientId(context.resources.getString(R.string.WEB_CLIENT_ID))
-//        .setNonce(null)
-//        .build()
-
     private val googleIdOption: GetSignInWithGoogleOption =
         GetSignInWithGoogleOption.Builder(context.resources.getString(R.string.WEB_CLIENT_ID))
             .build()
@@ -36,7 +29,6 @@ class GoogleLoginHelper @Inject constructor(
             val credential = credentialManager.getCredential(
                 context = activityContext, request = request
             ).credential
-
             when (credential) {
                 is CustomCredential -> {
                     if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
