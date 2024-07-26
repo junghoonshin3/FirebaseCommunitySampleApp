@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.request.RequestOptions
@@ -191,7 +192,7 @@ fun ConversationItem(
     chatMessage: ChatMessageModel,
 ) {
     val maxWidthDp = LocalConfiguration.current.screenWidthDp.dp * 2 / 3
-    val dateFormat = SimpleDateFormat("HH:mm")
+    val dateFormat = SimpleDateFormat("a hh:mm")
 
     Row(
         modifier = modifier,
@@ -213,7 +214,7 @@ fun ConversationItem(
 fun MessageBubbleWithTime(
     isMe: Boolean, message: String, timestamp: Date?, dateFormat: SimpleDateFormat, maxWidthDp: Dp
 ) {
-    Column { // 컬럼을 사용하여 메시지 거품과 시간을 배치
+    Column { // 컬럼을 사용하여 메시지와 시간을 배치
         Box(
             modifier = Modifier
                 .widthIn(max = maxWidthDp)
@@ -232,6 +233,7 @@ fun MessageBubbleWithTime(
         }
         timestamp?.let { // 시간 표시
             Text(
+                fontSize = 12.sp,
                 text = dateFormat.format(it),
                 color = Color.White,
                 modifier = Modifier

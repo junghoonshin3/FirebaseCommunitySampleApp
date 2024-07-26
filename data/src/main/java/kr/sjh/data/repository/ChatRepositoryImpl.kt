@@ -35,47 +35,45 @@ class ChatRepositoryImpl @Inject constructor(
     override fun getInitialMessages(
         roomId: String, size: Long
     ): Flow<ResultState<ChatMessageModel>> = callbackFlow {
-        auth.currentUser?.uid?.let {
-            firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
-                .collection(Constants.FirebaseCollectionChatMessages)
-                .orderBy("timeStamp", Query.Direction.ASCENDING).limitToLast(size)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        trySend(ResultState.Failure(error))
-                        return@addSnapshotListener
-                    }
-                    if (snapshot != null && !snapshot.isEmpty) {
-                        snapshot.metadata.hasPendingWrites()
-                        snapshot.documentChanges.forEach { dc ->
-                            when (dc.type) {
-                                ADDED -> {
-                                    // 로컬에 변경사항이 있는지 체크
-                                    if (!snapshot.metadata.hasPendingWrites()) {
-                                        val message =
-                                            dc.document.toObject(ChatMessageEntity::class.java)
-                                                .toChatMessageModel()
-                                        Log.d("ADDED", "${message.timeStamp?.time}")
-                                        trySend(ResultState.Success(message))
-                                    }
-                                }
-
-                                MODIFIED -> {
-                                    // 백엔드에 데이터가 쓰기 처리된 후의 메세지 데이터
+        val listener = firebase.collection(Constants.FirebaseCollectionChats).document(roomId)
+            .collection(Constants.FirebaseCollectionChatMessages)
+            .orderBy("timeStamp", Query.Direction.ASCENDING).limitToLast(size)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(ResultState.Failure(error))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && !snapshot.isEmpty) {
+                    snapshot.metadata.hasPendingWrites()
+                    snapshot.documentChanges.forEach { dc ->
+                        when (dc.type) {
+                            ADDED -> {
+                                // 로컬에 변경사항이 있는지 체크
+                                if (!snapshot.metadata.hasPendingWrites()) {
                                     val message =
                                         dc.document.toObject(ChatMessageEntity::class.java)
                                             .toChatMessageModel()
+                                    Log.d("ADDED", "${message.timeStamp?.time}")
                                     trySend(ResultState.Success(message))
                                 }
+                            }
 
-                                REMOVED -> {
-                                    Log.d("REMOVED", "")
-                                }
+                            MODIFIED -> {
+                                // 백엔드에 데이터가 쓰기 처리된 후의 메세지 데이터
+                                val message = dc.document.toObject(ChatMessageEntity::class.java)
+                                    .toChatMessageModel()
+                                trySend(ResultState.Success(message))
+                            }
+
+                            REMOVED -> {
+                                Log.d("REMOVED", "")
                             }
                         }
                     }
                 }
-        }
+            }
         awaitClose {
+            listener.remove()
             close()
         }
     }
@@ -129,6 +127,8 @@ class ChatRepositoryImpl @Inject constructor(
                 val msgEntity = message.copy(
                     messageId = messagesDoc.id,
                 ).toChatMessageEntity()
+
+
 
                 messagesDoc.set(msgEntity).await()
 
