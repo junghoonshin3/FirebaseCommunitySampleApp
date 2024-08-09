@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
@@ -146,6 +147,7 @@ fun MainNavGraph(
                     .fillMaxWidth()
                     .height(80.dp)
                     .background(backgroundColor)
+                    .shadow(elevation = 1.dp)
             )
         })
     }
@@ -256,7 +258,10 @@ fun BottomNavigationItem(
         }
     }
 
-    ConstraintLayout(modifier = modifier.clickableSingle(enabled = !selected) {
+    ConstraintLayout(modifier = modifier.clickableSingle(
+        enabled = !selected,
+        indication = { null }
+    ) {
         onClick(screen)
     }) {
         val (icon, badge) = createRefs()

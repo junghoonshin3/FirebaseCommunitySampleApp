@@ -3,6 +3,7 @@ package kr.sjh.presentation.utill
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -132,14 +133,17 @@ fun NavController.currentRootScreenAsState(): State<RootScreen> {
 
 fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
     navigate(rootScreen.route) {
-        popUpTo(graph.findStartDestination().id) {
-        }
+        popUpTo(graph.findStartDestination().id) {}
         launchSingleTop = true
     }
 }
 
 fun Modifier.clickableSingle(
-    enabled: Boolean = true, onClickLabel: String? = null, role: Role? = null, onClick: () -> Unit
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    role: Role? = null,
+    indication: @Composable () -> Indication? = { LocalIndication.current },
+    onClick: () -> Unit
 ) = then(composed(inspectorInfo = debugInspectorInfo {
     name = "clickable"
     properties["enabled"] = enabled
@@ -155,7 +159,7 @@ fun Modifier.clickableSingle(
     Modifier.clickable(enabled = enabled,
         onClickLabel = onClickLabel,
         role = role,
-        indication = LocalIndication.current,
+        indication = indication(),
         interactionSource = remember { MutableInteractionSource() }) {
         if (duplicated) return@clickable
 
