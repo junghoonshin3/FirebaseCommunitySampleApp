@@ -104,7 +104,11 @@ fun ChatRoomList(
     uid: String, chatRooms: List<ChatRoomModel>, navigateToDetail: (String, String, String) -> Unit
 ) {
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(10.dp)) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp)
+    ) {
         itemsIndexed(chatRooms, key = { _, room -> room.roomId }) { index, room ->
             val partnerUid = getReceiverUid(room.roomId, uid)
             val partner = room.users[partnerUid] ?: emptyMap()
@@ -202,8 +206,7 @@ fun BadgeCount(modifier: Modifier = Modifier, count: Long, textSize: TextUnit = 
     }
 
     Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
+        modifier = modifier, contentAlignment = Alignment.Center
     ) {
         Text(
             modifier = Modifier.padding(5.dp),

@@ -256,7 +256,7 @@ fun BottomNavigationItem(
         }
     }
 
-    ConstraintLayout(modifier = modifier.clickableSingle {
+    ConstraintLayout(modifier = modifier.clickableSingle(enabled = !selected) {
         onClick(screen)
     }) {
         val (icon, badge) = createRefs()
