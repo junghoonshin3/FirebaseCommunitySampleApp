@@ -9,6 +9,7 @@ import kr.sjh.domain.usecase.chat.GetChatRoomsUseCase
 import kr.sjh.domain.usecase.chat.GetInitialMessagesUseCase
 import kr.sjh.domain.usecase.chat.GetNextMessagesUseCase
 import kr.sjh.domain.usecase.chat.SendMessageUseCase
+import kr.sjh.domain.usecase.chat.UpdateLastVisitedTimeStampUseCase
 import javax.inject.Singleton
 
 @Module
@@ -37,4 +38,16 @@ object ChatUseCaseModule {
     fun provideGetChatRoomsUseCase(chatRepository: ChatRepository): GetChatRoomsUseCase {
         return GetChatRoomsUseCase(chatRepository::getChatRooms)
     }
+
+    @Provides
+    @Singleton
+    fun provideUpdateLastVisitedTimeStampUseCase(chatRepository: ChatRepository): UpdateLastVisitedTimeStampUseCase {
+        return UpdateLastVisitedTimeStampUseCase(chatRepository::updateLastVisitedTimeStamp)
+    }
+
+//    @Provides
+//    @Singleton
+//    fun provideUpdateFirstVisitedTimeStampUseCase(chatRepository: ChatRepository): UpdateFirstVisitedTimeStampUseCase {
+//        return UpdateFirstVisitedTimeStampUseCase(chatRepository::updateFirstVisitedTimeStamp)
+//    }
 }

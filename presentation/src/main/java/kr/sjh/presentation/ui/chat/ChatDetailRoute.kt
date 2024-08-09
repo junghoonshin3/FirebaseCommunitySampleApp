@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.chat
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -53,6 +54,8 @@ import kotlinx.coroutines.launch
 import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.model.UserModel
 import kr.sjh.presentation.R
+import kr.sjh.presentation.constants.LOAD_ITEM_COUNT
+import kr.sjh.presentation.constants.VISIBLE_ITEM_COUNT
 import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.ContentTextField
 import kr.sjh.presentation.ui.main.MainViewModel
@@ -75,8 +78,11 @@ fun ChatDetailRoute(
     ChatDetailScreen(
         messageUiState = messageUiState,
         currentUser = currentUser,
-        onBack = onBack,
-        text = viewModel.message,
+        onBack = {
+            viewModel.updateLastVisitedTimeStamp()
+            onBack()
+        },
+        text = { viewModel.message },
         onTextChanged = viewModel::changeTextMessage,
         sendMessage = viewModel::sendMessage,
         nextMessages = viewModel::getNextMessages
@@ -88,34 +94,43 @@ fun ChatDetailScreen(
     messageUiState: MessageUiState,
     currentUser: UserModel,
     onBack: () -> Unit,
-    text: String,
+    text: () -> String,
     onTextChanged: (String) -> Unit,
     sendMessage: (() -> Unit) -> Unit,
     nextMessages: (limit: Long) -> Unit
 ) {
 
     val lazyListState = rememberLazyListState()
-
-    val newText by rememberUpdatedState(newValue = text)
-
     val coroutineScope = rememberCoroutineScope()
-
     val isLoadMore = remember {
         derivedStateOf {
             val layoutInfo = lazyListState.layoutInfo
             val totalItemsNumber = layoutInfo.totalItemsCount
             val lastVisibleItemIndex = (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-            lastVisibleItemIndex > (totalItemsNumber - 4)
+            lastVisibleItemIndex > (totalItemsNumber - 8)
         }
     }
+
+
 
     LaunchedEffect(isLoadMore) {
         snapshotFlow {
             isLoadMore.value
-        }.distinctUntilChanged().filter { it && lazyListState.layoutInfo.totalItemsCount > 0 }
-            .collectLatest {
-                nextMessages(10)
+        }.distinctUntilChanged()
+            .filter { it && lazyListState.layoutInfo.visibleItemsInfo.isNotEmpty() }.collectLatest {
+                nextMessages(LOAD_ITEM_COUNT)
             }
+    }
+
+    LaunchedEffect(key1 = messageUiState.messages) {
+        if (messageUiState.messages.size <= VISIBLE_ITEM_COUNT) {
+            lazyListState.animateScrollToItem(0)
+        }
+    }
+
+    //하드웨어 백버튼을 누르는 경우 이벤트 감지
+    BackHandler {
+        onBack()
     }
 
     Column(
@@ -144,7 +159,7 @@ fun ChatDetailScreen(
             .fillMaxWidth()
             .heightIn(max = 100.dp, min = 80.dp)
             .padding(5.dp),
-            text = newText,
+            text = text,
             onTextChanged = onTextChanged,
             sendMessage = {
                 sendMessage {
@@ -173,7 +188,7 @@ fun Conversation(
         contentPadding = PaddingValues(10.dp),
         reverseLayout = true
     ) {
-        itemsIndexed(conversations, key = { _, item -> item.messageId }) { index, item ->
+        items(conversations, key = { item -> item.messageId }) { item ->
             val isMe = item.senderUid == currentUid
             ConversationItem(
                 modifier = Modifier.fillMaxWidth(), isMe = isMe, chatMessage = item
@@ -202,7 +217,7 @@ fun ConversationItem(
         // when 문을 사용하여 isMe에 따라 UI를 다르게 표시
         MessageBubbleWithTime(
             isMe = isMe,
-            message = chatMessage.message,
+            message = chatMessage.text,
             timestamp = chatMessage.timeStamp,
             dateFormat = dateFormat,
             maxWidthDp = maxWidthDp
@@ -214,7 +229,7 @@ fun ConversationItem(
 fun MessageBubbleWithTime(
     isMe: Boolean, message: String, timestamp: Date?, dateFormat: SimpleDateFormat, maxWidthDp: Dp
 ) {
-    Column { // 컬럼을 사용하여 메시지와 시간을 배치
+    Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) { // 컬럼을 사용하여 메시지와 시간을 배치
         Box(
             modifier = Modifier
                 .widthIn(max = maxWidthDp)
@@ -256,11 +271,11 @@ fun Profile(modifier: Modifier = Modifier, imageUrl: String) {
 @Composable
 fun InputMessage(
     modifier: Modifier = Modifier,
-    text: String,
+    text: () -> String,
     onTextChanged: (String) -> Unit,
     sendMessage: () -> Unit
 ) {
-    val newText by rememberUpdatedState(newValue = text)
+
     Row(
         modifier = modifier, verticalAlignment = Alignment.CenterVertically
     ) {
@@ -268,7 +283,7 @@ fun InputMessage(
             .clip(RoundedCornerShape(20.dp))
             .background(Color.LightGray)
             .weight(1f),
-            text = newText,
+            text = text,
             onTextChanged = onTextChanged,
             placeholder = { Text(text = "메세지 보내기", color = Color.White) })
         Box(

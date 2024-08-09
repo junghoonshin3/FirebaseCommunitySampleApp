@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.login.detail
 
-import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -84,7 +83,7 @@ fun LoginDetailScreen(
             modifier = Modifier
                 .padding(5.dp)
                 .fillMaxWidth()
-                .padding(10.dp),
+                .height(60.dp),
             title = "프로필 수정",
             buttonTitle = "완료",
             backIcon = Icons.Default.ArrowBack,
@@ -92,7 +91,9 @@ fun LoginDetailScreen(
             onClick = signUp
         )
         Column(
-            modifier = Modifier.padding(10.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp)
         ) {
             ProfileImage(modifier = Modifier
                 .fillMaxWidth()
@@ -111,7 +112,7 @@ fun LoginDetailScreen(
                     .height(50.dp)
                     .fillMaxWidth()
                     .imePadding(),
-                text = nickName,
+                text = { nickName },
                 onTextChanged = onTextChange,
                 textStyle = TextStyle.Default.copy(color = Color.White, fontSize = 20.sp),
                 placeholder = {

@@ -1,32 +1,31 @@
 package kr.sjh.presentation.ui.chat
 
-import android.net.Uri
 import android.util.Log
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.usecase.auth.firebase.GetAuthCurrentUserUseCase
 import kr.sjh.domain.usecase.chat.GetInitialMessagesUseCase
 import kr.sjh.domain.usecase.chat.GetNextMessagesUseCase
 import kr.sjh.domain.usecase.chat.SendMessageUseCase
-import kr.sjh.domain.util.generateUniqueChatKey
+import kr.sjh.domain.usecase.chat.UpdateLastVisitedTimeStampUseCase
 import kr.sjh.domain.util.getReceiverUid
-import java.net.URLEncoder
+import kr.sjh.presentation.constants.LOAD_ITEM_COUNT
+import kr.sjh.presentation.constants.VISIBLE_ITEM_COUNT
 import javax.inject.Inject
 
+@Stable
 data class MessageUiState(
     val messages: List<ChatMessageModel> = emptyList(),
     val nickName: String = "",
@@ -41,7 +40,8 @@ class ChatDetailViewModel @Inject constructor(
     private val getInitialMessagesUseCase: GetInitialMessagesUseCase,
     private val getNextMessagesUseCase: GetNextMessagesUseCase,
     getAuthCurrentUserUseCase: GetAuthCurrentUserUseCase,
-    private val sendMessageUseCase: SendMessageUseCase
+    private val sendMessageUseCase: SendMessageUseCase,
+    private val updateLastVisitedTimeStampUseCase: UpdateLastVisitedTimeStampUseCase
 ) : ViewModel() {
 
     private val roomId = savedStateHandle.get<String>("roomId").toString()
@@ -63,12 +63,15 @@ class ChatDetailViewModel @Inject constructor(
 
     init {
         getInitialMessages()
+
     }
 
-    private fun getInitialMessages(limit: Long = 20) {
+    private fun getInitialMessages(
+        size: Long = VISIBLE_ITEM_COUNT
+    ) {
         viewModelScope.launch {
             getInitialMessagesUseCase(
-                roomId = roomId, limit = limit
+                roomId = roomId, size = size
             ).collect { result ->
                 when (result) {
                     is ResultState.Failure -> {
@@ -89,10 +92,8 @@ class ChatDetailViewModel @Inject constructor(
 
                     is ResultState.Success -> {
                         _messageUiState.update {
-                            val newMessages = it.messages.toMutableList()
-                            newMessages.add(0, result.data)
                             it.copy(
-                                isLoading = false, messages = newMessages
+                                isLoading = false, messages = result.data
                             )
                         }
                     }
@@ -101,7 +102,7 @@ class ChatDetailViewModel @Inject constructor(
         }
     }
 
-    fun getNextMessages(limit: Long = 10) {
+    fun getNextMessages(limit: Long = LOAD_ITEM_COUNT) {
         viewModelScope.launch {
             messageUiState.value.messages.last().timeStamp?.let { timeStamp ->
                 getNextMessagesUseCase(
@@ -151,25 +152,26 @@ class ChatDetailViewModel @Inject constructor(
         if (message.isNotEmpty()) {
             viewModelScope.launch {
                 val newMessage = ChatMessageModel(
-                    senderUid = uid, receiverUid = getReceiverUid(roomId, uid), message = message
+                    senderUid = uid, receiverUid = getReceiverUid(roomId, uid), text = message
                 )
                 sendMessageUseCase(newMessage).collect { result ->
                     when (result) {
-                        is ResultState.Failure -> {
-
-                        }
-
-                        ResultState.Loading -> {
-
-                        }
-
                         is ResultState.Success -> {
                             onSuccess()
                         }
+
+                        else -> {}
                     }
                 }
             }
             changeTextMessage("")
         }
     }
+
+    fun updateLastVisitedTimeStamp() {
+        viewModelScope.launch {
+            updateLastVisitedTimeStampUseCase(roomId)
+        }
+    }
+
 }

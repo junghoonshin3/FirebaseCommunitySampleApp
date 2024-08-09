@@ -33,6 +33,5 @@ fun MyPageScreen(modifier: Modifier = Modifier, logOut: () -> Unit) {
         Button(onClick = logOut) {
             Text(text = "로그아웃")
         }
-
     }
 }

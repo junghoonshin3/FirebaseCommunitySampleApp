@@ -6,6 +6,6 @@ import kr.sjh.domain.model.ChatMessageModel
 
 fun interface GetInitialMessagesUseCase {
     operator fun invoke(
-        roomId: String, limit: Long
-    ): Flow<ResultState<ChatMessageModel>>
+        roomId: String, size: Long
+    ): Flow<ResultState<List<ChatMessageModel>>>
 }

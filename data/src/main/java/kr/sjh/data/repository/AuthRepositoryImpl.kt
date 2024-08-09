@@ -1,15 +1,10 @@
 package kr.sjh.data.repository
 
-import android.util.Log
-import com.google.firebase.FirebaseError.ERROR_INVALID_CREDENTIAL
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.GoogleAuthCredential
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import kr.sjh.data.mapper.toAuthUserModel
 import kr.sjh.data.utils.Constants
@@ -28,7 +23,7 @@ class AuthRepositoryImpl @Inject constructor(
             val firebaseCredential = GoogleAuthProvider.getCredential(credential.idToken, null)
             val result = auth.signInWithCredential(firebaseCredential).await()
             result.user?.uid?.let { uid ->
-                fireStore.collection(Constants.FirebaseCollectionUsers).document(uid).get()
+                fireStore.collection(Constants.COL_USERS).document(uid).get()
                     .addOnSuccessListener {
                         trySend(ResultState.Success(it.exists()))
                     }.addOnFailureListener { e ->

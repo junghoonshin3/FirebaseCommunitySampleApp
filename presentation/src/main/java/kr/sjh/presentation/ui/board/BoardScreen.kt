@@ -135,7 +135,7 @@ fun BoardScreen(
                                 },
                             title = post.title,
                             nickname = post.nickName,
-                            createAt = post.timeStamp?.time ?: Date().time,
+                            createAt = post.timeStamp.time,
                             readCount = post.readCount,
                             likeCount = post.likeCount,
                             images = post.images

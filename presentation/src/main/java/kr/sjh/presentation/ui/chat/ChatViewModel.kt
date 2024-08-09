@@ -1,10 +1,15 @@
 package kr.sjh.presentation.ui.chat
 
+import android.util.Log
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kr.sjh.domain.ResultState
@@ -14,21 +19,24 @@ import kr.sjh.domain.usecase.chat.GetChatRoomsUseCase
 import kr.sjh.domain.util.getReceiverUid
 import javax.inject.Inject
 
+@Stable
 data class ChatRoomUiState(
     val uid: String = "",
     val rooms: List<ChatRoomModel> = emptyList(),
     val isLoading: Boolean = false,
-    val throwable: Throwable? = null
+    val throwable: Throwable? = null,
 )
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRoomsUseCase: GetChatRoomsUseCase,
-    private val authCurrentUserUseCase: GetAuthCurrentUserUseCase
+    authCurrentUserUseCase: GetAuthCurrentUserUseCase
 ) : ViewModel() {
 
     private val _chatRooms = MutableStateFlow(ChatRoomUiState())
     val chatRooms = _chatRooms.asStateFlow()
+
+    private val uid = authCurrentUserUseCase()?.uid.toString()
 
     init {
         getChatRooms()
@@ -39,11 +47,17 @@ class ChatViewModel @Inject constructor(
             chatRoomsUseCase().collect { result ->
                 when (result) {
                     is ResultState.Failure -> {}
-                    ResultState.Loading -> {}
+                    ResultState.Loading -> {
+                        _chatRooms.update {
+                            it.copy(isLoading = true)
+                        }
+                    }
+
                     is ResultState.Success -> {
+                        Log.d("sjh", "getChatRooms > ${result.data}")
                         _chatRooms.update {
                             it.copy(
-                                uid = authCurrentUserUseCase()?.uid.toString(), rooms = result.data
+                                isLoading = false, uid = uid, rooms = result.data
                             )
                         }
                     }

@@ -1,7 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    kotlin("kapt")
+    id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
 }
@@ -40,7 +40,7 @@ dependencies {
     //Dagger-Hilt
     implementation(DaggerHilt.daggerHilt)
     testImplementation(TestImplementation.jUnit)
-    kapt(DaggerHilt.daggerHiltCompiler)
+    ksp(DaggerHilt.daggerHiltCompiler)
     implementation(DaggerHilt.hiltNavigation)
 
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))

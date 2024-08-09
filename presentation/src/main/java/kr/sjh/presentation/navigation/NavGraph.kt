@@ -1,24 +1,37 @@
 package kr.sjh.presentation.navigation
 
 import android.content.Intent
+import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,28 +41,25 @@ import com.bumptech.glide.request.RequestOptions
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.glide.GlideImage
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kr.sjh.presentation.ui.board.BoardRoute
 import kr.sjh.presentation.ui.board.detail.BoardDetailRoute
 import kr.sjh.presentation.ui.board.edit.BoardEditRoute
 import kr.sjh.presentation.ui.board.write.BoardWriteRoute
+import kr.sjh.presentation.ui.chat.BadgeCount
 import kr.sjh.presentation.ui.chat.ChatDetailRoute
 import kr.sjh.presentation.ui.chat.ChatRoute
 import kr.sjh.presentation.ui.login.LoginActivity
 import kr.sjh.presentation.ui.login.LoginRoute
-import kr.sjh.presentation.ui.login.LoginViewModel
 import kr.sjh.presentation.ui.login.detail.LoginDetailRoute
 import kr.sjh.presentation.ui.main.MainActivity
 import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.mypage.MyPageRoute
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
-import kr.sjh.presentation.utill.currentScreenAsState
+import kr.sjh.presentation.utill.clickableSingle
+import kr.sjh.presentation.utill.currentRootScreenAsState
 import kr.sjh.presentation.utill.navigateToRootScreen
 import kr.sjh.presentation.utill.toEncodingURL
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun LoginNavGraph(
@@ -107,14 +117,35 @@ fun MainNavGraph(
 
     val user by mainViewModel.currentUser.collectAsStateWithLifecycle()
 
-    val currentSelectedScreen by navController.currentScreenAsState()
+    val currentSelectedScreen by navController.currentRootScreenAsState()
 
-    val bottomBar: @Composable () -> Unit by remember(currentSelectedScreen, user) {
+    val navItems = persistentListOf(
+        BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage
+    )
+
+    val bottomBar: @Composable () -> Unit by remember {
         mutableStateOf({
+            Log.d("bottomBar", "totalUnReadMessageCount >>>>>>>>>> ${user.totalUnReadMessageCount}")
             BottomNavigation(
-                currentSelectedScreen = currentSelectedScreen,
-                navController = navController,
-                profileImageUrl = user.profileImageUrl
+                content = {
+                    navItems.forEach { item ->
+                        BottomNavigationItem(
+                            screen = item.screen,
+                            selected = currentSelectedScreen == item.screen,
+                            title = item.title,
+                            profileImageUrl = user.profileImageUrl,
+                            iconResource = item.iconResource,
+                            totalUnReadMessageCount = user.totalUnReadMessageCount,
+                            onClick = {
+                                navController.navigateToRootScreen(it)
+                            },
+                            modifier = Modifier.sizeIn(minWidth = 60.dp, minHeight = 60.dp)
+                        )
+                    }
+                }, modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .background(backgroundColor)
             )
         })
     }
@@ -155,8 +186,9 @@ fun MainNavGraph(
                 BoardDetailRoute(modifier = Modifier.fillMaxSize(), onBack = {
                     navController.popBackStack(LeafScreen.Board.route, false)
                 }, onChat = { roomId, nickName, profileImageUrl ->
-
-                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}")
+                    navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}") {
+                        popUpTo(LeafScreen.BoardDetail.route)
+                    }
                 }, onEdit = {
                     navController.navigate("${LeafScreen.BoardEdit.route}?postKey=$it")
                 })
@@ -165,8 +197,7 @@ fun MainNavGraph(
 
         navigation(route = RootScreen.Chat.route, startDestination = LeafScreen.Chat.route) {
             composable(route = LeafScreen.Chat.route) {
-                ChatRoute(
-                    bottomBar = bottomBar,
+                ChatRoute(bottomBar = bottomBar,
                     navigateToDetail = { roomId, nickName, profileImageUrl ->
                         navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}")
                     })
@@ -193,43 +224,82 @@ fun MainNavGraph(
 
 }
 
-
+@Stable
 @Composable
 fun BottomNavigation(
-    navController: NavController, currentSelectedScreen: RootScreen, profileImageUrl: String?
+    content: @Composable RowScope.() -> Unit, modifier: Modifier = Modifier
 ) {
-    val navItems = persistentListOf(BottomNavItem.Board, BottomNavItem.Chat, BottomNavItem.MyPage)
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
+}
 
-    NavigationBar(containerColor = backgroundColor) {
-        navItems.forEach { item ->
-            NavigationBarItem(colors = NavigationBarItemDefaults.colors(
-                indicatorColor = Color.Transparent,
-                selectedTextColor = carrot,
-                unselectedTextColor = Color.White,
-            ), alwaysShowLabel = true, label = {
-                Text(text = item.title, fontSize = 12.sp)
-            }, selected = currentSelectedScreen == item.screen, onClick = {
-                navController.navigateToRootScreen(item.screen)
-            }, icon = {
-                GlideImage(imageOptions = ImageOptions(
-                    colorFilter = if (item.screen == RootScreen.MyPage) {
-                        null
-                    } else if (currentSelectedScreen == item.screen) {
-                        ColorFilter.tint(carrot)
-                    } else {
-                        ColorFilter.tint(Color.White)
-                    }
-                ), requestOptions = {
-                    RequestOptions().override(60).circleCrop()
-                }, imageModel = {
-                    when (item.screen) {
-                        RootScreen.MyPage -> profileImageUrl
-                        else -> {
-                            item.iconResource
-                        }
-                    }
-                })
+@Stable
+@Composable
+fun BottomNavigationItem(
+    screen: RootScreen,
+    selected: Boolean,
+    title: String,
+    profileImageUrl: String,
+    iconResource: Int,
+    totalUnReadMessageCount: Long,
+    onClick: (RootScreen) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+
+    val selectedColor by remember {
+        derivedStateOf {
+            if (selected) carrot else Color.White
+        }
+    }
+
+    ConstraintLayout(modifier = modifier.clickableSingle {
+        onClick(screen)
+    }) {
+        val (icon, badge) = createRefs()
+        Column(
+            modifier = Modifier.constrainAs(icon) {
+                top.linkTo(parent.top)
+                bottom.linkTo(parent.bottom)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            GlideImage(imageOptions = if (screen is RootScreen.MyPage) {
+                ImageOptions()
+            } else {
+                ImageOptions(colorFilter = ColorFilter.tint(selectedColor))
+            }, requestOptions = {
+                RequestOptions().override(60).circleCrop()
+            }, imageModel = {
+                if (screen is RootScreen.MyPage) {
+                    profileImageUrl
+                } else {
+                    iconResource
+                }
             })
+            Text(
+                color = selectedColor, text = title
+            )
+        }
+
+        if (screen is RootScreen.Chat) {
+            if (totalUnReadMessageCount > 0)
+                BadgeCount(modifier = Modifier
+                    .sizeIn(25.dp, 25.dp)
+                    .constrainAs(badge) {
+                        top.linkTo(parent.top)
+                        start.linkTo(icon.end)
+                    }
+                    .clip(CircleShape)
+                    .background(carrot),
+                    totalUnReadMessageCount,
+                    textSize = 12.sp)
         }
     }
 }

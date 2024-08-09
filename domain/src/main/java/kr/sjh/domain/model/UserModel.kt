@@ -14,4 +14,6 @@ data class UserModel(
     val myPosts: List<String> = emptyList(),
     val role: String = Role.USER,
     val banUsers: List<String> = emptyList(),
+    val chatRooms: List<String> = emptyList(),
+    val totalUnReadMessageCount: Long = 0L
 )

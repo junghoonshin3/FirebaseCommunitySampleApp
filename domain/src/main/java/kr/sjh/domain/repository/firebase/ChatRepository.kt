@@ -8,7 +8,7 @@ import kr.sjh.domain.model.ChatRoomModel
 interface ChatRepository {
     fun getInitialMessages(
         roomId: String, size: Long
-    ): Flow<ResultState<ChatMessageModel>>
+    ): Flow<ResultState<List<ChatMessageModel>>>
 
     fun getNextMessages(
         roomId: String, size: Long, fromTime: Long
@@ -16,4 +16,6 @@ interface ChatRepository {
 
     suspend fun sendMessage(message: ChatMessageModel): Flow<ResultState<Unit>>
     fun getChatRooms(): Flow<ResultState<List<ChatRoomModel>>>
+    suspend fun updateLastVisitedTimeStamp(roomId: String)
+    fun getTotalUnReadMessageCount(uid: String): Flow<ResultState<Long>>
 }

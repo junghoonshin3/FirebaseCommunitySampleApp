@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.board.detail
 
-import android.content.res.Configuration
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -36,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -80,25 +79,13 @@ val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 @Composable
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
+    detailViewModel: BoardDetailViewModel = hiltViewModel(),
+    mainViewModel: MainViewModel = hiltViewModel(getActivity()),
     onBack: () -> Unit,
     onChat: (String, String, String) -> Unit,
     onEdit: (String) -> Unit,
-    detailViewModel: BoardDetailViewModel = hiltViewModel(),
-    mainViewModel: MainViewModel = hiltViewModel(getActivity())
 ) {
-    val listState = rememberLazyListState()
 
-    val overlapHeightPx = with(LocalDensity.current) {
-        EXPANDED_TOP_BAR_HEIGHT.toPx() - COLLAPSED_TOP_BAR_HEIGHT.toPx()
-    }
-
-    val isCollapsed by remember {
-        derivedStateOf {
-            val isFirstItemHidden = listState.firstVisibleItemScrollOffset > overlapHeightPx
-
-            isFirstItemHidden || listState.firstVisibleItemIndex > 0
-        }
-    }
 
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -110,17 +97,12 @@ fun BoardDetailRoute(
 
     val currentUser by mainViewModel.currentUser.collectAsStateWithLifecycle()
 
-    val configuration = LocalConfiguration.current
-
     BoardDetailScreen(modifier = modifier,
-        isCollapsed = isCollapsed,
         currentUser = currentUser,
-        listState = listState,
         bottomSheetShow = bottomSheetShow,
         detailUiState = detailUiState,
         bottomSheetUiState = bottomSheetUiState,
         onBack = onBack,
-        configuration = configuration,
         onMoreMenu = {
             bottomSheetShow = true
         },
@@ -151,18 +133,16 @@ fun BoardDetailRoute(
 
 }
 
+@Stable
 @Composable
 fun BoardDetailScreen(
     modifier: Modifier = Modifier,
-    isCollapsed: Boolean,
-    currentUser: UserModel?,
-    configuration: Configuration,
+    currentUser: UserModel,
     bottomSheetShow: Boolean,
     onDismissRequest: () -> Unit,
     onDeleteCompleted: () -> Unit,
     detailUiState: DetailUiState,
     bottomSheetUiState: DetailBottomSheetUiState,
-    listState: LazyListState,
     onBack: () -> Unit,
     onMoreMenu: () -> Unit,
     onLikeChange: () -> Unit,
@@ -172,6 +152,23 @@ fun BoardDetailScreen(
     onHide: (String) -> Unit,
     onBan: (String) -> Unit
 ) {
+
+    val listState = rememberLazyListState()
+
+    val overlapHeightPx = with(LocalDensity.current) {
+        EXPANDED_TOP_BAR_HEIGHT.toPx() - COLLAPSED_TOP_BAR_HEIGHT.toPx()
+    }
+
+    val isCollapsed by remember {
+        derivedStateOf {
+            val isFirstItemHidden = listState.firstVisibleItemScrollOffset > overlapHeightPx
+
+            isFirstItemHidden || listState.firstVisibleItemIndex > 0
+        }
+    }
+
+    val configuration = LocalConfiguration.current
+
     Box(modifier = modifier) {
         when (detailUiState) {
             is DetailUiState.Error -> {}

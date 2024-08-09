@@ -94,16 +94,20 @@ fun getActivity() = LocalContext.current as ComponentActivity
 
 @Stable
 @Composable
-fun NavController.currentScreenAsState(): State<RootScreen> {
+fun NavController.currentRootScreenAsState(): State<RootScreen> {
+
     val selectedItem = remember {
         mutableStateOf<RootScreen>(
             RootScreen.Board
         )
     }
+
     DisposableEffect(key1 = this) {
-        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+        val listener = NavController.OnDestinationChangedListener { navController, destination, _ ->
             when {
-                destination.hierarchy.any { it.route == RootScreen.Board.route } -> {
+                destination.hierarchy.any {
+                    it.route == RootScreen.Board.route
+                } -> {
                     selectedItem.value = RootScreen.Board
                 }
 
@@ -115,24 +119,22 @@ fun NavController.currentScreenAsState(): State<RootScreen> {
                     selectedItem.value = RootScreen.MyPage
                 }
             }
-
         }
         addOnDestinationChangedListener(listener)
         onDispose {
             removeOnDestinationChangedListener(listener)
         }
     }
+    Log.d("sjh", "selectedItem : ${selectedItem.value}")
     return selectedItem
 }
 
 
 fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
     navigate(rootScreen.route) {
-        launchSingleTop = true
-        restoreState = true
         popUpTo(graph.findStartDestination().id) {
-            saveState = true
         }
+        launchSingleTop = true
     }
 }
 

@@ -261,7 +261,7 @@ fun BoardWriteBody(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            text = title,
+            text = { title },
             onTextChanged = { updateTitle(it) },
             placeholder = {
                 Text(
@@ -275,7 +275,7 @@ fun BoardWriteBody(
             parentScrollState = scrollState,
             modifier = Modifier
                 .fillMaxWidth(),
-            text = content,
+            text = { content },
             onTextChanged = { updateContent(it) },
             placeholder = {
                 Text(
