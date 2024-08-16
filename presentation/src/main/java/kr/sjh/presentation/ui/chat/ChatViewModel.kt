@@ -23,6 +23,7 @@ import javax.inject.Inject
 data class ChatRoomUiState(
     val uid: String = "",
     val rooms: List<ChatRoomModel> = emptyList(),
+    val c: Long = 0L,
     val isLoading: Boolean = false,
     val throwable: Throwable? = null,
 )
@@ -54,7 +55,6 @@ class ChatViewModel @Inject constructor(
                     }
 
                     is ResultState.Success -> {
-                        Log.d("sjh", "getChatRooms > ${result.data}")
                         _chatRooms.update {
                             it.copy(
                                 isLoading = false, uid = uid, rooms = result.data

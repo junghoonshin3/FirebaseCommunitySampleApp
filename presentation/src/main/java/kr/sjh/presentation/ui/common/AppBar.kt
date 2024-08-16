@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,7 +62,11 @@ fun AppTopBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             profileImageUrl?.let { url ->
-                Profile(imageUrl = url)
+                Profile(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape), imageUrl = url
+                )
                 Spacer(modifier = Modifier.width(10.dp))
             }
             Text(

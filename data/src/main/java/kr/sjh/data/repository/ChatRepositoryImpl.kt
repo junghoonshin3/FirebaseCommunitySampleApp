@@ -3,28 +3,24 @@ package kr.sjh.data.repository
 import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.DocumentChange
-import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.Source
-import com.google.firebase.firestore.getField
 import com.google.firebase.firestore.snapshots
-import com.google.firebase.firestore.toObject
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.zip
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kr.sjh.data.mapper.toChatMessageModel
-import kr.sjh.data.mapper.toUserModel
+import kr.sjh.data.mapper.toChatRoomModel
 import kr.sjh.data.model.ChatMessageEntity
+import kr.sjh.data.model.ChatRoomEntity
+import kr.sjh.data.model.ChatRoomUserEntity
 import kr.sjh.data.model.UserEntity
 import kr.sjh.data.utils.Constants
 import kr.sjh.domain.ResultState
@@ -32,7 +28,6 @@ import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.model.ChatRoomModel
 import kr.sjh.domain.repository.firebase.ChatRepository
 import kr.sjh.domain.util.generateUniqueChatKey
-import kr.sjh.domain.util.getReceiverUid
 import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
@@ -96,129 +91,106 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun sendMessage(
         message: ChatMessageModel
     ): Flow<ResultState<Unit>> = flow {
-        try {
-            emit(ResultState.Loading) // 로딩 상태 emit
-            auth.currentUser?.uid?.let { uid -> // 현재 사용자 UID 가져오기
-                val roomId = generateUniqueChatKey(uid, message.receiverUid) // 채팅방 ID 생성
-                val chatsDoc =
-                    firebase.collection(Constants.COL_CHATS).document(roomId) // 채팅방 문서 참조
+        emit(ResultState.Loading)
 
-                val messagesCollection =
-                    firebase.collection(Constants.COL_CHAT_MESSAGES) // 메시지 컬렉션 참조
-                val messagesDoc = messagesCollection.document(roomId).collection("contents")
-                    .document() // 새로운 메시지 문서 참조
+        val roomId = generateUniqueChatKey(message.senderUid, message.receiverUid)
 
-                val partnerUserDoc =
-                    firebase.collection(Constants.COL_USERS).document(message.receiverUid)
+        val meChatRoomDoc =
+            firebase.collection(Constants.COL_CHAT_ROOMS).document(message.senderUid)
+                .collection("my_chat_room").document(roomId)
 
-                val isRoomExist = chatsDoc.get().await().exists() // 채팅방 존재 여부 확인
+        val youChatRoomDoc =
+            firebase.collection(Constants.COL_CHAT_ROOMS).document(message.receiverUid)
+                .collection("my_chat_room").document(roomId)
 
-                if (!isRoomExist) {
-                    createChat(roomId, uid, message.receiverUid) // 채팅방이 존재하지 않으면 생성
-                }
+        val youTotalUnReadMessageCountDoc =
+            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT)
+                .document(message.receiverUid)
 
-                val nowTime = FieldValue.serverTimestamp() // 서버 시간 가져오기
+        val messageDoc =
+            firebase.collection(Constants.COL_CHAT_MESSAGES).document(roomId).collection("contents")
+                .document()
 
-                // 트랜잭션을 사용하여 최근 메시지와 메시지 내용을 동시에 업데이트
-                firebase.runTransaction { transaction ->
-                    transaction.set(
-                        chatsDoc, mapOf(
-                            "recentMessageTimeStamp" to nowTime, // 최근 메시지 시간 업데이트
-                            "recentMessage" to message.text, // 최근 메시지 내용 업데이트
-                        ), SetOptions.merge() // 병합 옵션 사용
-                    )
-                    transaction.set(
-                        messagesDoc, mapOf(
-                            "messageId" to messagesDoc.id, // 메시지 ID 설정
-                            "senderUid" to uid, // 보낸 사람 UID 설정
-                            "receiverUid" to message.receiverUid, // 받는 사람 UID 설정
-                            "message" to message.text, // 메시지 내용 설정
-                            "timeStamp" to nowTime, // 메시지 시간 설정
-                        ), SetOptions.merge() // 병합 옵션 사용
-                    )
-                }.await()
+        val meChatRoomExist = meChatRoomDoc.get().await().exists()
 
+        val youChatRoomExist = youChatRoomDoc.get().await().exists()
 
-                //트랜잭션을 사용하여 읽지 않은 메시지 수 업데이트
-                firebase.runTransaction { transaction ->
-                    val lastVisitedTime = transaction.get(chatsDoc).get(
-                        FieldPath.of(
-                            message.receiverUid, "lastVisitedTimeStamp"
-                        )
-                    ) as Timestamp // 상대방의 마지막 방문 시간 가져오기
-
-                    val recentMessageTime = transaction.get(chatsDoc)
-                        .getTimestamp("recentMessageTimeStamp") // 최근 메시지 시간 가져오기
-                    if (lastVisitedTime.toDate() < recentMessageTime?.toDate()) { // 마지막 방문 시간보다 최근 메시지 시간이 더 최근인 경우
-                        transaction.set(
-                            chatsDoc, mapOf(
-                                message.receiverUid to mapOf(
-                                    "unReadMessageCount" to FieldValue.increment(
-                                        1
-                                    ) // 읽지 않은 메시지 수 1 증가
-                                )
-                            ), SetOptions.merge() // 병합 옵션 사용
-                        )
-                        transaction.set(
-                            partnerUserDoc, mapOf(
-                                "totalUnReadMessageCount" to FieldValue.increment(
-                                    1
-                                )
-                            ), SetOptions.merge()
-                        )
-                    }
-                }.await()
-
-                emit(ResultState.Success(Unit)) // 성공 상태 emit
-
-            }
-        } catch (e: Exception) {
-            e.printStackTrace() // 예외 발생 시 스택 트레이스 출력
-            emit(ResultState.Failure(e)) // 실패 상태 emit
+        if (!meChatRoomExist && !youChatRoomExist) {
+            createChat(
+                roomId, message.senderUid, message.receiverUid, meChatRoomDoc, youChatRoomDoc
+            )
         }
+
+        val nowTime = FieldValue.serverTimestamp()
+
+        firebase.runTransaction { transaction ->
+            transaction.set(
+                messageDoc, mapOf(
+                    "messageId" to messageDoc.id,
+                    "senderUid" to message.senderUid,
+                    "receiverUid" to message.receiverUid,
+                    "message" to message.text,
+                    "timeStamp" to nowTime
+                ), SetOptions.merge()
+            )
+
+            transaction.set(
+                meChatRoomDoc, mapOf(
+                    "recentMessageTimeStamp" to nowTime, "recentMessage" to message.text
+                ), SetOptions.merge()
+            )
+        }.await()
+
+        firebase.runTransaction { transaction ->
+
+            val yourLastVisitedTimestamp =
+                transaction.get(youChatRoomDoc).getTimestamp("lastVisitedTimeStamp") as Timestamp
+
+            val recentMessageTimestamp =
+                transaction.get(meChatRoomDoc).getTimestamp("recentMessageTimeStamp")
+
+            val youChatRoomUpdates = mutableMapOf(
+                "recentMessageTimeStamp" to nowTime, "recentMessage" to message.text
+            )
+
+            if (yourLastVisitedTimestamp.toDate() < recentMessageTimestamp?.toDate()) {
+                youChatRoomUpdates["unReadMessageCount"] = FieldValue.increment(1)
+                transaction.set(
+                    youTotalUnReadMessageCountDoc, mapOf(
+                        "totalUnReadMessageCount" to FieldValue.increment(1)
+                    ), SetOptions.merge()
+                )
+            }
+
+            transaction.set(youChatRoomDoc, youChatRoomUpdates, SetOptions.merge())
+        }.await()
     }
 
 
     override fun getChatRooms(): Flow<ResultState<List<ChatRoomModel>>> = callbackFlow {
         trySend(ResultState.Loading)
         val uid = auth.currentUser?.uid.toString()
-        val userDoc = firebase.collection(Constants.COL_USERS).document(uid)
-        val messageCol = firebase.collection(Constants.COL_CHATS)
-        val myChatRooms =
-            userDoc.get(Source.SERVER).await().get("chatRooms") as? List<*> ?: emptyList<String>()
-        Log.d("sjh", "myChatRooms size : ${myChatRooms.size}")
+        val messageCol =
+            firebase.collection(Constants.COL_CHAT_ROOMS).document(uid).collection("my_chat_room")
+        val listener = messageCol.addSnapshotListener { value, error ->
+            Log.d("getChatRooms", "getChatRooms>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            if (error != null) {
+                trySend(ResultState.Failure(error))
+                return@addSnapshotListener
+            }
 
-        if (myChatRooms.isEmpty()) {
-            trySend(ResultState.Success(emptyList()))
-            awaitCancellation()
-        }
-
-        val listener = messageCol.whereIn(FieldPath.documentId(), myChatRooms)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(ResultState.Failure(error))
+            if (value != null && !value.isEmpty) {
+                val chatRooms = value.documents.mapNotNull { dc ->
+                    Log.d("sjh", "${dc.metadata}")
+                    dc.toObject(ChatRoomEntity::class.java)?.toChatRoomModel()
+                }
+                if (chatRooms.isEmpty()) {
+                    trySend(ResultState.Success(emptyList()))
                     return@addSnapshotListener
                 }
-                if (snapshot != null && !snapshot.isEmpty) {
-                    val chatRooms =
-                        snapshot.documents.filter { myChatRooms.contains(it.id) }.map { document ->
-                            val partnerUid = getReceiverUid(document.id, uid)
-                            val userData = document.data?.get(uid) as Map<String, Any>
-                            val partnerData = document.data!![partnerUid] as Map<String, Any>
-                            ChatRoomModel(
-                                roomId = document.id,
-                                recentMessage = document.getString("recentMessage") ?: "",
-                                recentMessageTimeStamp = document.getTimestamp("recentMessageTimeStamp")
-                                    ?.toDate(),
-                                users = mapOf(
-                                    uid to userData, partnerUid to partnerData
-                                )
-                            )
-                        }
-                    Log.d("sjh", "chatRooms : ${chatRooms.size}")
-                    trySend(ResultState.Success(chatRooms))
-                }
+                trySend(ResultState.Success(chatRooms))
             }
+        }
 
         awaitClose {
             Log.d("getChatRooms", "getChatRooms close")
@@ -228,75 +200,96 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     private suspend fun createChat(
-        roomId: String, user1Uid: String, user2Uid: String
+        roomId: String,
+        meUid: String,
+        youUid: String,
+        meChatRoom: DocumentReference,
+        youChatRoom: DocumentReference
     ) {
-        val chatsDoc = firebase.collection(Constants.COL_CHATS).document(roomId)
-        val user1Doc = firebase.collection(Constants.COL_USERS).document(user1Uid)
-        val user2Doc = firebase.collection(Constants.COL_USERS).document(user2Uid)
+
+        val myInfo = firebase.collection(Constants.COL_USERS).document(meUid)
+        val youInfo = firebase.collection(Constants.COL_USERS).document(youUid)
+        val myMessageCountCol =
+            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT).document(meUid)
+        val yourMessageCountCol =
+            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT).document(youUid)
+
         firebase.runTransaction { transaction ->
-            val user1 = transaction.get(user1Doc).toObject(UserEntity::class.java)
-            val user2 = transaction.get(user2Doc).toObject(UserEntity::class.java)
+            val meInfo = transaction.get(myInfo).toObject(UserEntity::class.java)
+            val youInfo = transaction.get(youInfo).toObject(UserEntity::class.java)
             transaction.set(
-                chatsDoc, mapOf(
-                    user1Uid to mapOf(
-                        "profileImageUrl" to user1?.profileImageUrl,
-                        "nickName" to user1?.nickName,
-                        "unReadMessageCount" to 0,
-                        "lastVisitedTimeStamp" to FieldValue.serverTimestamp()
-                    ),
-                    user2Uid to mapOf(
-                        "profileImageUrl" to user2?.profileImageUrl,
-                        "nickName" to user2?.nickName,
-                        "unReadMessageCount" to 0,
-                        "lastVisitedTimeStamp" to FieldValue.serverTimestamp(),
-                    ),
-                    "recentMessage" to "",
-                    "recentMessageTimeStamp" to FieldValue.serverTimestamp()
+                meChatRoom, ChatRoomEntity(
+                    roomId = roomId, you = ChatRoomUserEntity(
+                        profileImageUrl = youInfo?.profileImageUrl.toString(),
+                        nickName = youInfo?.nickName.toString(),
+                    )
                 )
             )
             transaction.set(
-                user1Doc, mapOf(
-                    "chatRooms" to FieldValue.arrayUnion(roomId)
-                ), SetOptions.merge()
+                youChatRoom, ChatRoomEntity(
+                    roomId = roomId, you = ChatRoomUserEntity(
+                        profileImageUrl = meInfo?.profileImageUrl.toString(),
+                        nickName = meInfo?.nickName.toString(),
+                    )
+                )
             )
             transaction.set(
-                user2Doc, mapOf(
-                    "chatRooms" to FieldValue.arrayUnion(roomId)
+                myMessageCountCol, mapOf(
+                    "totalUnReadMessageCount" to 0L
+                )
+            )
+            transaction.set(
+                yourMessageCountCol, mapOf(
+                    "totalUnReadMessageCount" to 0L
+                )
+            )
+        }.await()
+    }
+
+
+    override suspend fun updateLastVisitedTimeStamp(roomId: String) {
+        Log.d("updateLastVisitedTimeStamp", "updateLastVisitedTimeStamp")
+        val uid = auth.currentUser?.uid.toString()
+        val myTotalUnReadMessageCountDoc =
+            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT).document(uid)
+        val myChatRoomDoc =
+            firebase.collection(Constants.COL_CHAT_ROOMS).document(uid).collection("my_chat_room")
+                .document(roomId)
+
+        val nowTime = FieldValue.serverTimestamp()
+
+        firebase.runTransaction { transaction ->
+            val unReadMessageCount =
+                transaction.get(myChatRoomDoc).data?.get("unReadMessageCount") as? Long ?: 0L
+            val totalUnReadMessageCount =
+                transaction.get(myTotalUnReadMessageCountDoc).data?.get("totalUnReadMessageCount") as? Long
+                    ?: 0L
+            if (totalUnReadMessageCount > 0) {
+                transaction.set(
+                    myTotalUnReadMessageCountDoc, mapOf(
+                        "totalUnReadMessageCount" to FieldValue.increment(
+                            -unReadMessageCount
+                        )
+                    ), SetOptions.merge()
+                )
+            }
+            transaction.set(
+                myChatRoomDoc, mapOf(
+                    "unReadMessageCount" to 0, "lastVisitedTimeStamp" to nowTime
                 ), SetOptions.merge()
             )
         }.await()
     }
 
-    override suspend fun updateLastVisitedTimeStamp(roomId: String) {
-        Log.d("updateLastVisitedTimeStamp", "updateLastVisitedTimeStamp")
+    override fun getTotalMessageCount(): Flow<ResultState<Long>> {
         val uid = auth.currentUser?.uid.toString()
-        val chatDoc = firebase.collection(Constants.COL_CHATS).document(roomId)
-        val userDoc = firebase.collection(Constants.COL_USERS).document(uid)
-        firebase.runTransaction { transaction ->
-            val exists = transaction.get(chatDoc).exists()
-            val user = transaction.get(userDoc).toObject(UserEntity::class.java)
-            val unReadMessageCount =
-                transaction.get(chatDoc).get(FieldPath.of(uid, "unReadMessageCount")) as Long
-            if (user != null && user.totalUnReadMessageCount > 0) {
-                transaction.set(
-                    userDoc, mapOf(
-                        "totalUnReadMessageCount" to FieldValue.increment(-unReadMessageCount)
-                    ), SetOptions.merge()
-                )
-            }
-            if (exists) {
-                transaction.set(
-                    chatDoc, mapOf(
-                        uid to mapOf(
-                            "lastVisitedTimeStamp" to FieldValue.serverTimestamp(),
-                            "unReadMessageCount" to 0
-                        )
-                    ), SetOptions.merge()
-                )
-            }
-
+        val myMessageCountCol =
+            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT).document(uid)
+        return myMessageCountCol.snapshots().map { snapshot ->
+            Log.d("getTotalMessageCount", "getTotalMessageCount>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            snapshot.getLong("totalUnReadMessageCount") ?: 0L
+        }.map {
+            ResultState.Success(it)
         }
     }
-
-    override fun getTotalUnReadMessageCount(uid: String): Flow<ResultState<Long>> = flow {}
 }

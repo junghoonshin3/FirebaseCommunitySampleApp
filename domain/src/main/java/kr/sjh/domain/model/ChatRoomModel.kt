@@ -7,6 +7,9 @@ import java.util.Date
 data class ChatRoomModel(
     val roomId: String,
     val recentMessage: String,
+    val unReadMessageCount: Long = 0L,
     val recentMessageTimeStamp: Date? = null,
-    val users: Map<String, Map<String, Any>> = emptyMap(),
+    val lastVisitedTimeStamp: Date? = null,
+    val you: ChatRoomUserModel = ChatRoomUserModel()
 )
+

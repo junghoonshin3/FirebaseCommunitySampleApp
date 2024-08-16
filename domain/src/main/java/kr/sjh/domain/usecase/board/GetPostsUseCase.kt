@@ -5,5 +5,5 @@ import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.PostModel
 
 fun interface GetPostsUseCase {
-    suspend operator fun invoke(): Flow<ResultState<List<PostModel>>>
+    operator fun invoke(size: Long, lastTime: Long?): Flow<ResultState<List<PostModel>>>
 }

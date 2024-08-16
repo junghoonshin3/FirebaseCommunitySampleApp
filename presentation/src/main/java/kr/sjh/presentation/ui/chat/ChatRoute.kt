@@ -21,7 +21,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -37,11 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bumptech.glide.request.RequestOptions
-import com.skydoves.landscapist.glide.GlideImage
+import coil.compose.AsyncImage
 import kr.sjh.domain.model.ChatRoomModel
-import kr.sjh.domain.util.getReceiverUid
-import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.calculationTime
@@ -77,7 +73,7 @@ private fun ChatScreen(
 
     Surface(modifier = modifier, color = backgroundColor) {
         if (chatRoomUiState.isLoading) {
-            LoadingDialog()
+//            LoadingDialog()
         } else if (chatRoomUiState.rooms.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
@@ -91,9 +87,7 @@ private fun ChatScreen(
             }
         } else {
             ChatRoomList(
-                chatRoomUiState.uid,
-                chatRooms = chatRoomUiState.rooms,
-                navigateToDetail = navigateToDetail
+                chatRooms = chatRoomUiState.rooms, navigateToDetail = navigateToDetail
             )
         }
     }
@@ -101,7 +95,7 @@ private fun ChatScreen(
 
 @Composable
 fun ChatRoomList(
-    uid: String, chatRooms: List<ChatRoomModel>, navigateToDetail: (String, String, String) -> Unit
+    chatRooms: List<ChatRoomModel>, navigateToDetail: (String, String, String) -> Unit
 ) {
 
     LazyColumn(
@@ -110,12 +104,10 @@ fun ChatRoomList(
             .padding(10.dp)
     ) {
         itemsIndexed(chatRooms, key = { _, room -> room.roomId }) { index, room ->
-            val partnerUid = getReceiverUid(room.roomId, uid)
-            val partner = room.users[partnerUid] ?: emptyMap()
-            val me = room.users[uid] ?: emptyMap()
-            val nickname = partner["nickName"].toString()
-            val profileUrl = partner["profileImageUrl"].toString()
-            val unReadCount = me["unReadMessageCount"] as? Long ?: 0L
+            val you = room.you
+            val nickname = you.nickName
+            val profileUrl = you.profileImageUrl
+            val unReadCount = room.unReadMessageCount
 
             ChatRoom(modifier = Modifier
                 .clickableSingle {
@@ -155,14 +147,13 @@ fun ChatRoom(
     timeStamp: String = "",
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        GlideImage(modifier = Modifier
-            .clip(CircleShape)
-            .sizeIn(60.dp, 60.dp), requestOptions = {
-            RequestOptions().override(200, 200).centerInside().circleCrop()
-        }, imageModel = {
-            //대화 상대의 이미지 Url
-            profileUrl
-        })
+        AsyncImage(
+            modifier = Modifier
+                .clip(CircleShape)
+                .sizeIn(60.dp, 60.dp),
+            model = profileUrl,
+            contentDescription = null
+        )
         Spacer(modifier = Modifier.width(10.dp))
         Column(
             modifier = Modifier

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.PostModel
@@ -13,12 +14,11 @@ import kr.sjh.domain.usecase.board.GetPostsUseCase
 import kr.sjh.domain.usecase.board.UpdatePostCountUseCase
 import javax.inject.Inject
 
-sealed interface BoardUiState {
-    data object Init : BoardUiState
-    data class Success(val posts: List<PostModel>) : BoardUiState
-    data object Loading : BoardUiState
-    data class Error(val throwable: Throwable) : BoardUiState
-}
+data class BoardUiState(
+    val isLoading: Boolean = false,
+    val posts: List<PostModel> = emptyList(),
+    val error: Throwable? = null
+)
 
 @HiltViewModel
 class BoardViewModel @Inject constructor(
@@ -26,23 +26,40 @@ class BoardViewModel @Inject constructor(
     private val updatePostCountUseCase: UpdatePostCountUseCase
 ) : ViewModel() {
 
-    private val _postUiState = MutableStateFlow<BoardUiState>(BoardUiState.Init)
+    private val _postUiState = MutableStateFlow(BoardUiState())
     val postUiState = _postUiState.asStateFlow()
 
-    fun getPosts() {
+    init {
+        getPosts()
+    }
+
+    fun nextPosts() {
+        val title = _postUiState.value.posts.last().title
+        val lastTime = _postUiState.value.posts.last().timeStamp.time
+        Log.d("sjh", "title : ${title}, last : $lastTime")
+        getPosts(size = 5, lastTime = lastTime)
+    }
+
+    private fun getPosts(size: Long = 10, lastTime: Long? = null) {
         viewModelScope.launch {
-            postsUseCase().collect {
-                when (it) {
+            postsUseCase(size = size, lastTime).collect { result ->
+                when (result) {
                     is ResultState.Failure -> {
-                        _postUiState.value = BoardUiState.Error(it.throwable)
+                        _postUiState.update {
+                            it.copy(isLoading = false, error = result.throwable)
+                        }
                     }
 
                     ResultState.Loading -> {
-                        _postUiState.value = BoardUiState.Loading
+                        _postUiState.update {
+                            it.copy(isLoading = true, error = null)
+                        }
                     }
 
                     is ResultState.Success -> {
-                        _postUiState.value = BoardUiState.Success(it.data)
+                        _postUiState.update {
+                            it.copy(isLoading = false, posts = it.posts + result.data, error = null)
+                        }
                     }
                 }
             }

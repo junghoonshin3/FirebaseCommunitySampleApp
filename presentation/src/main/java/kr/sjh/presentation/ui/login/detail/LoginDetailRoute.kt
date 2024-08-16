@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bumptech.glide.request.RequestOptions
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.ContentTextField
@@ -95,13 +94,12 @@ fun LoginDetailScreen(
                 .fillMaxSize()
                 .padding(10.dp)
         ) {
-            ProfileImage(modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp), imageModel = {
-                profileImageUrl ?: R.drawable.baseline_image_24
-            }, requestOptions = {
-                RequestOptions().override(350, 350).circleCrop()
-            }, onImageEdit = onImageEdit
+            ProfileImage(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp),
+                imageModel = profileImageUrl ?: R.drawable.baseline_image_24,
+                onImageEdit = onImageEdit
             )
             Spacer(modifier = Modifier.height(30.dp))
             Text(text = "닉네임", color = Color.White, fontWeight = FontWeight.Bold)

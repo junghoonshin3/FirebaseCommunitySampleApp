@@ -33,7 +33,6 @@ import kr.sjh.domain.model.PostModel
 import kr.sjh.presentation.ui.board.write.BoardWriteBody
 import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.BoardPicture
-import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.backgroundColor
 
 @Composable
@@ -98,7 +97,7 @@ private fun BoardEditScreen(
     navigateToDetail: (String) -> Unit,
 ) {
     if (editUiState.loading) {
-        LoadingDialog()
+//        LoadingDialog()
     }
 
     LaunchedEffect(key1 = editUiState.isComplete, block = {
@@ -138,7 +137,7 @@ private fun BoardEditScreen(
             )
             BoardPicture(
                 modifier = Modifier
-                    .padding(5.dp)
+                    .padding(10.dp)
                     .fillMaxWidth()
                     .imePadding(),
                 onPhoto = onPhoto

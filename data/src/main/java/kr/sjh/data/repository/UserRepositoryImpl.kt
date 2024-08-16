@@ -36,8 +36,8 @@ class UserRepositoryImpl @Inject constructor(
 ) : UserRepository {
     override fun getCurrentUser(): Flow<ResultState<UserModel>> = callbackFlow {
         val uid = auth.currentUser?.uid.toString()
-        val listener = fireStore.collection(COL_USERS).document(uid)
-            .addSnapshotListener { snapshots, error ->
+        val listener =
+            fireStore.collection(COL_USERS).document(uid).addSnapshotListener { snapshots, error ->
                 if (error != null) {
                     trySend(ResultState.Failure(error))
                     return@addSnapshotListener
@@ -46,10 +46,6 @@ class UserRepositoryImpl @Inject constructor(
                 if (snapshots != null && snapshots.exists()) {
                     val userEntity = snapshots.toObject(UserEntity::class.java)
                     if (userEntity != null) {
-                        Log.d(
-                            "getCurrentUser",
-                            "totalUnReadMessageCount >> ${userEntity.totalUnReadMessageCount}"
-                        )
                         trySend(ResultState.Success(data = userEntity.toUserModel()))
                     } else {
                         trySend(ResultState.Failure(Exception("UserEntity 생성 실패!")))
@@ -125,29 +121,32 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun hideUser(uid: String): Flow<ResultState<Unit>> = callbackFlow {
-        try {
-            trySend(ResultState.Loading)
-            auth.currentUser?.uid?.let {
-                fireStore.collection(COL_USERS).document(it)
-                    .update("banUsers", FieldValue.arrayUnion(uid)).addOnSuccessListener {
-                        trySend(ResultState.Success(Unit))
-                    }.addOnFailureListener { error ->
-                        trySend(ResultState.Failure(error))
-                    }
-            }
-        } catch (e: Exception) {
-            trySend(ResultState.Failure(e))
-        }
-        awaitClose {
-            close()
-        }
-    }
+//    override fun hideUser(uid: String): Flow<ResultState<Unit>> = callbackFlow {
+//        try {
+//            trySend(ResultState.Loading)
+//            auth.currentUser?.uid?.let {
+//                fireStore.collection(COL_USERS).document(it)
+//                    .update("banUsers", FieldValue.arrayUnion(uid)).addOnSuccessListener {
+//                        trySend(ResultState.Success(Unit))
+//                    }.addOnFailureListener { error ->
+//                        trySend(ResultState.Failure(error))
+//                    }
+//            }
+//        } catch (e: Exception) {
+//            trySend(ResultState.Failure(e))
+//        }
+//        awaitClose {
+//            close()
+//        }
+//    }
 
-    override fun banUser(uid: String): Flow<ResultState<Unit>> = flow {
+    override fun banUser(banUid: String): Flow<ResultState<Unit>> = flow {
         try {
-            fireStore.collection("bans").document("ban-users")
-                .set(mapOf(uid to true), SetOptions.merge()).await()
+
+            fireStore.collection(COL_USERS).document(auth.currentUser?.uid.toString()).set(
+                mapOf("banUsers" to FieldValue.arrayUnion(banUid)),
+                SetOptions.merge()
+            ).await()
             emit(ResultState.Success(Unit))
         } catch (e: Exception) {
             emit(ResultState.Failure(e))

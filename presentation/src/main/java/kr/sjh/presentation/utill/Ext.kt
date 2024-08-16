@@ -1,5 +1,7 @@
 package kr.sjh.presentation.utill
 
+import android.content.Context
+import android.graphics.drawable.Drawable
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -38,8 +40,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.navOptions
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kr.sjh.presentation.navigation.LeafScreen
 import kr.sjh.presentation.navigation.RootScreen
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -96,7 +100,6 @@ fun getActivity() = LocalContext.current as ComponentActivity
 @Stable
 @Composable
 fun NavController.currentRootScreenAsState(): State<RootScreen> {
-
     val selectedItem = remember {
         mutableStateOf<RootScreen>(
             RootScreen.Board
@@ -126,16 +129,19 @@ fun NavController.currentRootScreenAsState(): State<RootScreen> {
             removeOnDestinationChangedListener(listener)
         }
     }
-    Log.d("sjh", "selectedItem : ${selectedItem.value}")
     return selectedItem
 }
 
 
 fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
     navigate(rootScreen.route) {
-        popUpTo(graph.findStartDestination().id) {}
+        popUpTo(graph.id) {
+            saveState = true
+        }
+        restoreState = true
         launchSingleTop = true
     }
+
 }
 
 fun Modifier.clickableSingle(

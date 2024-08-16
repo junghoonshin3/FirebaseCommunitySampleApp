@@ -17,15 +17,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.bumptech.glide.request.RequestOptions
-import com.skydoves.landscapist.glide.GlideImage
+import coil.compose.AsyncImage
 import kr.sjh.presentation.R
 
 @Composable
 fun ProfileImage(
     modifier: Modifier = Modifier,
-    imageModel: () -> Any?,
-    requestOptions: @Composable () -> RequestOptions,
+    imageModel: Any?,
     onImageEdit: (String) -> Unit
 ) {
     val imagePick = rememberLauncherForActivityResult(
@@ -42,12 +40,12 @@ fun ProfileImage(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.size(150.dp)) {
-            GlideImage(
+            AsyncImage(
                 modifier = Modifier
                     .align(Alignment.Center),
-                requestOptions = requestOptions,
-                imageModel = imageModel,
-            )
+                model = imageModel,
+                contentDescription = null,
+                )
             Image(
                 colorFilter = ColorFilter.tint(Color.White),
                 modifier = Modifier

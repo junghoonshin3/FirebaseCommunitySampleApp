@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.board.write
 
-import android.util.Log
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -165,7 +164,7 @@ fun BoardWriteScreen(
 
             BoardPicture(
                 modifier = Modifier
-                    .padding(5.dp)
+                    .padding(10.dp)
                     .fillMaxWidth()
                     .imePadding(),
                 onPhoto = onPhoto

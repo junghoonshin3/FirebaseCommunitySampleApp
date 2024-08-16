@@ -25,7 +25,6 @@ import kr.sjh.presentation.ui.theme.backgroundColor
 fun BoardPicture(modifier: Modifier, onPhoto: (List<String>) -> Unit) {
     val multiplePhotoPickerLauncher = // 갤러리에서 사진 가져오기
         rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris: List<Uri> ->
-
             onPhoto(uris.map { it.toString() })
         }
     Row(
@@ -39,7 +38,7 @@ fun BoardPicture(modifier: Modifier, onPhoto: (List<String>) -> Unit) {
                 .clickable {
                     multiplePhotoPickerLauncher.launch(
                         PickVisualMediaRequest(
-                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                            ActivityResultContracts.PickVisualMedia.ImageOnly,
                         )
                     )
                 },

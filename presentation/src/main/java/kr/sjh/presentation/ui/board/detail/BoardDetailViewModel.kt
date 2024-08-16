@@ -6,84 +6,110 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.PostModel
 import kr.sjh.domain.model.UserModel
 import kr.sjh.domain.usecase.board.GetPostUseCase
-import kr.sjh.domain.usecase.user.HideUserUseCase
 import kr.sjh.domain.usecase.board.RemovePostUseCase
 import kr.sjh.domain.usecase.user.BanUserUseCase
 import javax.inject.Inject
 
-sealed interface DetailUiState {
-    data class Success(val data: Pair<PostModel, UserModel>) : DetailUiState
-    data class Error(val throwable: Throwable) : DetailUiState
-    data object Loading : DetailUiState
-    data object Init : DetailUiState
-}
-
-sealed interface DetailBottomSheetUiState {
-    data object Success : DetailBottomSheetUiState
-    data class Error(val throwable: Throwable) : DetailBottomSheetUiState
-    data object Loading : DetailBottomSheetUiState
-    data object Init : DetailBottomSheetUiState
-}
+data class DetailUiState(
+    val loading: Boolean = false,
+    val post: PostModel = PostModel(),
+    val writerUser: UserModel = UserModel(),
+    val bottomSheetShow: Boolean = false,
+    val throwable: Throwable? = null
+)
 
 
 @HiltViewModel
 class BoardDetailViewModel @Inject constructor(
     private val getPostUseCase: GetPostUseCase,
     private val removePostUseCase: RemovePostUseCase,
-    private val hideUserUseCase: HideUserUseCase,
     private val banUserUseCase: BanUserUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val postKey = savedStateHandle.get<String>("postKey").orEmpty()
 
-    private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Init)
+    private val _uiState = MutableStateFlow(DetailUiState())
     val uiState = _uiState.asStateFlow()
-
-    private val _bottomSheetUiState =
-        MutableStateFlow<DetailBottomSheetUiState>(DetailBottomSheetUiState.Init)
-    val bottomSheetUiState = _bottomSheetUiState.asStateFlow()
 
     init {
         getPost()
     }
 
+    fun setBottomSheetVisible() {
+        _uiState.update {
+            it.copy(
+                bottomSheetShow = !it.bottomSheetShow
+            )
+        }
+    }
 
     private fun getPost() {
         viewModelScope.launch {
             getPostUseCase(postKey).collect { result ->
                 when (result) {
                     is ResultState.Failure -> {
-                        _uiState.value = DetailUiState.Error(result.throwable)
+                        _uiState.update {
+                            it.copy(
+                                loading = false, throwable = result.throwable
+                            )
+                        }
                     }
 
-                    ResultState.Loading -> _uiState.value = DetailUiState.Loading
+                    ResultState.Loading -> {
+                        _uiState.update {
+                            it.copy(
+                                loading = true
+                            )
+                        }
+                    }
+
                     is ResultState.Success -> {
-                        _uiState.value = DetailUiState.Success(result.data)
+                        _uiState.update {
+                            it.copy(
+                                loading = false,
+                                post = result.data.first,
+                                writerUser = result.data.second
+                            )
+                        }
                     }
                 }
             }
         }
     }
 
-    fun deletePost() {
+    fun deletePost(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            removePostUseCase(postKey).collect {
-                when (it) {
+            removePostUseCase(postKey).collect { result ->
+                when (result) {
                     is ResultState.Failure -> {
-                        _bottomSheetUiState.value = DetailBottomSheetUiState.Error(it.throwable)
+                        _uiState.update {
+                            it.copy(
+                                loading = false, throwable = it.throwable
+                            )
+                        }
                     }
 
                     ResultState.Loading -> {
-                        _bottomSheetUiState.value = DetailBottomSheetUiState.Loading
+                        _uiState.update {
+                            it.copy(
+                                loading = true
+                            )
+                        }
                     }
 
                     is ResultState.Success -> {
-                        _bottomSheetUiState.value = DetailBottomSheetUiState.Success
+                        _uiState.update {
+                            it.copy(
+                                loading = false
+                            )
+                        }
+                        onSuccess()
                     }
                 }
             }
@@ -95,25 +121,20 @@ class BoardDetailViewModel @Inject constructor(
     }
 
 
-    fun hideUser(writerUid: String) {
+    fun hidePost(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            hideUserUseCase(writerUid).collect {
-                when (it) {
-                    is ResultState.Failure -> {}
-                    ResultState.Loading -> {}
-                    is ResultState.Success -> {}
-                }
-            }
         }
     }
 
-    fun banUser(writerUid: String) {
+    fun banUser(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            banUserUseCase(writerUid).collect {
-                when (it) {
+            banUserUseCase(uiState.value.writerUser.uid).collect { result ->
+                when (result) {
                     is ResultState.Failure -> {}
                     ResultState.Loading -> {}
-                    is ResultState.Success -> {}
+                    is ResultState.Success -> {
+                        onSuccess()
+                    }
                 }
             }
         }

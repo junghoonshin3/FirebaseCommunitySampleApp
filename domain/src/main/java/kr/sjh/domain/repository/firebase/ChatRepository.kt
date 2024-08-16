@@ -17,5 +17,5 @@ interface ChatRepository {
     suspend fun sendMessage(message: ChatMessageModel): Flow<ResultState<Unit>>
     fun getChatRooms(): Flow<ResultState<List<ChatRoomModel>>>
     suspend fun updateLastVisitedTimeStamp(roomId: String)
-    fun getTotalUnReadMessageCount(uid: String): Flow<ResultState<Long>>
+    fun getTotalMessageCount(): Flow<ResultState<Long>>
 }

@@ -1,18 +1,25 @@
 package kr.sjh.data.repository
 
 import android.net.Uri
+import android.util.Log
 import androidx.core.net.toUri
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Source
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firestore.v1.Document
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kr.sjh.data.mapper.toPostEntity
@@ -34,29 +41,49 @@ class PostRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
 ) : PostRepository {
 
-    override fun getPosts(): Flow<ResultState<List<PostModel>>> = callbackFlow {
-        trySend(ResultState.Loading)
-        try {
-            val uid = auth.currentUser?.uid.toString()
-            val user = fireStore.collection(COL_USERS).document(uid).get().await()
-                .toObject(UserEntity::class.java)
-            fireStore.collection(COL_POSTS)
-                .orderBy("timeStamp", Query.Direction.DESCENDING).get().addOnSuccessListener {
-                    val posts = it.documentChanges.map {
-                        it.document.toObject(PostEntity::class.java).toPostModel()
-                    }.filterNot { it.writerUid in (user?.banUsers ?: emptyList()) }
+    override fun getPosts(size: Long, lastTime: Long?): Flow<ResultState<List<PostModel>>> =
+        callbackFlow {
+            trySend(ResultState.Loading)
+            try {
+                val uid = auth.currentUser?.uid.toString()
+                val user = fireStore.collection(COL_USERS).document(uid).get().await()
+                    .toObject(UserEntity::class.java)
+                Log.d("banUsers", "${user?.banUsers}")
+
+                val query = if (lastTime == null) {
+                    fireStore.collection(COL_POSTS)
+                        .limit(size)
+                        .orderBy("timeStamp", Query.Direction.DESCENDING)
+
+                } else {
+                    val lastTimestamp =
+                        Timestamp(lastTime / 1000, (lastTime % 1000 * 1000000).toInt())
+                    fireStore.collection(COL_POSTS)
+                        .limit(size)
+                        .whereLessThan("timeStamp", lastTimestamp)
+                        .orderBy("timeStamp", Query.Direction.DESCENDING)
+                }
+
+                query.get().addOnSuccessListener {
+                    Log.d("getPosts", "${it.documents.size}")
+                    val posts = it.documentChanges.mapNotNull { documentChange ->
+                        documentChange.document.toObject(PostEntity::class.java).toPostModel()
+                    }.filterNot { postModel ->
+                        user?.banUsers?.contains(postModel.writerUid) ?: false
+                    }
                     trySend(ResultState.Success(posts))
                 }.addOnFailureListener { e ->
+                    e.printStackTrace()
                     trySend(ResultState.Failure(e))
                 }
-        } catch (e: Exception) {
-            trySend(ResultState.Failure(e))
-            e.printStackTrace()
+            } catch (e: Exception) {
+                trySend(ResultState.Failure(e))
+                e.printStackTrace()
+            }
+            awaitClose {
+                close()
+            }
         }
-        awaitClose {
-            close()
-        }
-    }
 
     override fun getPost(postKey: String): Flow<ResultState<Pair<PostModel, UserModel>>> =
         callbackFlow {
@@ -70,8 +97,7 @@ class PostRepositoryImpl @Inject constructor(
                 // PostEntity를 PostModel로 변환
                 val postModel = postEntity.toPostModel()
                 // 작성자 정보 가져오기
-                val userDoc =
-                    fireStore.collection(COL_USERS).document(postModel.writerUid)
+                val userDoc = fireStore.collection(COL_USERS).document(postModel.writerUid)
                 val userSnapshot = transaction.get(userDoc)
                 val userModel = userSnapshot.toObject(UserModel::class.java)
                     ?: throw RuntimeException("User does not exist")
@@ -93,30 +119,37 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val uid = auth.currentUser?.uid.toString()
 
-            val userEntity =
-                fireStore.collection(COL_USERS).document(uid).get().await()
-                    .toObject(UserEntity::class.java)
+            val userEntity = fireStore.collection(COL_USERS).document(uid).get().await()
+                .toObject(UserEntity::class.java)
+
+            val postRef = fireStore.collection(COL_POSTS).document()
+
+            val postKey = postRef.id
+
+            val userRef = fireStore.collection(COL_USERS).document(uid)
 
             // 이미지 업로드 후 storage에서 다운로드 url 획득
             val downloadUrls = if (postModel.images.isNotEmpty()) {
-                uploadImagesAndGetUrls(uid, postModel.postKey, postModel.images)
+                uploadImagesAndGetUrls(uid, postKey, postModel.images)
             } else {
                 emptyList() // 이미지가 없으면 빈 리스트 반환
             }
 
             // 다운로드 URL을 PostModel에 설정
             val postEntity = postModel.copy(
-                nickName = userEntity?.nickName.toString(), writerUid = uid, images = downloadUrls
+                postKey = postKey,
+                nickName = userEntity?.nickName.toString(),
+                writerUid = uid,
+                images = downloadUrls
             ).toPostEntity()
 
-            val postRef = fireStore.collection(COL_POSTS).document(postEntity.postKey)
-            val userRef = fireStore.collection(COL_USERS).document(uid)
+
 
             fireStore.runBatch { batch ->
                 batch.set(postRef, postEntity)
-                batch.update(userRef, "myPosts", FieldValue.arrayUnion(postEntity.postKey))
+                batch.update(userRef, "myPosts", FieldValue.arrayUnion(postKey))
             }.addOnSuccessListener {
-                trySend(ResultState.Success(postEntity.postKey))
+                trySend(ResultState.Success(postKey))
             }.addOnFailureListener { exception ->
                 trySend(ResultState.Failure(exception))
             }
@@ -133,8 +166,7 @@ class PostRepositoryImpl @Inject constructor(
         trySend(ResultState.Loading)
         try {
             val uid = auth.currentUser?.uid.toString()
-            val storageRef =
-                storage.reference.child(STORAGE_POST_IMAGES).child(uid).child(postKey)
+            val storageRef = storage.reference.child(STORAGE_POST_IMAGES).child(uid).child(postKey)
             val items = storageRef.listAll().await().items
             items.map {
                 it.delete().await()
@@ -164,9 +196,8 @@ class PostRepositoryImpl @Inject constructor(
     override suspend fun updatePost(postModel: PostModel): Flow<ResultState<Unit>> = callbackFlow {
         trySend(ResultState.Loading)
         try {
-            val storageRef =
-                storage.reference.child(STORAGE_POST_IMAGES).child(postModel.writerUid)
-                    .child(postModel.postKey)
+            val storageRef = storage.reference.child(STORAGE_POST_IMAGES).child(postModel.writerUid)
+                .child(postModel.postKey)
             val items = storageRef.listAll().await().items
 
             val existingImages = items.map { it.downloadUrl.await().toString() }

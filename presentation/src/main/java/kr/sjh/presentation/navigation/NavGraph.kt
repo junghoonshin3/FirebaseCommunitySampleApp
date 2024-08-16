@@ -1,7 +1,6 @@
 package kr.sjh.presentation.navigation
 
 import android.content.Intent
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,9 +37,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
-import com.bumptech.glide.request.RequestOptions
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.glide.GlideImage
+import coil.compose.AsyncImage
 import kotlinx.collections.immutable.persistentListOf
 import kr.sjh.presentation.ui.board.BoardRoute
 import kr.sjh.presentation.ui.board.detail.BoardDetailRoute
@@ -118,6 +115,8 @@ fun MainNavGraph(
 
     val user by mainViewModel.currentUser.collectAsStateWithLifecycle()
 
+    val totalUnReadMessageCount by mainViewModel.totalUnReadMessageCount.collectAsStateWithLifecycle()
+
     val currentSelectedScreen by navController.currentRootScreenAsState()
 
     val navItems = persistentListOf(
@@ -126,7 +125,6 @@ fun MainNavGraph(
 
     val bottomBar: @Composable () -> Unit by remember {
         mutableStateOf({
-            Log.d("bottomBar", "totalUnReadMessageCount >>>>>>>>>> ${user.totalUnReadMessageCount}")
             BottomNavigation(
                 content = {
                     navItems.forEach { item ->
@@ -134,16 +132,22 @@ fun MainNavGraph(
                             screen = item.screen,
                             selected = currentSelectedScreen == item.screen,
                             title = item.title,
-                            profileImageUrl = user.profileImageUrl,
-                            iconResource = item.iconResource,
-                            totalUnReadMessageCount = user.totalUnReadMessageCount,
+                            imageModel = {
+                                if (item.screen is RootScreen.MyPage) {
+                                    user.profileImageUrl
+                                } else {
+                                    item.iconResource
+                                }
+                            },
+                            totalUnReadMessageCount = totalUnReadMessageCount,
                             onClick = {
                                 navController.navigateToRootScreen(it)
                             },
                             modifier = Modifier.sizeIn(minWidth = 60.dp, minHeight = 60.dp)
                         )
                     }
-                }, modifier = Modifier
+                },
+                modifier = Modifier
                     .fillMaxWidth()
                     .height(80.dp)
                     .background(backgroundColor)
@@ -186,7 +190,9 @@ fun MainNavGraph(
                 route = "${LeafScreen.BoardDetail.route}?postKey={postKey}"
             ) {
                 BoardDetailRoute(modifier = Modifier.fillMaxSize(), onBack = {
-                    navController.popBackStack(LeafScreen.Board.route, false)
+                    navController.navigate(LeafScreen.Board.route) {
+                        popUpTo(LeafScreen.Board.route)
+                    }
                 }, onChat = { roomId, nickName, profileImageUrl ->
                     navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}") {
                         popUpTo(LeafScreen.BoardDetail.route)
@@ -199,7 +205,8 @@ fun MainNavGraph(
 
         navigation(route = RootScreen.Chat.route, startDestination = LeafScreen.Chat.route) {
             composable(route = LeafScreen.Chat.route) {
-                ChatRoute(bottomBar = bottomBar,
+                ChatRoute(
+                    bottomBar = bottomBar,
                     navigateToDetail = { roomId, nickName, profileImageUrl ->
                         navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}")
                     })
@@ -245,8 +252,7 @@ fun BottomNavigationItem(
     screen: RootScreen,
     selected: Boolean,
     title: String,
-    profileImageUrl: String,
-    iconResource: Int,
+    imageModel: () -> Any?,
     totalUnReadMessageCount: Long,
     onClick: (RootScreen) -> Unit,
     modifier: Modifier = Modifier,
@@ -258,10 +264,9 @@ fun BottomNavigationItem(
         }
     }
 
-    ConstraintLayout(modifier = modifier.clickableSingle(
-        enabled = !selected,
-        indication = { null }
-    ) {
+
+    ConstraintLayout(modifier = modifier.clickableSingle(enabled = !selected,
+        indication = { null }) {
         onClick(screen)
     }) {
         val (icon, badge) = createRefs()
@@ -275,36 +280,33 @@ fun BottomNavigationItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            GlideImage(imageOptions = if (screen is RootScreen.MyPage) {
-                ImageOptions()
-            } else {
-                ImageOptions(colorFilter = ColorFilter.tint(selectedColor))
-            }, requestOptions = {
-                RequestOptions().override(60).circleCrop()
-            }, imageModel = {
-                if (screen is RootScreen.MyPage) {
-                    profileImageUrl
-                } else {
-                    iconResource
-                }
-            })
+            AsyncImage(
+                modifier = Modifier
+                    .size(25.dp)
+                    .clip(CircleShape),
+                model = imageModel(),
+                colorFilter = if (screen is RootScreen.MyPage) null else ColorFilter.tint(
+                    selectedColor
+                ),
+                contentDescription = null,
+            )
+
             Text(
                 color = selectedColor, text = title
             )
         }
 
         if (screen is RootScreen.Chat) {
-            if (totalUnReadMessageCount > 0)
-                BadgeCount(modifier = Modifier
-                    .sizeIn(25.dp, 25.dp)
-                    .constrainAs(badge) {
-                        top.linkTo(parent.top)
-                        start.linkTo(icon.end)
-                    }
-                    .clip(CircleShape)
-                    .background(carrot),
-                    totalUnReadMessageCount,
-                    textSize = 12.sp)
+            if (totalUnReadMessageCount > 0) BadgeCount(modifier = Modifier
+                .sizeIn(25.dp, 25.dp)
+                .constrainAs(badge) {
+                    top.linkTo(parent.top)
+                    start.linkTo(icon.end)
+                }
+                .clip(CircleShape)
+                .background(carrot),
+                totalUnReadMessageCount,
+                textSize = 12.sp)
         }
     }
 }

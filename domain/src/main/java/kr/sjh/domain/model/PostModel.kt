@@ -7,7 +7,7 @@ import java.util.UUID
 @Stable
 data class PostModel(
     val writerUid: String = "",
-    val postKey: String = UUID.randomUUID().toString(),
+    val postKey: String = "",
     val title: String = "",
     val content: String = "",
     val nickName: String = "",

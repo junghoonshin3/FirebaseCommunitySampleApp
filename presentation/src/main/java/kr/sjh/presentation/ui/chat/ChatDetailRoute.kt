@@ -45,8 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bumptech.glide.request.RequestOptions
-import com.skydoves.landscapist.glide.GlideImage
+import coil.compose.AsyncImage
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -101,7 +100,9 @@ fun ChatDetailScreen(
 ) {
 
     val lazyListState = rememberLazyListState()
+
     val coroutineScope = rememberCoroutineScope()
+
     val isLoadMore = remember {
         derivedStateOf {
             val layoutInfo = lazyListState.layoutInfo
@@ -110,8 +111,6 @@ fun ChatDetailScreen(
             lastVisibleItemIndex > (totalItemsNumber - 8)
         }
     }
-
-
 
     LaunchedEffect(isLoadMore) {
         snapshotFlow {
@@ -261,11 +260,9 @@ fun MessageBubbleWithTime(
 
 @Composable
 fun Profile(modifier: Modifier = Modifier, imageUrl: String) {
-    GlideImage(modifier = modifier, requestOptions = {
-        RequestOptions().override(70).circleCrop()
-    }, imageModel = {
-        imageUrl
-    })
+    AsyncImage(
+        modifier = modifier, model = imageUrl, contentDescription = null
+    )
 }
 
 @Composable
