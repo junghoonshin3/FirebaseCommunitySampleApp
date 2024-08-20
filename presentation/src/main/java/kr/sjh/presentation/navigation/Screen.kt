@@ -1,6 +1,8 @@
 package kr.sjh.presentation.navigation
 
+import androidx.compose.runtime.Stable
 
+@Stable
 sealed class RootScreen(val route: String) {
     data object Board : RootScreen("board_root")
     data object Chat : RootScreen("chat_root")

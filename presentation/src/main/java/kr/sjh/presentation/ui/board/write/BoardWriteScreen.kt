@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.board.write
 
-import android.util.Log
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -61,11 +60,6 @@ fun BoardWriteRoute(
     onBack: () -> Unit,
     navigateToDetail: (String) -> Unit
 ) {
-    val scrollState = rememberScrollState()
-
-    val snackBarState = remember { SnackbarHostState() }
-
-    val coroutineScope = rememberCoroutineScope()
 
     val writeUiState by boardWriteViewModel.writeUiState.collectAsStateWithLifecycle()
 
@@ -74,10 +68,8 @@ fun BoardWriteRoute(
         onPost = {
             boardWriteViewModel.addPost(writeUiState.post)
         },
-        snackBarState = snackBarState,
         writeUiState = writeUiState,
         onBack = onBack,
-        scrollState = scrollState,
         updateContent = {
             boardWriteViewModel.updateContent(it)
         },
@@ -85,16 +77,6 @@ fun BoardWriteRoute(
             boardWriteViewModel.updateTitle(it)
         },
         onPhoto = {
-            if ((writeUiState.post.images.size + it.size) > 3) {
-                coroutineScope.launch {
-                    snackBarState.showSnackbar(
-                        "사진은 최대 3장까지 첨부 할 수 있어요",
-                        "확인",
-                        duration = SnackbarDuration.Short
-                    )
-                }
-                return@BoardWriteScreen
-            }
             boardWriteViewModel.setSelectedImages(it)
         },
         onDelete = {
@@ -110,8 +92,6 @@ fun BoardWriteRoute(
 fun BoardWriteScreen(
     modifier: Modifier = Modifier,
     writeUiState: WriteUiState,
-    snackBarState: SnackbarHostState,
-    scrollState: ScrollState,
     updateContent: (String) -> Unit,
     updateTitle: (String) -> Unit,
     onPhoto: (List<String>) -> Unit,
@@ -120,6 +100,14 @@ fun BoardWriteScreen(
     onPost: () -> Unit,
     onBack: () -> Unit,
 ) {
+
+    val scrollState = rememberScrollState()
+
+    val snackBarState = remember { SnackbarHostState() }
+
+    val coroutineScope = rememberCoroutineScope()
+
+
     if (writeUiState.loading) {
         LoadingDialog()
     }
@@ -135,8 +123,7 @@ fun BoardWriteScreen(
         modifier = modifier.background(backgroundColor),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             AppTopBar(
                 modifier = Modifier
@@ -163,17 +150,23 @@ fun BoardWriteScreen(
                 onDelete = onDelete
             )
 
-            BoardPicture(
-                modifier = Modifier
-                    .padding(5.dp)
-                    .fillMaxWidth()
-                    .imePadding(),
-                onPhoto = onPhoto
-            )
+            BoardPicture(modifier = Modifier
+                .padding(10.dp)
+                .fillMaxWidth()
+                .imePadding(), onPhoto = {
+                if ((writeUiState.post.images.size + it.size) > 3) {
+                    coroutineScope.launch {
+                        snackBarState.showSnackbar(
+                            "사진은 최대 3장까지 첨부 할 수 있어요", "확인", duration = SnackbarDuration.Short
+                        )
+                    }
+                } else {
+                    onPhoto(it)
+                }
+            })
         }
         SnackbarHost(
-            hostState = snackBarState,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            hostState = snackBarState, modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
 }
@@ -181,17 +174,11 @@ fun BoardWriteScreen(
 
 @Composable
 fun BoardWriteWarning(
-    modifier: Modifier = Modifier,
-    fontSize: TextUnit,
-    fontColor: Color,
-    text: AnnotatedString
+    modifier: Modifier = Modifier, fontSize: TextUnit, fontColor: Color, text: AnnotatedString
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text(
-            modifier = Modifier.padding(10.dp),
-            color = fontColor,
-            fontSize = fontSize,
-            text = text
+            modifier = Modifier.padding(10.dp), color = fontColor, fontSize = fontSize, text = text
         )
     }
 }
@@ -210,31 +197,26 @@ fun BoardWriteBody(
     val focusManager = LocalFocusManager.current
 
     Column(
-        modifier = modifier
-            .verticalScroll(state = scrollState),
+        modifier = modifier.verticalScroll(state = scrollState),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        BoardWriteWarning(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .background(Color(0xFFAFB0B1), shape = RoundedCornerShape(10.dp)),
+        BoardWriteWarning(modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .background(Color(0xFFAFB0B1), shape = RoundedCornerShape(10.dp)),
             fontSize = 15.sp,
             fontColor = Color.White,
             text = buildAnnotatedString {
                 append("게시판의 성격과 다른 글의 경우 ")
                 withStyle(
                     SpanStyle(
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = carrot
+                        fontSize = 17.sp, fontWeight = FontWeight.Bold, color = carrot
                     )
                 ) {
                     append("삭제 조치 및 계정 이용 ")
                 }
                 append("정지될 수 있습니다.")
-            }
-        )
+            })
         if (selectedImages.isNotEmpty()) {
             SelectedImages(
                 modifier = Modifier
@@ -244,12 +226,9 @@ fun BoardWriteBody(
                 onDelete = onDelete
             )
         }
-        ContentTextField(
-            singleLine = true,
+        ContentTextField(singleLine = true,
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                autoCorrect = false,
-                imeAction = ImeAction.Next
+                keyboardType = KeyboardType.Text, autoCorrect = false, imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(onDone = {
                 focusManager.moveFocus(FocusDirection.Next)
@@ -261,27 +240,21 @@ fun BoardWriteBody(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            text = title,
+            text = { title },
             onTextChanged = { updateTitle(it) },
             placeholder = {
                 Text(
-                    fontSize = 20.sp,
-                    text = "제목을 입력하세요.",
-                    color = Color.LightGray
+                    fontSize = 20.sp, text = "제목을 입력하세요.", color = Color.LightGray
                 )
-            }
-        )
+            })
         ContentTextField(
             parentScrollState = scrollState,
-            modifier = Modifier
-                .fillMaxWidth(),
-            text = content,
+            modifier = Modifier.fillMaxWidth(),
+            text = { content },
             onTextChanged = { updateContent(it) },
             placeholder = {
                 Text(
-                    fontSize = 17.sp,
-                    text = "방문한 음식점에 대한 정보를 공유해 주세요!",
-                    color = Color.LightGray
+                    fontSize = 17.sp, text = "방문한 음식점에 대한 정보를 공유해 주세요!", color = Color.LightGray
                 )
             },
 
@@ -293,9 +266,7 @@ fun BoardWriteBody(
                 fontSize = 17.sp,
             ),
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                autoCorrect = false,
-                imeAction = ImeAction.Default
+                keyboardType = KeyboardType.Text, autoCorrect = false, imeAction = ImeAction.Default
             )
 
         )

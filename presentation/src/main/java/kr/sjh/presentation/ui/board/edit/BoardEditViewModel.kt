@@ -33,7 +33,7 @@ class BoardEditViewModel @Inject constructor(
     private val getPostUseCase: GetPostUseCase
 ) : ViewModel() {
 
-    val postKey: String? = savedStateHandle.get<String>("postKey")
+    private val postKey: String? = savedStateHandle.get<String>("postKey")
 
     private val _editUiState = MutableStateFlow(EditUiState())
     val editUiState = _editUiState.asStateFlow()

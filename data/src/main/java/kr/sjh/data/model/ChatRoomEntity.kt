@@ -1,20 +1,13 @@
 package kr.sjh.data.model
 
-import java.util.Date
-
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ServerTimestamp
 
 data class ChatRoomEntity(
     val roomId: String = "",
     val recentMessage: String = "",
-    val timeStamp: Date? = null,
-    val inviter: Inviter = Inviter(),
-    val invitee: Invitee = Invitee()
-) {
-    data class Inviter(
-        val uid: String = "", val profileImageUrl: String = "", val nickName: String = ""
-    )
-
-    data class Invitee(
-        val uid: String = "", val profileImageUrl: String = "", val nickName: String = ""
-    )
-}
+    val unReadMessageCount: Long = 0L,
+    @ServerTimestamp val recentMessageTimeStamp: Timestamp? = null,
+    @ServerTimestamp val lastVisitedTimeStamp: Timestamp? = null,
+    val you: ChatRoomUserEntity = ChatRoomUserEntity()
+)

@@ -16,8 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toFile
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.backgroundColor
 
@@ -25,7 +27,6 @@ import kr.sjh.presentation.ui.theme.backgroundColor
 fun BoardPicture(modifier: Modifier, onPhoto: (List<String>) -> Unit) {
     val multiplePhotoPickerLauncher = // 갤러리에서 사진 가져오기
         rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(3)) { uris: List<Uri> ->
-
             onPhoto(uris.map { it.toString() })
         }
     Row(
@@ -39,7 +40,7 @@ fun BoardPicture(modifier: Modifier, onPhoto: (List<String>) -> Unit) {
                 .clickable {
                     multiplePhotoPickerLauncher.launch(
                         PickVisualMediaRequest(
-                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                            ActivityResultContracts.PickVisualMedia.ImageOnly,
                         )
                     )
                 },

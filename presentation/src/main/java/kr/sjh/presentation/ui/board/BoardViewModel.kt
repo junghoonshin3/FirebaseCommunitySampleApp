@@ -6,19 +6,23 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.PostModel
 import kr.sjh.domain.usecase.board.GetPostsUseCase
 import kr.sjh.domain.usecase.board.UpdatePostCountUseCase
+import kr.sjh.presentation.constants.LOAD_ITEM_COUNT
+import kr.sjh.presentation.constants.VISIBLE_ITEM_COUNT
 import javax.inject.Inject
 
-sealed interface BoardUiState {
-    data object Init : BoardUiState
-    data class Success(val posts: List<PostModel>) : BoardUiState
-    data object Loading : BoardUiState
-    data class Error(val throwable: Throwable) : BoardUiState
-}
+data class BoardUiState(
+    val isRefreshing: Boolean = false,
+    val isLoading: Boolean = false,
+    val isLoadMore: Boolean = false,
+    val posts: List<PostModel> = emptyList(),
+    val error: Throwable? = null
+)
 
 @HiltViewModel
 class BoardViewModel @Inject constructor(
@@ -26,23 +30,99 @@ class BoardViewModel @Inject constructor(
     private val updatePostCountUseCase: UpdatePostCountUseCase
 ) : ViewModel() {
 
-    private val _postUiState = MutableStateFlow<BoardUiState>(BoardUiState.Init)
+    private val _postUiState = MutableStateFlow(BoardUiState())
     val postUiState = _postUiState.asStateFlow()
 
-    fun getPosts() {
+    init {
+        initPosts()
+    }
+
+    fun refreshPosts() {
         viewModelScope.launch {
-            postsUseCase().collect {
-                when (it) {
+            postsUseCase(VISIBLE_ITEM_COUNT, null).collect { result ->
+                when (result) {
                     is ResultState.Failure -> {
-                        _postUiState.value = BoardUiState.Error(it.throwable)
+                        _postUiState.update {
+                            it.copy(
+                                isRefreshing = false, error = result.throwable
+                            )
+                        }
                     }
 
                     ResultState.Loading -> {
-                        _postUiState.value = BoardUiState.Loading
+                        _postUiState.update {
+                            it.copy(isRefreshing = true, error = null)
+                        }
                     }
 
                     is ResultState.Success -> {
-                        _postUiState.value = BoardUiState.Success(it.data)
+                        _postUiState.update {
+                            it.copy(
+                                isRefreshing = false, posts = result.data, error = null
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun nextPosts() {
+        val lastTime = _postUiState.value.posts.last().timeStamp.time
+        viewModelScope.launch {
+            postsUseCase(size = VISIBLE_ITEM_COUNT, lastTime).collect { result ->
+                when (result) {
+                    is ResultState.Failure -> {
+                        _postUiState.update {
+                            it.copy(
+                                isLoadMore = false, error = result.throwable
+                            )
+                        }
+                    }
+
+                    ResultState.Loading -> {
+                        _postUiState.update {
+                            it.copy(isLoadMore = true, error = null)
+                        }
+                    }
+
+                    is ResultState.Success -> {
+                        _postUiState.update {
+                            it.copy(
+                                isLoadMore = false, posts = it.posts + result.data, error = null
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun initPosts(
+    ) {
+        viewModelScope.launch {
+            postsUseCase(size = VISIBLE_ITEM_COUNT, lastTime = null).collect { result ->
+                when (result) {
+                    is ResultState.Failure -> {
+                        _postUiState.update {
+                            it.copy(
+                                isLoading = false, error = result.throwable
+                            )
+                        }
+                    }
+
+                    ResultState.Loading -> {
+                        _postUiState.update {
+                            it.copy(isLoading = true, error = null)
+                        }
+                    }
+
+                    is ResultState.Success -> {
+                        _postUiState.update {
+                            it.copy(
+                                isLoading = false, posts = result.data, error = null
+                            )
+                        }
                     }
                 }
             }

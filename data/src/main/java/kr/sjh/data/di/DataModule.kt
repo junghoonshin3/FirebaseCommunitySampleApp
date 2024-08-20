@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
@@ -32,6 +33,10 @@ class DataModule {
     @Provides
     @Singleton
     fun provideFirebaseFireStore() = Firebase.firestore
+        .apply {
+            firestoreSettings =
+                FirebaseFirestoreSettings.Builder().setPersistenceEnabled(false).build()
+        }
 
     @Provides
     @Singleton
@@ -43,7 +48,9 @@ class DataModule {
 
     @Provides
     @Singleton
-    fun provideFileUtil() = FileUtil
+    fun provideFileUtil(
+        @ApplicationContext applicationContext: Context
+    ) = FileUtil(applicationContext)
 
     @Provides
     @Singleton
@@ -51,11 +58,14 @@ class DataModule {
         storage: FirebaseStorage,
         db: FirebaseFirestore,
         auth: FirebaseAuth,
+        fileUtil: FileUtil,
+        @ApplicationContext context: Context
     ): PostRepository {
         return PostRepositoryImpl(
             storage,
             db,
             auth,
+            fileUtil
         )
     }
 

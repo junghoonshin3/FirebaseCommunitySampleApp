@@ -4,5 +4,5 @@ import kotlinx.coroutines.flow.Flow
 import kr.sjh.domain.ResultState
 
 fun interface BanUserUseCase {
-    operator fun invoke(uid: String): Flow<ResultState<Unit>>
+    operator fun invoke(banUid: String): Flow<ResultState<Unit>>
 }

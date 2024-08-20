@@ -9,8 +9,5 @@ interface UserRepository {
     suspend fun getUser(uid: String): Flow<ResultState<UserModel>>
     suspend fun isUserExist(uid: String): Flow<ResultState<Boolean>>
     suspend fun signUp(userModel: UserModel): Flow<ResultState<Unit>>
-    fun hideUser(uid: String): Flow<ResultState<Unit>>
-
-    // for Admin
-    fun banUser(uid: String): Flow<ResultState<Unit>>
+    fun banUser(banUid: String): Flow<ResultState<Unit>>
 }

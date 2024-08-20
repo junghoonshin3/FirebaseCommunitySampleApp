@@ -1,8 +1,11 @@
 package kr.sjh.presentation.utill
 
+import android.content.Context
+import android.graphics.drawable.Drawable
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -30,15 +33,20 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.navOptions
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kr.sjh.presentation.navigation.LeafScreen
 import kr.sjh.presentation.navigation.RootScreen
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -91,16 +99,19 @@ fun getActivity() = LocalContext.current as ComponentActivity
 
 @Stable
 @Composable
-fun NavController.currentScreenAsState(): State<RootScreen> {
+fun NavController.currentRootScreenAsState(): State<RootScreen> {
     val selectedItem = remember {
         mutableStateOf<RootScreen>(
             RootScreen.Board
         )
     }
+
     DisposableEffect(key1 = this) {
-        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+        val listener = NavController.OnDestinationChangedListener { navController, destination, _ ->
             when {
-                destination.hierarchy.any { it.route == RootScreen.Board.route } -> {
+                destination.hierarchy.any {
+                    it.route == RootScreen.Board.route
+                } -> {
                     selectedItem.value = RootScreen.Board
                 }
 
@@ -112,7 +123,6 @@ fun NavController.currentScreenAsState(): State<RootScreen> {
                     selectedItem.value = RootScreen.MyPage
                 }
             }
-
         }
         addOnDestinationChangedListener(listener)
         onDispose {
@@ -122,35 +132,24 @@ fun NavController.currentScreenAsState(): State<RootScreen> {
     return selectedItem
 }
 
-@Stable
-@Composable
-fun NavController.currentRouteAsState(): State<String?> {
-    val selectedItem = remember { mutableStateOf<String?>(null) }
-    DisposableEffect(this) {
-        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
-            selectedItem.value = destination.route
-        }
-        addOnDestinationChangedListener(listener)
-
-        onDispose {
-            removeOnDestinationChangedListener(listener)
-        }
-    }
-    return selectedItem
-}
 
 fun NavController.navigateToRootScreen(rootScreen: RootScreen) {
     navigate(rootScreen.route) {
-        launchSingleTop = true
-        restoreState = true
-        popUpTo(graph.findStartDestination().id) {
+        popUpTo(graph.id) {
             saveState = true
         }
+        restoreState = true
+        launchSingleTop = true
     }
+
 }
 
 fun Modifier.clickableSingle(
-    enabled: Boolean = true, onClickLabel: String? = null, role: Role? = null, onClick: () -> Unit
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    role: Role? = null,
+    indication: @Composable () -> Indication? = { LocalIndication.current },
+    onClick: () -> Unit
 ) = then(composed(inspectorInfo = debugInspectorInfo {
     name = "clickable"
     properties["enabled"] = enabled
@@ -166,7 +165,7 @@ fun Modifier.clickableSingle(
     Modifier.clickable(enabled = enabled,
         onClickLabel = onClickLabel,
         role = role,
-        indication = LocalIndication.current,
+        indication = indication(),
         interactionSource = remember { MutableInteractionSource() }) {
         if (duplicated) return@clickable
 
@@ -179,3 +178,7 @@ fun Modifier.clickableSingle(
         }
     }
 })
+
+fun String.toEncodingURL(): String {
+    return URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
+}

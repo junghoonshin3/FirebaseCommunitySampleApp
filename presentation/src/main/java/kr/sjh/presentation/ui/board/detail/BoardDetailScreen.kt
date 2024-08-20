@@ -1,6 +1,6 @@
 package kr.sjh.presentation.ui.board.detail
 
-import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,15 +10,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -36,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,29 +47,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.RequestOptions
-import com.skydoves.landscapist.glide.GlideImage
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.toPersistentList
+import coil.compose.SubcomposeAsyncImage
 import kr.sjh.domain.constant.Role
 import kr.sjh.domain.model.UserModel
 import kr.sjh.domain.util.generateUniqueChatKey
 import kr.sjh.presentation.R
-import kr.sjh.presentation.ui.bottomsheet.CommonModalBottomSheet
+import kr.sjh.presentation.ui.common.CommonModalBottomSheet
+import kr.sjh.presentation.ui.common.CommonPopUp
 import kr.sjh.presentation.ui.common.LoadingDialog
+import kr.sjh.presentation.ui.common.popup.TwoButtonPopUpContent
+import kr.sjh.presentation.ui.common.shimmer.shimmerLoadingAnimation
 import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
@@ -80,16 +87,68 @@ val EXPANDED_TOP_BAR_HEIGHT = 400.dp
 @Composable
 fun BoardDetailRoute(
     modifier: Modifier = Modifier,
+    detailViewModel: BoardDetailViewModel = hiltViewModel(),
+    mainViewModel: MainViewModel = hiltViewModel(getActivity()),
     onBack: () -> Unit,
     onChat: (String, String, String) -> Unit,
     onEdit: (String) -> Unit,
-    detailViewModel: BoardDetailViewModel = hiltViewModel(),
-    mainViewModel: MainViewModel = hiltViewModel(getActivity())
 ) {
+
+    val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
+
+    val user by mainViewModel.currentUser.collectAsStateWithLifecycle()
+
+    BoardDetailScreen(modifier = modifier,
+        user = user,
+        detailUiState = detailUiState,
+        onBack = onBack,
+        onLikeChange = {},
+        onChat = onChat,
+        onEdit = {
+            onEdit(it)
+        },
+        onDelete = {
+            detailViewModel.deletePost {
+                onBack()
+            }
+        },
+        onHide = {
+            detailViewModel.hidePost {
+                onBack()
+            }
+        },
+        onBan = {
+            detailViewModel.banUser {
+                onBack()
+            }
+        })
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Stable
+@Composable
+fun BoardDetailScreen(
+    modifier: Modifier = Modifier,
+    user: UserModel,
+    detailUiState: DetailUiState,
+    onBack: () -> Unit,
+    onLikeChange: () -> Unit,
+    onEdit: (String) -> Unit,
+    onDelete: () -> Unit,
+    onChat: (String, String, String) -> Unit,
+    onHide: () -> Unit,
+    onBan: (String) -> Unit
+) {
+
     val listState = rememberLazyListState()
 
     val overlapHeightPx = with(LocalDensity.current) {
         EXPANDED_TOP_BAR_HEIGHT.toPx() - COLLAPSED_TOP_BAR_HEIGHT.toPx()
+    }
+
+    var bottomSheetShow by remember {
+        mutableStateOf(false)
     }
 
     val isCollapsed by remember {
@@ -100,176 +159,144 @@ fun BoardDetailRoute(
         }
     }
 
-    val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
-
-    val bottomSheetUiState by detailViewModel.bottomSheetUiState.collectAsStateWithLifecycle()
-
-    var bottomSheetShow by remember {
-        mutableStateOf(false)
-    }
-
-    val currentUser by mainViewModel.currentUser.collectAsStateWithLifecycle()
-
-    val configuration = LocalConfiguration.current
-
-    BoardDetailScreen(modifier = modifier,
-        isCollapsed = isCollapsed,
-        currentUser = currentUser,
-        listState = listState,
-        bottomSheetShow = bottomSheetShow,
-        detailUiState = detailUiState,
-        bottomSheetUiState = bottomSheetUiState,
-        onBack = onBack,
-        configuration = configuration,
-        onMoreMenu = {
-            bottomSheetShow = true
-        },
-        onLikeChange = {},
-        onChat = onChat,
-        onDismissRequest = {
-            bottomSheetShow = false
-        },
-        onDeleteCompleted = {
-            bottomSheetShow = false
-            onBack()
-        },
-        onEdit = {
-            onEdit(it)
-            bottomSheetShow = false
-        },
-        onDelete = {
-            detailViewModel.deletePost()
-        },
-        onHide = { writerUid ->
-            detailViewModel.hideUser(writerUid)
-            onBack()
-        },
-        onBan = { writerUid ->
-            detailViewModel.banUser(writerUid)
-            onBack()
-        })
-
-}
-
-@Composable
-fun BoardDetailScreen(
-    modifier: Modifier = Modifier,
-    isCollapsed: Boolean,
-    currentUser: UserModel?,
-    configuration: Configuration,
-    bottomSheetShow: Boolean,
-    onDismissRequest: () -> Unit,
-    onDeleteCompleted: () -> Unit,
-    detailUiState: DetailUiState,
-    bottomSheetUiState: DetailBottomSheetUiState,
-    listState: LazyListState,
-    onBack: () -> Unit,
-    onMoreMenu: () -> Unit,
-    onLikeChange: () -> Unit,
-    onEdit: (String) -> Unit,
-    onDelete: () -> Unit,
-    onChat: (String, String, String) -> Unit,
-    onHide: (String) -> Unit,
-    onBan: (String) -> Unit
-) {
-    Box(modifier = modifier) {
-        when (detailUiState) {
-            is DetailUiState.Error -> {}
-            DetailUiState.Loading -> {
-                LoadingDialog()
-            }
-
-            is DetailUiState.Success -> {
-                val (post, writerUser) = detailUiState.data
-                val bottomSheetList = mutableListOf<BottomSheetData>().apply {
-                    add(BottomSheetData("수정하기", Color.White, 17.sp) {
-                        onEdit(post.postKey)
-                    })
-                    add(BottomSheetData("삭제하기", Color.Red, 17.sp, onDelete))
-                    add(BottomSheetData("이 회원의 글 숨기기", Color.Red, 17.sp) {
-                        onHide(writerUser.uid)
-                    })
-                    if (currentUser?.role == Role.ADMIN) {
-                        add(BottomSheetData("이 회원 차단하기", Color.Red, 17.sp) {
-                            onBan(writerUser.uid)
-                        })
-                    }
-                }
-                BoardDetailBottomSheet(
-                    bottomSheetUiState = bottomSheetUiState,
-                    bottomSheetShow = bottomSheetShow,
-                    onDismissRequest = onDismissRequest,
-                    onDeleteCompleted = onDeleteCompleted,
-                    items = bottomSheetList.toPersistentList(),
-                )
-                DetailCollapsedTopBar(
-                    modifier = Modifier
-                        .zIndex(1f)
-                        .fillMaxWidth()
-                        .height(COLLAPSED_TOP_BAR_HEIGHT),
-                    isCollapsed = isCollapsed,
-                    isLike = false,
-                    isWriter = (currentUser?.uid == writerUser.uid && writerUser.role == Role.USER) || currentUser?.role == Role.ADMIN,
-                    onLikeChange = onLikeChange,
-                    onMoreMenu = onMoreMenu,
-                    onBack = onBack
-                )
-                LazyColumn(
-                    modifier = Modifier
-                        .background(backgroundColor)
-                        .fillMaxSize(), state = listState
-                ) {
-                    item {
-                        //확장된 상태 탑바
-                        DetailExpendedTopBar(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(EXPANDED_TOP_BAR_HEIGHT),
-                            images = post.images
-                        )
-                    }
-                    item {
-                        DetailWriterProfile(
-                            profileImageUrl = writerUser.profileImageUrl,
-                            nickName = writerUser.nickName ?: "닉네임이 없어요",
-                            readCount = post.readCount,
-                            postCount = writerUser.myPosts.size
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.fillMaxWidth(), thickness = 1.dp, color = Color.Gray
-                        )
-                        DetailTitle(
-                            modifier = Modifier.padding(10.dp), title = post.title ?: ""
-                        )
-                        DetailContent(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(10.dp)
-                                .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT),
-                            content = post.content
-                        )
-                        if (currentUser?.uid != writerUser.uid) {
-                            DetailRequestChat(modifier = Modifier
-                                .size(100.dp, 60.dp)
-                                .padding(10.dp)
-                                .background(carrot, RoundedCornerShape(5.dp)), onChat = {
-                                onChat(
-                                    generateUniqueChatKey(
-                                        currentUser?.uid.toString(), writerUser.uid
-                                    ), writerUser.nickName, writerUser.profileImageUrl
-
-                                )
-                            })
-                        }
-                    }
-                }
-
-            }
-
-            DetailUiState.Init -> {}
+    val bottomSheetItems = mutableListOf<BottomSheetItem>().apply {
+        if (user.role == Role.ADMIN) {
+            add(BottomSheetItem.Edit)
+            add(BottomSheetItem.Delete)
+            add(BottomSheetItem.Report)
+            add(BottomSheetItem.Ban)
+        } else if (user.uid == detailUiState.writerUser.uid) {
+            add(BottomSheetItem.Edit)
+            add(BottomSheetItem.Delete)
+        } else {
+            add(BottomSheetItem.Report)
+            add(BottomSheetItem.Ban)
         }
     }
 
+    val configuration = LocalConfiguration.current
+
+    var isPopUp by remember {
+        mutableStateOf(false)
+    }
+
+    if (isPopUp) {
+        CommonPopUp(content = {
+            TwoButtonPopUpContent(title = "이 사용자의 글 보지 않기",
+                subTitle = "${detailUiState.writerUser.nickName}님의 모든 게시글을 보시지 않으시겠어요?",
+                onConfirm = { onBan(detailUiState.writerUser.uid) },
+                onCancel = {
+                    isPopUp = false
+                })
+        })
+    }
+
+    BackHandler {
+        onBack()
+    }
+
+    CommonModalBottomSheet(showSheet = bottomSheetShow, dragHandle = {
+        BottomSheetDefaults.DragHandle(color = Color.LightGray)
+    }, containerColor = backgroundColor, onDismissRequest = { bottomSheetShow = false }) {
+        BottomSheetMoreMenu(modifier = Modifier
+            .fillMaxWidth()
+            .background(backgroundColor),
+            items = bottomSheetItems,
+            onClick = { item ->
+                bottomSheetShow = false
+                when (item) {
+                    BottomSheetItem.Ban -> {
+                        isPopUp = true
+                    }
+
+                    BottomSheetItem.Delete -> {
+                        onDelete()
+                    }
+
+                    BottomSheetItem.Edit -> {
+                        onEdit(detailUiState.post.postKey)
+                    }
+
+                    BottomSheetItem.Report -> {
+                        onHide()
+                    }
+                }
+            })
+    }
+
+    Box(modifier = modifier) {
+        DetailCollapsedTopBar(
+            modifier = Modifier
+                .zIndex(1f)
+                .fillMaxWidth()
+                .height(COLLAPSED_TOP_BAR_HEIGHT),
+            isCollapsed = isCollapsed,
+            isLike = false,
+            onLikeChange = onLikeChange,
+            onMoreMenu = {
+                bottomSheetShow = true
+            },
+            onBack = onBack
+        )
+        LazyColumn(
+            modifier = Modifier
+                .background(backgroundColor)
+                .fillMaxSize(), state = listState
+        ) {
+            item {
+                //확장된 상태 탑바
+                DetailExpendedTopBar(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(EXPANDED_TOP_BAR_HEIGHT)
+                        .shimmerLoadingAnimation(isLoading = detailUiState.loading, Color.White),
+                    images = detailUiState.post.images
+                )
+            }
+            item {
+                DetailWriterProfile(
+                    loading = detailUiState.loading,
+                    profileImageUrl = detailUiState.writerUser.profileImageUrl,
+                    nickName = detailUiState.writerUser.nickName,
+                    readCount = detailUiState.post.readCount,
+                    postCount = detailUiState.writerUser.myPosts.size
+                )
+                HorizontalDivider(
+                    modifier = Modifier.fillMaxWidth(), thickness = 1.dp, color = Color.Gray
+                )
+                DetailTitle(
+                    modifier = Modifier
+                        .widthIn(min = 300.dp)
+                        .padding(10.dp)
+                        .shimmerLoadingAnimation(detailUiState.loading),
+                    title = detailUiState.post.title ?: ""
+                )
+                DetailContent(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)
+                        .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT)
+                        .shimmerLoadingAnimation(detailUiState.loading),
+                    content = detailUiState.post.content
+                )
+                if (user.uid != detailUiState.writerUser.uid) {
+                    val roomId = generateUniqueChatKey(
+                        user.uid, detailUiState.writerUser.uid
+                    )
+                    DetailRequestChat(modifier = Modifier
+                        .size(100.dp, 60.dp)
+                        .padding(10.dp)
+                        .background(carrot, RoundedCornerShape(5.dp)), onChat = {
+                        onChat(
+                            roomId,
+                            detailUiState.writerUser.nickName,
+                            detailUiState.writerUser.profileImageUrl
+                        )
+                    })
+                }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -278,39 +305,43 @@ fun DetailExpendedTopBar(modifier: Modifier, images: List<String>) {
     Box(
         modifier = modifier, contentAlignment = Alignment.BottomCenter
     ) {
-
-        val pageCount by remember(images) {
-            mutableIntStateOf(
-                if (images.isEmpty()) {
-                    1
-                } else {
-                    images.size
-                }
-            )
+        val pagerState = rememberPagerState {
+            images.size
         }
-
-        val pagerState = rememberPagerState(initialPage = 0) {
-            pageCount
-        }
-
-        HorizontalPager(state = pagerState) { index ->
-            GlideImage(imageModel = {
-                if (images.isEmpty()) {
-                    R.drawable.test_image
-                } else {
-                    images[index]
-                }
-            }, modifier = Modifier.fillMaxSize(), failure = {
-                Image(
-                    modifier = Modifier.size(50.dp),
-                    colorFilter = ColorFilter.tint(Color.White),
-                    imageVector = ImageVector.vectorResource(id = R.drawable.baseline_image_not_supported_24),
-                    contentDescription = ""
+        HorizontalPager(
+            modifier = Modifier.aspectRatio(1f), state = pagerState
+        ) { index ->
+            if (images.isEmpty()) {
+                Spacer(modifier = Modifier.fillMaxSize())
+            } else {
+                SubcomposeAsyncImage(
+                    model = images[index],
+                    modifier = Modifier.fillMaxSize(),
+                    loading = {
+                        Box(modifier = Modifier.matchParentSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .align(Alignment.Center),
+                                color = carrot
+                            )
+                        }
+                    },
+                    error = {
+                        it.result.throwable.printStackTrace()
+                        Image(
+                            modifier = Modifier.size(50.dp),
+                            colorFilter = ColorFilter.tint(Color.White),
+                            imageVector = ImageVector.vectorResource(id = R.drawable.baseline_image_not_supported_24),
+                            contentDescription = ""
+                        )
+                    },
+                    contentDescription = null
                 )
-            })
+            }
         }
         Indicator(
-            pageCount, pagerState, Modifier.height(20.dp)
+            images.size, pagerState, Modifier.height(20.dp)
         )
     }
 }
@@ -322,7 +353,6 @@ fun DetailCollapsedTopBar(
     isCollapsed: Boolean,
     isLike: Boolean,
     onLikeChange: () -> Unit,
-    isWriter: Boolean,
     onMoreMenu: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -391,17 +421,15 @@ fun DetailCollapsedTopBar(
             colors = IconButtonDefaults.iconButtonColors(contentColor = likeColor),
             onClick = onLikeChange
         )
-        if (isWriter) {
-            IconButton(
-                onClick = onMoreMenu,
-                colors = IconButtonDefaults.iconButtonColors(contentColor = collapseColor)
-            ) {
-                Icon(
-                    modifier = Modifier.padding(10.dp),
-                    imageVector = ImageVector.vectorResource(id = R.drawable.baseline_more_vert_24),
-                    contentDescription = ""
-                )
-            }
+        IconButton(
+            onClick = onMoreMenu,
+            colors = IconButtonDefaults.iconButtonColors(contentColor = collapseColor)
+        ) {
+            Icon(
+                modifier = Modifier.padding(10.dp),
+                imageVector = ImageVector.vectorResource(id = R.drawable.baseline_more_vert_24),
+                contentDescription = ""
+            )
         }
     }
 }
@@ -445,36 +473,52 @@ fun Indicator(
 
 @Composable
 fun DetailWriterProfile(
-    profileImageUrl: String?, nickName: String, readCount: Int, postCount: Int
+    loading: Boolean, profileImageUrl: String?, nickName: String, readCount: Int, postCount: Int
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        GlideImage(
-            modifier = Modifier.size(80.dp),
-            imageModel = {
-                profileImageUrl ?: R.drawable.baseline_face_24
-            },
-            requestOptions = {
-                RequestOptions().override(with(LocalDensity.current) { 80.dp.toPx() }.toInt(),
-                    with(LocalDensity.current) { 80.dp.toPx() }.toInt()
-                ).diskCacheStrategy(DiskCacheStrategy.ALL).circleCrop()
-            },
+        SubcomposeAsyncImage(
+            modifier = Modifier
+                .sizeIn(80.dp, 80.dp, 80.dp, 80.dp)
+                .clip(CircleShape)
+                .shimmerLoadingAnimation(loading),
+            contentScale = ContentScale.Crop,
             loading = {
-                Box(modifier = Modifier.matchParentSize()) {
-                    CircularProgressIndicator(
-                        color = carrot, modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-            },
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .align(Alignment.Center), color = carrot
+                )
+            }, model = profileImageUrl ?: R.drawable.baseline_face_24, contentDescription = null
         )
         Spacer(modifier = Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = nickName, color = Color.White, fontSize = 20.sp)
-            Text(text = "내가 쓴 글 $postCount", color = Color.Gray)
-            Text(text = "조회수 $readCount", color = Color.Gray)
+            Text(
+                modifier = Modifier
+                    .widthIn(min = 50.dp)
+                    .shimmerLoadingAnimation(loading),
+                text = nickName,
+                color = Color.White,
+                fontSize = 20.sp
+            )
+            Text(
+                modifier = Modifier
+                    .widthIn(min = 50.dp)
+                    .shimmerLoadingAnimation(loading),
+                text = "내가 쓴 글 $postCount",
+                color = Color.Gray
+            )
+            Text(
+                modifier = Modifier
+                    .widthIn(min = 50.dp)
+                    .shimmerLoadingAnimation(loading),
+                text = "조회수 $readCount",
+                color = Color.Gray
+            )
         }
     }
 }
@@ -503,39 +547,5 @@ fun DetailRequestChat(modifier: Modifier = Modifier, onChat: () -> Unit) {
         ) {
             Text(fontSize = 15.sp, color = Color.White, text = "채팅하기")
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BoardDetailBottomSheet(
-    bottomSheetUiState: DetailBottomSheetUiState,
-    bottomSheetShow: Boolean,
-    items: PersistentList<BottomSheetData>,
-    onDismissRequest: () -> Unit,
-    onDeleteCompleted: () -> Unit,
-) {
-    when (bottomSheetUiState) {
-        is DetailBottomSheetUiState.Error -> {}
-        DetailBottomSheetUiState.Init -> {}
-        DetailBottomSheetUiState.Loading -> {
-            LoadingDialog()
-        }
-
-        DetailBottomSheetUiState.Success -> {
-            onDeleteCompleted()
-        }
-    }
-
-    CommonModalBottomSheet(
-        showSheet = bottomSheetShow, dragHandle = {
-            BottomSheetDefaults.DragHandle(color = Color.LightGray)
-        }, containerColor = backgroundColor, onDismissRequest = onDismissRequest
-    ) {
-        BottomSheetMoreMenu(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(backgroundColor), items = items
-        )
     }
 }

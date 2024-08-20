@@ -1,6 +1,7 @@
 package kr.sjh.presentation.ui.chat
 
 import android.util.Log
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -18,10 +19,13 @@ import kr.sjh.domain.usecase.auth.firebase.GetAuthCurrentUserUseCase
 import kr.sjh.domain.usecase.chat.GetInitialMessagesUseCase
 import kr.sjh.domain.usecase.chat.GetNextMessagesUseCase
 import kr.sjh.domain.usecase.chat.SendMessageUseCase
-import kr.sjh.domain.util.generateUniqueChatKey
+import kr.sjh.domain.usecase.chat.UpdateLastVisitedTimeStampUseCase
 import kr.sjh.domain.util.getReceiverUid
+import kr.sjh.presentation.constants.LOAD_ITEM_COUNT
+import kr.sjh.presentation.constants.VISIBLE_ITEM_COUNT
 import javax.inject.Inject
 
+@Stable
 data class MessageUiState(
     val messages: List<ChatMessageModel> = emptyList(),
     val nickName: String = "",
@@ -36,7 +40,8 @@ class ChatDetailViewModel @Inject constructor(
     private val getInitialMessagesUseCase: GetInitialMessagesUseCase,
     private val getNextMessagesUseCase: GetNextMessagesUseCase,
     getAuthCurrentUserUseCase: GetAuthCurrentUserUseCase,
-    private val sendMessageUseCase: SendMessageUseCase
+    private val sendMessageUseCase: SendMessageUseCase,
+    private val updateLastVisitedTimeStampUseCase: UpdateLastVisitedTimeStampUseCase
 ) : ViewModel() {
 
     private val roomId = savedStateHandle.get<String>("roomId").toString()
@@ -49,17 +54,24 @@ class ChatDetailViewModel @Inject constructor(
 
     var message by mutableStateOf(savedStateHandle["message"] ?: "")
 
-    private val _messageUiState = MutableStateFlow(MessageUiState())
+    private val _messageUiState = MutableStateFlow(
+        MessageUiState(
+            nickName = nickName, profileImageUrl = profileImageUrl
+        )
+    )
     val messageUiState = _messageUiState.asStateFlow()
 
     init {
         getInitialMessages()
+
     }
 
-    private fun getInitialMessages(limit: Long = 20) {
+    private fun getInitialMessages(
+        size: Long = VISIBLE_ITEM_COUNT
+    ) {
         viewModelScope.launch {
             getInitialMessagesUseCase(
-                roomId = roomId, limit = limit
+                roomId = roomId, size = size
             ).collect { result ->
                 when (result) {
                     is ResultState.Failure -> {
@@ -80,13 +92,8 @@ class ChatDetailViewModel @Inject constructor(
 
                     is ResultState.Success -> {
                         _messageUiState.update {
-                            val newMessages = it.messages.toMutableList()
-                            newMessages.add(0, result.data)
                             it.copy(
-                                isLoading = false,
-                                messages = newMessages,
-                                nickName = nickName,
-                                profileImageUrl = profileImageUrl
+                                isLoading = false, messages = result.data
                             )
                         }
                     }
@@ -95,41 +102,41 @@ class ChatDetailViewModel @Inject constructor(
         }
     }
 
-    fun getNextMessages(limit: Long = 10) {
+    fun getNextMessages(limit: Long = LOAD_ITEM_COUNT) {
         viewModelScope.launch {
-            getNextMessagesUseCase(
-                roomId = roomId,
-                limit = limit,
-                fromTime = messageUiState.value.messages.last().timeStamp!!.time
-            ).collect { result ->
-                when (result) {
-                    is ResultState.Failure -> {
-                        Log.d("sjh", "Failure")
-                        _messageUiState.update {
-                            it.copy(
-                                isLoading = false, throwable = result.throwable
-                            )
-                        }
-                    }
-
-                    ResultState.Loading -> {
-                        _messageUiState.update {
-                            it.copy(
-                                isLoading = true, throwable = null
-                            )
-                        }
-                    }
-
-                    is ResultState.Success -> {
-                        Log.d("getNextMessages", "Success > ${result.data}")
-                        _messageUiState.update {
-                            it.copy(
-                                isLoading = false,
-                                messages = it.messages + result.data,
-                                throwable = null
-                            )
+            messageUiState.value.messages.last().timeStamp?.let { timeStamp ->
+                getNextMessagesUseCase(
+                    roomId = roomId, limit = limit, fromTime = timeStamp.time
+                ).collect { result ->
+                    when (result) {
+                        is ResultState.Failure -> {
+                            Log.d("sjh", "Failure")
+                            _messageUiState.update {
+                                it.copy(
+                                    isLoading = false, throwable = result.throwable
+                                )
+                            }
                         }
 
+                        ResultState.Loading -> {
+                            _messageUiState.update {
+                                it.copy(
+                                    isLoading = true, throwable = null
+                                )
+                            }
+                        }
+
+                        is ResultState.Success -> {
+                            Log.d("getNextMessages", "Success > ${result.data}")
+                            _messageUiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    messages = it.messages + result.data,
+                                    throwable = null
+                                )
+                            }
+
+                        }
                     }
                 }
             }
@@ -145,26 +152,26 @@ class ChatDetailViewModel @Inject constructor(
         if (message.isNotEmpty()) {
             viewModelScope.launch {
                 val newMessage = ChatMessageModel(
-                    senderUid = uid, receiverUid = getReceiverUid(roomId, uid), message = message
+                    senderUid = uid, receiverUid = getReceiverUid(roomId, uid), text = message
                 )
-
                 sendMessageUseCase(newMessage).collect { result ->
                     when (result) {
-                        is ResultState.Failure -> {
-
-                        }
-
-                        ResultState.Loading -> {
-
-                        }
-
                         is ResultState.Success -> {
                             onSuccess()
                         }
+
+                        else -> {}
                     }
                 }
             }
             changeTextMessage("")
         }
     }
+
+    fun updateLastVisitedTimeStamp() {
+        viewModelScope.launch {
+            updateLastVisitedTimeStampUseCase(roomId)
+        }
+    }
+
 }

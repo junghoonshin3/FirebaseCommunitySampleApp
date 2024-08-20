@@ -7,6 +7,6 @@ data class ChatMessageModel(
     val messageId: String = "",
     val senderUid: String = "",
     val receiverUid: String = "",
-    val message: String = "",
+    val text: String = "",
     val timeStamp: Date? = null,
 )

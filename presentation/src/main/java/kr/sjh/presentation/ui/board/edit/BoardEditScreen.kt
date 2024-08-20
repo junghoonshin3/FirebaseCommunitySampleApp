@@ -1,7 +1,5 @@
 package kr.sjh.presentation.ui.board.edit
 
-import android.util.Log
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +17,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -29,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import kr.sjh.domain.model.PostModel
 import kr.sjh.presentation.ui.board.write.BoardWriteBody
 import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.BoardPicture
@@ -43,52 +38,27 @@ fun BoardEditRoute(
     navigateToDetail: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
+
     val editUiState by boardEditViewModel.editUiState.collectAsStateWithLifecycle()
-    val snackBarState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    BoardEditScreen(
-        modifier = modifier,
-        editUiState = editUiState,
-        onUpdate = {
-            boardEditViewModel.updatePost(editUiState.post)
-        },
-        onBack = onBack,
-        onPhoto = {
-            if ((editUiState.post.images.size + it.size) > 3) {
-                coroutineScope.launch {
-                    snackBarState.showSnackbar(
-                        "사진은 최대 3장까지 첨부 할 수 있어요",
-                        "확인",
-                        duration = SnackbarDuration.Short
-                    )
-                }
-                return@BoardEditScreen
-            }
-            boardEditViewModel.setSelectedImages(it)
-        },
-        scrollState = scrollState,
-        snackBarState = snackBarState,
-        updateContent = {
-            boardEditViewModel.updateContent(it)
-        },
-        updateTitle = {
-            boardEditViewModel.updateTitle(it)
-        },
-        onDelete = {
-            boardEditViewModel.removeSelectedImage(it)
-        },
-        navigateToDetail = navigateToDetail
-    )
+
+    BoardEditScreen(modifier = modifier, editUiState = editUiState, onUpdate = {
+        boardEditViewModel.updatePost(editUiState.post)
+    }, onBack = onBack, updateContent = {
+        boardEditViewModel.updateContent(it)
+    }, updateTitle = {
+        boardEditViewModel.updateTitle(it)
+    }, onDelete = {
+        boardEditViewModel.removeSelectedImage(it)
+    }, navigateToDetail = navigateToDetail, onPhoto = {
+        boardEditViewModel.setSelectedImages(it)
+    })
 
 }
 
 @Composable
 private fun BoardEditScreen(
     modifier: Modifier = Modifier,
-    scrollState: ScrollState,
     editUiState: EditUiState,
-    snackBarState: SnackbarHostState,
     onPhoto: (List<String>) -> Unit,
     updateContent: (String) -> Unit,
     updateTitle: (String) -> Unit,
@@ -97,9 +67,10 @@ private fun BoardEditScreen(
     onBack: () -> Unit,
     navigateToDetail: (String) -> Unit,
 ) {
-    if (editUiState.loading) {
-        LoadingDialog()
-    }
+
+    val scrollState = rememberScrollState()
+    val snackBarState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(key1 = editUiState.isComplete, block = {
         if (editUiState.isComplete) {
@@ -107,11 +78,13 @@ private fun BoardEditScreen(
         }
     })
 
+    if (editUiState.loading) {
+        LoadingDialog()
+    }
 
     Box(modifier = modifier.background(backgroundColor)) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             AppTopBar(
                 modifier = Modifier
@@ -138,16 +111,26 @@ private fun BoardEditScreen(
             )
             BoardPicture(
                 modifier = Modifier
-                    .padding(5.dp)
+                    .padding(10.dp)
                     .fillMaxWidth()
                     .imePadding(),
-                onPhoto = onPhoto
+                onPhoto = {
+                    if ((editUiState.post.images.size + it.size) > 3) {
+                        coroutineScope.launch {
+                            snackBarState.showSnackbar(
+                                "사진은 최대 3장까지 첨부 할 수 있어요", "확인", duration = SnackbarDuration.Short
+                            )
+                        }
+                    } else {
+                        onPhoto(it)
+                    }
+
+                },
             )
 
         }
         SnackbarHost(
-            hostState = snackBarState,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            hostState = snackBarState, modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
 }

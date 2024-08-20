@@ -77,6 +77,7 @@ private fun LoginScreen(
     if (loginUiState.isLoading) {
         LoadingDialog()
     }
+
     LaunchedEffect(key1 = loginUiState) {
         if (loginUiState.destination == "loginToDetail") {
             Log.d("sjh", "loginToDetail")

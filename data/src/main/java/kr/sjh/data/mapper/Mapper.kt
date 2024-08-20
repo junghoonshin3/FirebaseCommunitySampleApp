@@ -1,15 +1,15 @@
 package kr.sjh.data.mapper
 
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.FieldValue
 import kr.sjh.data.model.ChatMessageEntity
 import kr.sjh.data.model.ChatRoomEntity
+import kr.sjh.data.model.ChatRoomUserEntity
 import kr.sjh.data.model.PostEntity
 import kr.sjh.data.model.UserEntity
 import kr.sjh.domain.model.AuthUserModel
 import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.model.ChatRoomModel
+import kr.sjh.domain.model.ChatRoomUserModel
 import kr.sjh.domain.model.PostModel
 import kr.sjh.domain.model.UserModel
 import java.util.Date
@@ -48,7 +48,7 @@ fun UserModel.toUserEntity(): UserEntity {
         profileImageUrl = profileImageUrl,
         likePosts = likePosts,
         myPosts = myPosts,
-        role = role
+        role = role,
     )
 }
 
@@ -59,7 +59,7 @@ fun UserEntity.toUserModel(): UserModel {
         profileImageUrl = profileImageUrl,
         likePosts = likePosts,
         myPosts = myPosts,
-        role = role
+        role = role,
     )
 }
 
@@ -75,13 +75,28 @@ fun ChatMessageModel.toChatMessageEntity() = ChatMessageEntity(
     messageId = messageId,
     senderUid = senderUid,
     receiverUid = receiverUid,
-    message = message,
+    message = text,
 )
 
 fun ChatMessageEntity.toChatMessageModel() = ChatMessageModel(
     messageId = messageId,
     senderUid = senderUid,
     receiverUid = receiverUid,
-    message = message,
+    text = message,
     timeStamp = timeStamp
 )
+
+fun ChatRoomEntity.toChatRoomModel() = ChatRoomModel(
+    roomId = roomId,
+    recentMessage = recentMessage,
+    unReadMessageCount = unReadMessageCount,
+    lastVisitedTimeStamp = lastVisitedTimeStamp?.toDate(),
+    recentMessageTimeStamp = recentMessageTimeStamp?.toDate(),
+    you = you.toChatRoomUserModel()
+)
+
+fun ChatRoomUserEntity.toChatRoomUserModel() = ChatRoomUserModel(
+    profileImageUrl = profileImageUrl,
+    nickName = nickName
+)
+

@@ -2,6 +2,7 @@ package kr.sjh.domain.model
 
 import androidx.compose.runtime.Stable
 import kr.sjh.domain.constant.Role
+import java.util.Date
 
 
 @Stable

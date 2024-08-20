@@ -8,7 +8,9 @@ import kr.sjh.domain.repository.firebase.ChatRepository
 import kr.sjh.domain.usecase.chat.GetChatRoomsUseCase
 import kr.sjh.domain.usecase.chat.GetInitialMessagesUseCase
 import kr.sjh.domain.usecase.chat.GetNextMessagesUseCase
+import kr.sjh.domain.usecase.chat.GetTotalMessageCountUseCase
 import kr.sjh.domain.usecase.chat.SendMessageUseCase
+import kr.sjh.domain.usecase.chat.UpdateLastVisitedTimeStampUseCase
 import javax.inject.Singleton
 
 @Module
@@ -36,5 +38,17 @@ object ChatUseCaseModule {
     @Singleton
     fun provideGetChatRoomsUseCase(chatRepository: ChatRepository): GetChatRoomsUseCase {
         return GetChatRoomsUseCase(chatRepository::getChatRooms)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUpdateLastVisitedTimeStampUseCase(chatRepository: ChatRepository): UpdateLastVisitedTimeStampUseCase {
+        return UpdateLastVisitedTimeStampUseCase(chatRepository::updateLastVisitedTimeStamp)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetTotalMessageCountUseCase(chatRepository: ChatRepository): GetTotalMessageCountUseCase {
+        return GetTotalMessageCountUseCase(chatRepository::getTotalMessageCount)
     }
 }

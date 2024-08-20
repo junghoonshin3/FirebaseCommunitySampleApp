@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ContentTextField(
     modifier: Modifier = Modifier,
-    text: String,
+    text: () -> String,
     onTextChanged: (text: String) -> Unit,
     singleLine: Boolean = false,
     placeholder: @Composable () -> Unit,
@@ -41,17 +41,13 @@ fun ContentTextField(
     var prevHeight by remember { mutableIntStateOf(0) }
 
     Box(
-        modifier = modifier
-            .padding(10.dp),
-        contentAlignment = Alignment.CenterStart
+        modifier = modifier.padding(10.dp), contentAlignment = Alignment.CenterStart
     ) {
-        if (text.isEmpty()) {
+        if (text().isEmpty()) {
             placeholder()
         }
-        BasicTextField(
-            singleLine = singleLine,
-            modifier = Modifier
-                .onSizeChanged { size ->
+        BasicTextField(singleLine = singleLine,
+            modifier = Modifier.onSizeChanged { size ->
                     parentScrollState?.let {
                         //변경된 텍스트 필드의 높이 - 변경되기 전 높이
                         val diff = size.height - prevHeight
@@ -67,7 +63,7 @@ fun ContentTextField(
                         }
                     }
                 },
-            value = text,
+            value = text(),
             onValueChange = { text ->
                 onTextChanged(text)
             },
@@ -82,7 +78,6 @@ fun ContentTextField(
                 ) {
                     innerTextField()
                 }
-            }
-        )
+            })
     }
 }

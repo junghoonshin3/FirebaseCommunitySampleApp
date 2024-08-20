@@ -1,6 +1,7 @@
 package kr.sjh.presentation.navigation
 
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.graphics.vector.ImageVector
 import kr.sjh.presentation.R
 
 @Stable
@@ -13,6 +14,5 @@ sealed class BottomNavItem(
         BottomNavItem("글 목록", R.drawable.baseline_format_list_numbered_24, RootScreen.Board)
 
 
-    data object MyPage :
-        BottomNavItem("내 정보", R.drawable.baseline_person_24, RootScreen.MyPage)
+    data object MyPage : BottomNavItem("내 정보", R.drawable.baseline_person_24, RootScreen.MyPage)
 }

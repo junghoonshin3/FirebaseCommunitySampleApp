@@ -10,19 +10,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import kr.sjh.presentation.ui.theme.backgroundColor
 
 @Composable
 fun MyPageRoute(
     modifier: Modifier = Modifier,
     bottomBar: @Composable () -> Unit,
-    viewModel: MyPageScreenViewModel = hiltViewModel(),
-    logOut: () -> Unit
+    logOut: () -> Unit,
+    viewModel: MyPageScreenViewModel = hiltViewModel()
 ) {
-    Scaffold(bottomBar = bottomBar) {
-        MyPageScreen(modifier = modifier.padding(it), logOut = {
-            viewModel.logOut()
-            logOut()
-        })
+    Scaffold(bottomBar = bottomBar, containerColor = backgroundColor) {
+        MyPageScreen(modifier = modifier.padding(it),
+            logOut = {
+                viewModel.logOut()
+                logOut()
+            })
     }
 
 }
@@ -33,6 +35,5 @@ fun MyPageScreen(modifier: Modifier = Modifier, logOut: () -> Unit) {
         Button(onClick = logOut) {
             Text(text = "로그아웃")
         }
-
     }
 }

@@ -50,6 +50,7 @@ dependencies {
     implementation(project(":presentation"))
     implementation(project(":domain"))
     implementation(project(":data"))
+
     //Dagger-Hilt
     ksp(DaggerHilt.daggerHilt)
     ksp(DaggerHilt.daggerHiltCompiler)
