@@ -12,8 +12,7 @@ import kr.sjh.presentation.ui.theme.carrot
 @Composable
 fun LoadingDialog() {
     Dialog(
-        onDismissRequest = { /*TODO*/ },
-        properties = DialogProperties(
+        onDismissRequest = { /*TODO*/ }, properties = DialogProperties(
             dismissOnBackPress = false,
             dismissOnClickOutside = false,
             decorFitsSystemWindows = false,
@@ -21,9 +20,7 @@ fun LoadingDialog() {
         )
     ) {
         CircularProgressIndicator(
-            modifier = Modifier.size(50.dp),
-            color = carrot,
-            strokeWidth = 5.dp
+            modifier = Modifier.size(50.dp), color = carrot, strokeWidth = 5.dp
         )
     }
 }

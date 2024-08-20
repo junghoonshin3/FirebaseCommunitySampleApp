@@ -2,12 +2,11 @@ package kr.sjh.data.repository
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import androidx.core.net.toUri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.Source
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -24,7 +23,6 @@ import kr.sjh.domain.ResultState
 import kr.sjh.domain.exception.FirebaseAuthCustomException.UserNotFoundInUsers
 import kr.sjh.domain.model.UserModel
 import kr.sjh.domain.repository.firebase.UserRepository
-import java.util.UUID
 import javax.inject.Inject
 
 class UserRepositoryImpl @Inject constructor(
@@ -87,13 +85,12 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun signUp(userModel: UserModel) = flow {
         emit(ResultState.Loading)
         try {
-            val uid = auth.currentUser?.uid
-            uid?.let {
-                val imageUrl = saveProfilePictureInStorage(uid, userModel.profileImageUrl!!)
-                fireStore.collection(COL_USERS).document(it)
-                    .set(userModel.copy(profileImageUrl = imageUrl).toUserEntity()).await()
-                emit(ResultState.Success(Unit))
-            }
+            val uid = auth.currentUser?.uid.toString()
+            val imageUrl =
+                saveProfilePictureInStorage("${uid}_profileImage.jpg", userModel.profileImageUrl)
+            fireStore.collection(COL_USERS).document(uid)
+                .set(userModel.copy(profileImageUrl = imageUrl).toUserEntity()).await()
+            emit(ResultState.Success(Unit))
         } catch (e: Exception) {
             e.printStackTrace()
             emit(ResultState.Failure(e))
@@ -101,51 +98,32 @@ class UserRepositoryImpl @Inject constructor(
 
     }
 
-    private suspend fun saveProfilePictureInStorage(uid: String, profilePicture: String): String {
+    private suspend fun saveProfilePictureInStorage(
+        fileName: String, profilePicture: String
+    ): String {
         return try {
-            val imageName = UUID.randomUUID().toString()
             val imageUri = Uri.parse(profilePicture)
-            val reSizedImageUri = fileUtil.run {
-                if (!fileUtil.isLocalUri(imageUri)) {
-                    val downloadImageUri = fileUtil.downloadImageFromUrl(context, profilePicture)
-                    resizeImage(context, uid, downloadImageUri, 100, 100)
-                } else {
-                    resizeImage(context, uid, imageUri, 100, 100)
-                }
+            val resizeBitmap = if (fileUtil.isLocalUri(imageUri)) {
+                fileUtil.optimizedBitmap(imageUri, 100, 100)
+            } else {
+                val downLoadImage = fileUtil.downloadImageFromUrl(imageUri)
+                fileUtil.optimizedBitmap(downLoadImage, 100, 100)
             }
-            storage.reference.child("${Constants.STORAGE_PROFILE_IMAGES}/$uid/${imageName}_${reSizedImageUri.lastPathSegment}")
-                .putFile(reSizedImageUri).await().storage.downloadUrl.await().toString()
+            val resizeBitmapToFile = fileUtil.saveBitmapAsFile(resizeBitmap, fileName)
+            resizeBitmap.recycle()
+            storage.reference.child("${Constants.STORAGE_PROFILE_IMAGES}/${auth.uid.toString()}/${fileName}")
+                .putFile(resizeBitmapToFile.toUri()).await().storage.downloadUrl.await().toString()
         } catch (e: Exception) {
             e.printStackTrace()
             throw e
         }
     }
 
-//    override fun hideUser(uid: String): Flow<ResultState<Unit>> = callbackFlow {
-//        try {
-//            trySend(ResultState.Loading)
-//            auth.currentUser?.uid?.let {
-//                fireStore.collection(COL_USERS).document(it)
-//                    .update("banUsers", FieldValue.arrayUnion(uid)).addOnSuccessListener {
-//                        trySend(ResultState.Success(Unit))
-//                    }.addOnFailureListener { error ->
-//                        trySend(ResultState.Failure(error))
-//                    }
-//            }
-//        } catch (e: Exception) {
-//            trySend(ResultState.Failure(e))
-//        }
-//        awaitClose {
-//            close()
-//        }
-//    }
-
     override fun banUser(banUid: String): Flow<ResultState<Unit>> = flow {
         try {
 
             fireStore.collection(COL_USERS).document(auth.currentUser?.uid.toString()).set(
-                mapOf("banUsers" to FieldValue.arrayUnion(banUid)),
-                SetOptions.merge()
+                mapOf("banUsers" to FieldValue.arrayUnion(banUid)), SetOptions.merge()
             ).await()
             emit(ResultState.Success(Unit))
         } catch (e: Exception) {

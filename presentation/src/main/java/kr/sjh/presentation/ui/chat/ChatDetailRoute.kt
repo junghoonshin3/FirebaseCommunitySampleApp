@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,6 +58,7 @@ import kr.sjh.presentation.constants.LOAD_ITEM_COUNT
 import kr.sjh.presentation.constants.VISIBLE_ITEM_COUNT
 import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.ContentTextField
+import kr.sjh.presentation.ui.common.InfinityLazyColumn
 import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.PurpleGrey80
 import kr.sjh.presentation.ui.theme.carrot
@@ -99,27 +101,9 @@ fun ChatDetailScreen(
     nextMessages: (limit: Long) -> Unit
 ) {
 
-    val lazyListState = rememberLazyListState()
-
     val coroutineScope = rememberCoroutineScope()
 
-    val isLoadMore = remember {
-        derivedStateOf {
-            val layoutInfo = lazyListState.layoutInfo
-            val totalItemsNumber = layoutInfo.totalItemsCount
-            val lastVisibleItemIndex = (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-            lastVisibleItemIndex > (totalItemsNumber - 8)
-        }
-    }
-
-    LaunchedEffect(isLoadMore) {
-        snapshotFlow {
-            isLoadMore.value
-        }.distinctUntilChanged()
-            .filter { it && lazyListState.layoutInfo.visibleItemsInfo.isNotEmpty() }.collectLatest {
-                nextMessages(LOAD_ITEM_COUNT)
-            }
-    }
+    val lazyListState = rememberLazyListState()
 
     LaunchedEffect(key1 = messageUiState.messages) {
         if (messageUiState.messages.size <= VISIBLE_ITEM_COUNT) {
@@ -145,14 +129,15 @@ fun ChatDetailScreen(
             onBack = onBack,
             profileImageUrl = messageUiState.profileImageUrl
         )
-        Conversation(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            lazyListState = lazyListState,
+        Conversation(modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f),
             messages = messageUiState.messages,
             currentUid = currentUser.uid,
-        )
+            lazyListState = lazyListState,
+            loadMore = {
+                nextMessages(LOAD_ITEM_COUNT)
+            })
         InputMessage(modifier = Modifier
             .imePadding()
             .fillMaxWidth()
@@ -173,19 +158,21 @@ fun ChatDetailScreen(
 @Composable
 fun Conversation(
     modifier: Modifier,
-    lazyListState: LazyListState,
     messages: List<ChatMessageModel>,
     currentUid: String,
+    loadMore: () -> Unit,
+    lazyListState: LazyListState = rememberLazyListState()
 ) {
 
     val conversations by rememberUpdatedState(newValue = messages)
 
-    LazyColumn(
-        state = lazyListState,
+    InfinityLazyColumn(
+        lazyListState = lazyListState,
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(10.dp),
-        reverseLayout = true
+        reverseLayout = true,
+        loadMore = loadMore
     ) {
         items(conversations, key = { item -> item.messageId }) { item ->
             val isMe = item.senderUid == currentUid
@@ -194,8 +181,6 @@ fun Conversation(
             )
         }
     }
-
-
 }
 
 
@@ -258,12 +243,6 @@ fun MessageBubbleWithTime(
     }
 }
 
-@Composable
-fun Profile(modifier: Modifier = Modifier, imageUrl: String) {
-    AsyncImage(
-        modifier = modifier, model = imageUrl, contentDescription = null
-    )
-}
 
 @Composable
 fun InputMessage(

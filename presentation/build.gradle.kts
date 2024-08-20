@@ -99,4 +99,9 @@ dependencies {
     // coil
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    //test
+
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0-RC")
+
 }

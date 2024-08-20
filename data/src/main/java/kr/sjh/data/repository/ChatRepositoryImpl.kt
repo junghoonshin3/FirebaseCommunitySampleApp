@@ -184,11 +184,9 @@ class ChatRepositoryImpl @Inject constructor(
                     Log.d("sjh", "${dc.metadata}")
                     dc.toObject(ChatRoomEntity::class.java)?.toChatRoomModel()
                 }
-                if (chatRooms.isEmpty()) {
-                    trySend(ResultState.Success(emptyList()))
-                    return@addSnapshotListener
-                }
                 trySend(ResultState.Success(chatRooms))
+            } else {
+                trySend(ResultState.Success(emptyList()))
             }
         }
 

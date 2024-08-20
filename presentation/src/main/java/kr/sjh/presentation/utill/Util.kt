@@ -1,5 +1,15 @@
 package kr.sjh.presentation.utill
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import coil.decode.DecodeUtils.calculateInSampleSize
+import coil.size.Scale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.FileInputStream
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 fun calculationTime(createDateTime: Long): String {
@@ -36,5 +46,57 @@ fun calculationTime(createDateTime: Long): String {
         }
     }
     return value
+}
+
+fun optimizedBitmap(
+    context: Context,
+    imageUri: Uri, reqWidth: Int, reqHeight: Int
+): Bitmap {
+    return try {
+        var inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
+            ?: throw Exception("Failed to open input stream")
+
+        val options = BitmapFactory.Options()
+
+        inputStream.use {
+            options.inJustDecodeBounds = true
+            BitmapFactory.decodeStream(inputStream, null, options)?.run {
+                recycle()
+            }
+            options.inSampleSize =
+                calculateInSampleSize(
+                    options.outWidth,
+                    options.outHeight,
+                    reqWidth,
+                    reqHeight,
+                    scale = Scale.FIT
+                )
+
+        }
+
+        options.inJustDecodeBounds = false
+
+        inputStream = context.contentResolver.openInputStream(imageUri)
+
+        inputStream.use {
+            BitmapFactory.decodeStream(inputStream, null, options)
+                ?: throw Exception("Failed to decode bitmap")
+        }
+
+//            inputStream = context.contentResolver.openInputStream(imageUri)
+//                ?: throw Exception("Failed to open input stream")
+//
+//            val rotationBitmap = inputStream.use {
+//                rotateImageIfRequired(resizedBitmap, imageUri)
+//                    ?: throw Exception("Failed to rotate image")
+//            }
+//
+//            resizedBitmap.recycle()
+//
+//            rotationBitmap
+    } catch (e: Exception) {
+        e.printStackTrace()
+        throw e
+    }
 }
 

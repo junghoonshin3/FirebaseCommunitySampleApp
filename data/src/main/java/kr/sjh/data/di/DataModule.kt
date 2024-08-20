@@ -48,7 +48,9 @@ class DataModule {
 
     @Provides
     @Singleton
-    fun provideFileUtil() = FileUtil
+    fun provideFileUtil(
+        @ApplicationContext applicationContext: Context
+    ) = FileUtil(applicationContext)
 
     @Provides
     @Singleton
@@ -56,11 +58,14 @@ class DataModule {
         storage: FirebaseStorage,
         db: FirebaseFirestore,
         auth: FirebaseAuth,
+        fileUtil: FileUtil,
+        @ApplicationContext context: Context
     ): PostRepository {
         return PostRepositoryImpl(
             storage,
             db,
             auth,
+            fileUtil
         )
     }
 

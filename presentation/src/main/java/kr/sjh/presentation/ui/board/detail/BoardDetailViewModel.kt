@@ -20,7 +20,7 @@ data class DetailUiState(
     val loading: Boolean = false,
     val post: PostModel = PostModel(),
     val writerUser: UserModel = UserModel(),
-    val bottomSheetShow: Boolean = false,
+//    val bottomSheetShow: Boolean = false,
     val throwable: Throwable? = null
 )
 
@@ -39,14 +39,6 @@ class BoardDetailViewModel @Inject constructor(
 
     init {
         getPost()
-    }
-
-    fun setBottomSheetVisible() {
-        _uiState.update {
-            it.copy(
-                bottomSheetShow = !it.bottomSheetShow
-            )
-        }
     }
 
     private fun getPost() {

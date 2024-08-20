@@ -1,67 +1,54 @@
 package kr.sjh.presentation.ui.common
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.theme.carrot
 
 @Composable
 fun ProfileImage(
     modifier: Modifier = Modifier,
     imageModel: Any?,
-    onImageEdit: (String) -> Unit
 ) {
-    val imagePick = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        uri?.let { selectedImageUri ->
-            onImageEdit(selectedImageUri.toString())
-        }
+    Box(modifier = modifier) {
+        SubcomposeAsyncImage(
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .align(Alignment.Center),
+            model = imageModel,
+            loading = {
+                Box(modifier = Modifier.matchParentSize()) {
+                    CircularProgressIndicator(
+                        color = carrot, modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            },
+            contentDescription = null,
+        )
+        Image(
+            colorFilter = ColorFilter.tint(Color.White),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(35.dp),
+            painter = painterResource(id = R.drawable.baseline_photo_camera_24),
+            contentDescription = ""
+        )
     }
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(modifier = Modifier.size(150.dp)) {
-            AsyncImage(
-                modifier = Modifier
-                    .align(Alignment.Center),
-                model = imageModel,
-                contentDescription = null,
-                )
-            Image(
-                colorFilter = ColorFilter.tint(Color.White),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(35.dp)
-                    .clickable {
-                        imagePick.launch(
-                            PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
-                        )
-                    },
-                painter = painterResource(id = R.drawable.baseline_photo_camera_24),
-                contentDescription = ""
-            )
-        }
-    }
-
 }

@@ -1,13 +1,22 @@
 package kr.sjh.presentation.ui.login.detail
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -15,7 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -67,6 +78,15 @@ fun LoginDetailScreen(
     onBack: () -> Unit,
     onImageEdit: (String) -> Unit,
 ) {
+
+    val multiplePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { selectedImageUri ->
+            onImageEdit(selectedImageUri.toString())
+        }
+    }
+
     LaunchedEffect(key1 = uiState) {
         if (uiState.isSuccess) {
             navigateToMain()
@@ -94,13 +114,24 @@ fun LoginDetailScreen(
                 .fillMaxSize()
                 .padding(10.dp)
         ) {
-            ProfileImage(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp),
-                imageModel = profileImageUrl ?: R.drawable.baseline_image_24,
-                onImageEdit = onImageEdit
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ProfileImage(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .clickable {
+                            multiplePhotoPickerLauncher.launch(
+                                PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        },
+                    imageModel = profileImageUrl ?: R.drawable.baseline_image_24,
+                )
+            }
             Spacer(modifier = Modifier.height(30.dp))
             Text(text = "닉네임", color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(20.dp))

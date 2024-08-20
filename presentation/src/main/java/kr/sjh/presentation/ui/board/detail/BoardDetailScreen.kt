@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.board.detail
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,13 +10,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -43,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -54,6 +59,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -67,6 +73,7 @@ import kr.sjh.presentation.ui.common.CommonModalBottomSheet
 import kr.sjh.presentation.ui.common.CommonPopUp
 import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.common.popup.TwoButtonPopUpContent
+import kr.sjh.presentation.ui.common.shimmer.shimmerLoadingAnimation
 import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
@@ -95,10 +102,8 @@ fun BoardDetailRoute(
         user = user,
         detailUiState = detailUiState,
         onBack = onBack,
-        onMoreMenu = detailViewModel::setBottomSheetVisible,
         onLikeChange = {},
         onChat = onChat,
-        onDismissRequest = detailViewModel::setBottomSheetVisible,
         onEdit = {
             onEdit(it)
         },
@@ -126,10 +131,8 @@ fun BoardDetailRoute(
 fun BoardDetailScreen(
     modifier: Modifier = Modifier,
     user: UserModel,
-    onDismissRequest: () -> Unit,
     detailUiState: DetailUiState,
     onBack: () -> Unit,
-    onMoreMenu: () -> Unit,
     onLikeChange: () -> Unit,
     onEdit: (String) -> Unit,
     onDelete: () -> Unit,
@@ -142,6 +145,10 @@ fun BoardDetailScreen(
 
     val overlapHeightPx = with(LocalDensity.current) {
         EXPANDED_TOP_BAR_HEIGHT.toPx() - COLLAPSED_TOP_BAR_HEIGHT.toPx()
+    }
+
+    var bottomSheetShow by remember {
+        mutableStateOf(false)
     }
 
     val isCollapsed by remember {
@@ -173,11 +180,6 @@ fun BoardDetailScreen(
         mutableStateOf(false)
     }
 
-    if (detailUiState.loading) {
-        LoadingDialog()
-//        BoardDetailShimmer()
-        return
-    }
     if (isPopUp) {
         CommonPopUp(content = {
             TwoButtonPopUpContent(title = "이 사용자의 글 보지 않기",
@@ -189,17 +191,19 @@ fun BoardDetailScreen(
         })
     }
 
+    BackHandler {
+        onBack()
+    }
 
-    CommonModalBottomSheet(
-        showSheet = detailUiState.bottomSheetShow, dragHandle = {
-            BottomSheetDefaults.DragHandle(color = Color.LightGray)
-        }, containerColor = backgroundColor, onDismissRequest = onDismissRequest
-    ) {
+    CommonModalBottomSheet(showSheet = bottomSheetShow, dragHandle = {
+        BottomSheetDefaults.DragHandle(color = Color.LightGray)
+    }, containerColor = backgroundColor, onDismissRequest = { bottomSheetShow = false }) {
         BottomSheetMoreMenu(modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor),
             items = bottomSheetItems,
             onClick = { item ->
+                bottomSheetShow = false
                 when (item) {
                     BottomSheetItem.Ban -> {
                         isPopUp = true
@@ -229,7 +233,9 @@ fun BoardDetailScreen(
             isCollapsed = isCollapsed,
             isLike = false,
             onLikeChange = onLikeChange,
-            onMoreMenu = onMoreMenu,
+            onMoreMenu = {
+                bottomSheetShow = true
+            },
             onBack = onBack
         )
         LazyColumn(
@@ -242,12 +248,14 @@ fun BoardDetailScreen(
                 DetailExpendedTopBar(
                     Modifier
                         .fillMaxWidth()
-                        .height(EXPANDED_TOP_BAR_HEIGHT),
+                        .height(EXPANDED_TOP_BAR_HEIGHT)
+                        .shimmerLoadingAnimation(isLoading = detailUiState.loading, Color.White),
                     images = detailUiState.post.images
                 )
             }
             item {
                 DetailWriterProfile(
+                    loading = detailUiState.loading,
                     profileImageUrl = detailUiState.writerUser.profileImageUrl,
                     nickName = detailUiState.writerUser.nickName,
                     readCount = detailUiState.post.readCount,
@@ -257,13 +265,18 @@ fun BoardDetailScreen(
                     modifier = Modifier.fillMaxWidth(), thickness = 1.dp, color = Color.Gray
                 )
                 DetailTitle(
-                    modifier = Modifier.padding(10.dp), title = detailUiState.post.title ?: ""
+                    modifier = Modifier
+                        .widthIn(min = 300.dp)
+                        .padding(10.dp)
+                        .shimmerLoadingAnimation(detailUiState.loading),
+                    title = detailUiState.post.title ?: ""
                 )
                 DetailContent(
                     Modifier
                         .fillMaxWidth()
                         .padding(10.dp)
-                        .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT),
+                        .heightIn(min = configuration.screenHeightDp.dp - EXPANDED_TOP_BAR_HEIGHT)
+                        .shimmerLoadingAnimation(detailUiState.loading),
                     content = detailUiState.post.content
                 )
                 if (user.uid != detailUiState.writerUser.uid) {
@@ -289,52 +302,46 @@ fun BoardDetailScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DetailExpendedTopBar(modifier: Modifier, images: List<String>) {
-
-    val context = LocalContext.current
     Box(
         modifier = modifier, contentAlignment = Alignment.BottomCenter
     ) {
-
-        val pageCount by remember(images) {
-            mutableIntStateOf(
-                if (images.isEmpty()) {
-                    1
-                } else {
-                    images.size
-                }
-            )
+        val pagerState = rememberPagerState {
+            images.size
         }
-
-        val pagerState = rememberPagerState(initialPage = 0) {
-            pageCount
-        }
-
-        HorizontalPager(state = pagerState) { index ->
-            SubcomposeAsyncImage(model = if (images.isEmpty()) {
-                R.drawable.test_image
+        HorizontalPager(
+            modifier = Modifier.aspectRatio(1f), state = pagerState
+        ) { index ->
+            if (images.isEmpty()) {
+                Spacer(modifier = Modifier.fillMaxSize())
             } else {
-                images[index]
-            }, modifier = Modifier.fillMaxSize(), loading = {
-                Box(modifier = Modifier.matchParentSize()) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .align(Alignment.Center), color = carrot
-                    )
-                }
-            }, error = {
-                it.result.throwable.printStackTrace()
-                Image(
-                    modifier = Modifier.size(50.dp),
-                    colorFilter = ColorFilter.tint(Color.White),
-                    imageVector = ImageVector.vectorResource(id = R.drawable.baseline_image_not_supported_24),
-                    contentDescription = ""
+                SubcomposeAsyncImage(
+                    model = images[index],
+                    modifier = Modifier.fillMaxSize(),
+                    loading = {
+                        Box(modifier = Modifier.matchParentSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .align(Alignment.Center),
+                                color = carrot
+                            )
+                        }
+                    },
+                    error = {
+                        it.result.throwable.printStackTrace()
+                        Image(
+                            modifier = Modifier.size(50.dp),
+                            colorFilter = ColorFilter.tint(Color.White),
+                            imageVector = ImageVector.vectorResource(id = R.drawable.baseline_image_not_supported_24),
+                            contentDescription = ""
+                        )
+                    },
+                    contentDescription = null
                 )
-            }, contentDescription = null
-            )
+            }
         }
         Indicator(
-            pageCount, pagerState, Modifier.height(20.dp)
+            images.size, pagerState, Modifier.height(20.dp)
         )
     }
 }
@@ -466,7 +473,7 @@ fun Indicator(
 
 @Composable
 fun DetailWriterProfile(
-    profileImageUrl: String?, nickName: String, readCount: Int, postCount: Int
+    loading: Boolean, profileImageUrl: String?, nickName: String, readCount: Int, postCount: Int
 ) {
     Row(
         modifier = Modifier
@@ -476,8 +483,11 @@ fun DetailWriterProfile(
     ) {
         SubcomposeAsyncImage(
             modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape), loading = {
+                .sizeIn(80.dp, 80.dp, 80.dp, 80.dp)
+                .clip(CircleShape)
+                .shimmerLoadingAnimation(loading),
+            contentScale = ContentScale.Crop,
+            loading = {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .size(80.dp)
@@ -487,9 +497,28 @@ fun DetailWriterProfile(
         )
         Spacer(modifier = Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = nickName, color = Color.White, fontSize = 20.sp)
-            Text(text = "내가 쓴 글 $postCount", color = Color.Gray)
-            Text(text = "조회수 $readCount", color = Color.Gray)
+            Text(
+                modifier = Modifier
+                    .widthIn(min = 50.dp)
+                    .shimmerLoadingAnimation(loading),
+                text = nickName,
+                color = Color.White,
+                fontSize = 20.sp
+            )
+            Text(
+                modifier = Modifier
+                    .widthIn(min = 50.dp)
+                    .shimmerLoadingAnimation(loading),
+                text = "내가 쓴 글 $postCount",
+                color = Color.Gray
+            )
+            Text(
+                modifier = Modifier
+                    .widthIn(min = 50.dp)
+                    .shimmerLoadingAnimation(loading),
+                text = "조회수 $readCount",
+                color = Color.Gray
+            )
         }
     }
 }

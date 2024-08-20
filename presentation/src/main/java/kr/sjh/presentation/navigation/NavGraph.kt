@@ -1,6 +1,7 @@
 package kr.sjh.presentation.navigation
 
 import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -129,6 +131,7 @@ fun MainNavGraph(
                 content = {
                     navItems.forEach { item ->
                         BottomNavigationItem(
+                            modifier = Modifier.sizeIn(minWidth = 65.dp, minHeight = 65.dp, maxHeight = 65.dp, maxWidth = 65.dp),
                             screen = item.screen,
                             selected = currentSelectedScreen == item.screen,
                             title = item.title,
@@ -142,8 +145,7 @@ fun MainNavGraph(
                             totalUnReadMessageCount = totalUnReadMessageCount,
                             onClick = {
                                 navController.navigateToRootScreen(it)
-                            },
-                            modifier = Modifier.sizeIn(minWidth = 60.dp, minHeight = 60.dp)
+                            }
                         )
                     }
                 },
@@ -163,7 +165,7 @@ fun MainNavGraph(
     ) {
         navigation(route = RootScreen.Board.route, startDestination = LeafScreen.Board.route) {
             composable(route = LeafScreen.Board.route) {
-                BoardRoute(modifier = Modifier.fillMaxSize(), navigateToBoardDetail = {
+                BoardRoute(navigateToBoardDetail = {
                     navController.navigate("${LeafScreen.BoardDetail.route}?postKey=$it")
                 }, navigateToBoardWrite = {
                     navController.navigate("${LeafScreen.BoardWrite.route}?postKey=$it")
@@ -172,7 +174,7 @@ fun MainNavGraph(
             }
             composable(route = "${LeafScreen.BoardEdit.route}?postKey={postKey}") { backStackEntry ->
                 BoardEditRoute(modifier = Modifier.fillMaxSize(), onBack = {
-                    navController.navigateUp()
+                    navController.popBackStack(LeafScreen.BoardDetail.route, false)
                 }, navigateToDetail = {
                     navController.navigate("${LeafScreen.BoardDetail.route}?postKey=$it")
                 })
@@ -181,7 +183,7 @@ fun MainNavGraph(
                 route = LeafScreen.BoardWrite.route
             ) {
                 BoardWriteRoute(modifier = Modifier.fillMaxSize(), onBack = {
-                    navController.popBackStack(LeafScreen.Board.route, false)
+                    navController.popBackStack(LeafScreen.Board.route, false, saveState = true)
                 }, navigateToDetail = { postKey ->
                     navController.navigate("${LeafScreen.BoardDetail.route}?postKey=${postKey}")
                 })
@@ -190,14 +192,33 @@ fun MainNavGraph(
                 route = "${LeafScreen.BoardDetail.route}?postKey={postKey}"
             ) {
                 BoardDetailRoute(modifier = Modifier.fillMaxSize(), onBack = {
-                    navController.navigate(LeafScreen.Board.route) {
-                        popUpTo(LeafScreen.Board.route)
+                    Log.d(
+                        "sjh",
+                        "previousBackStackEntry : ${navController.previousBackStackEntry?.destination?.route}"
+                    )
+                    val previous = navController.previousBackStackEntry?.destination?.route
+                    when {
+                        previous?.contains(LeafScreen.BoardDetail.route) == true -> navController.popBackStack(
+                            LeafScreen.Board.route, false
+                        )
+
+                        previous?.contains(LeafScreen.BoardWrite.route) == true -> navController.navigate(
+                            LeafScreen.Board.route
+                        )
+
+                        previous?.contains(LeafScreen.BoardEdit.route) == true -> navController.navigate(
+                            LeafScreen.Board.route
+                        )
+
+                        else -> navController.navigateUp()
+
                     }
                 }, onChat = { roomId, nickName, profileImageUrl ->
                     navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}") {
                         popUpTo(LeafScreen.BoardDetail.route)
                     }
                 }, onEdit = {
+
                     navController.navigate("${LeafScreen.BoardEdit.route}?postKey=$it")
                 })
             }
@@ -249,13 +270,13 @@ fun BottomNavigation(
 @Stable
 @Composable
 fun BottomNavigationItem(
+    modifier: Modifier = Modifier,
     screen: RootScreen,
     selected: Boolean,
     title: String,
     imageModel: () -> Any?,
     totalUnReadMessageCount: Long,
     onClick: (RootScreen) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
 
     val selectedColor by remember {
@@ -288,6 +309,7 @@ fun BottomNavigationItem(
                 colorFilter = if (screen is RootScreen.MyPage) null else ColorFilter.tint(
                     selectedColor
                 ),
+                contentScale = ContentScale.Crop,
                 contentDescription = null,
             )
 
@@ -297,16 +319,17 @@ fun BottomNavigationItem(
         }
 
         if (screen is RootScreen.Chat) {
-            if (totalUnReadMessageCount > 0) BadgeCount(modifier = Modifier
-                .sizeIn(25.dp, 25.dp)
-                .constrainAs(badge) {
-                    top.linkTo(parent.top)
-                    start.linkTo(icon.end)
-                }
-                .clip(CircleShape)
-                .background(carrot),
-                totalUnReadMessageCount,
-                textSize = 12.sp)
+            if (totalUnReadMessageCount > 0)
+                BadgeCount(modifier = Modifier
+                    .sizeIn(25.dp, 25.dp)
+                    .constrainAs(badge) {
+                        top.linkTo(parent.top)
+                        start.linkTo(icon.end)
+                    }
+                    .clip(CircleShape)
+                    .background(carrot),
+                    totalUnReadMessageCount,
+                    textSize = 12.sp)
         }
     }
 }

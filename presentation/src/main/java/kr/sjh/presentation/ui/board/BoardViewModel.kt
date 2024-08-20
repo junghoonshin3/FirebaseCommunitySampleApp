@@ -12,10 +12,14 @@ import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.PostModel
 import kr.sjh.domain.usecase.board.GetPostsUseCase
 import kr.sjh.domain.usecase.board.UpdatePostCountUseCase
+import kr.sjh.presentation.constants.LOAD_ITEM_COUNT
+import kr.sjh.presentation.constants.VISIBLE_ITEM_COUNT
 import javax.inject.Inject
 
 data class BoardUiState(
+    val isRefreshing: Boolean = false,
     val isLoading: Boolean = false,
+    val isLoadMore: Boolean = false,
     val posts: List<PostModel> = emptyList(),
     val error: Throwable? = null
 )
@@ -30,23 +34,80 @@ class BoardViewModel @Inject constructor(
     val postUiState = _postUiState.asStateFlow()
 
     init {
-        getPosts()
+        initPosts()
     }
 
-    fun nextPosts() {
-        val title = _postUiState.value.posts.last().title
-        val lastTime = _postUiState.value.posts.last().timeStamp.time
-        Log.d("sjh", "title : ${title}, last : $lastTime")
-        getPosts(size = 5, lastTime = lastTime)
-    }
-
-    private fun getPosts(size: Long = 10, lastTime: Long? = null) {
+    fun refreshPosts() {
         viewModelScope.launch {
-            postsUseCase(size = size, lastTime).collect { result ->
+            postsUseCase(VISIBLE_ITEM_COUNT, null).collect { result ->
                 when (result) {
                     is ResultState.Failure -> {
                         _postUiState.update {
-                            it.copy(isLoading = false, error = result.throwable)
+                            it.copy(
+                                isRefreshing = false, error = result.throwable
+                            )
+                        }
+                    }
+
+                    ResultState.Loading -> {
+                        _postUiState.update {
+                            it.copy(isRefreshing = true, error = null)
+                        }
+                    }
+
+                    is ResultState.Success -> {
+                        _postUiState.update {
+                            it.copy(
+                                isRefreshing = false, posts = result.data, error = null
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun nextPosts() {
+        val lastTime = _postUiState.value.posts.last().timeStamp.time
+        viewModelScope.launch {
+            postsUseCase(size = VISIBLE_ITEM_COUNT, lastTime).collect { result ->
+                when (result) {
+                    is ResultState.Failure -> {
+                        _postUiState.update {
+                            it.copy(
+                                isLoadMore = false, error = result.throwable
+                            )
+                        }
+                    }
+
+                    ResultState.Loading -> {
+                        _postUiState.update {
+                            it.copy(isLoadMore = true, error = null)
+                        }
+                    }
+
+                    is ResultState.Success -> {
+                        _postUiState.update {
+                            it.copy(
+                                isLoadMore = false, posts = it.posts + result.data, error = null
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun initPosts(
+    ) {
+        viewModelScope.launch {
+            postsUseCase(size = VISIBLE_ITEM_COUNT, lastTime = null).collect { result ->
+                when (result) {
+                    is ResultState.Failure -> {
+                        _postUiState.update {
+                            it.copy(
+                                isLoading = false, error = result.throwable
+                            )
                         }
                     }
 
@@ -58,7 +119,9 @@ class BoardViewModel @Inject constructor(
 
                     is ResultState.Success -> {
                         _postUiState.update {
-                            it.copy(isLoading = false, posts = it.posts + result.data, error = null)
+                            it.copy(
+                                isLoading = false, posts = result.data, error = null
+                            )
                         }
                     }
                 }

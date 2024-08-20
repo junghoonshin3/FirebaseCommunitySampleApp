@@ -6,12 +6,14 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.time.delay
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.ChatRoomModel
 import kr.sjh.domain.usecase.auth.firebase.GetAuthCurrentUserUseCase
@@ -23,8 +25,8 @@ import javax.inject.Inject
 data class ChatRoomUiState(
     val uid: String = "",
     val rooms: List<ChatRoomModel> = emptyList(),
-    val c: Long = 0L,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val throwable: Throwable? = null,
 )
 
@@ -58,6 +60,29 @@ class ChatViewModel @Inject constructor(
                         _chatRooms.update {
                             it.copy(
                                 isLoading = false, uid = uid, rooms = result.data
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun refreshChatRooms() {
+        viewModelScope.launch {
+            chatRoomsUseCase().collect { result ->
+                when (result) {
+                    is ResultState.Failure -> {}
+                    ResultState.Loading -> {
+                        _chatRooms.update {
+                            it.copy(isRefreshing = true)
+                        }
+                    }
+
+                    is ResultState.Success -> {
+                        _chatRooms.update {
+                            it.copy(
+                                isRefreshing = false, rooms = result.data
                             )
                         }
                     }

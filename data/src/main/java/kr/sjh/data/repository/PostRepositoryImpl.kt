@@ -5,21 +5,17 @@ import android.util.Log
 import androidx.core.net.toUri
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.DocumentChange
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.Source
 import com.google.firebase.storage.FirebaseStorage
-import com.google.firestore.v1.Document
+import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kr.sjh.data.mapper.toPostEntity
@@ -29,16 +25,19 @@ import kr.sjh.data.model.UserEntity
 import kr.sjh.data.utils.Constants.COL_POSTS
 import kr.sjh.data.utils.Constants.COL_USERS
 import kr.sjh.data.utils.Constants.STORAGE_POST_IMAGES
+import kr.sjh.data.utils.FileUtil
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.PostModel
 import kr.sjh.domain.model.UserModel
 import kr.sjh.domain.repository.firebase.PostRepository
+import java.util.UUID
 import javax.inject.Inject
 
 class PostRepositoryImpl @Inject constructor(
     private val storage: FirebaseStorage,
     private val fireStore: FirebaseFirestore,
     private val auth: FirebaseAuth,
+    private val fileUtil: FileUtil
 ) : PostRepository {
 
     override fun getPosts(size: Long, lastTime: Long?): Flow<ResultState<List<PostModel>>> =
@@ -51,15 +50,13 @@ class PostRepositoryImpl @Inject constructor(
                 Log.d("banUsers", "${user?.banUsers}")
 
                 val query = if (lastTime == null) {
-                    fireStore.collection(COL_POSTS)
-                        .limit(size)
+                    fireStore.collection(COL_POSTS).limit(size)
                         .orderBy("timeStamp", Query.Direction.DESCENDING)
 
                 } else {
                     val lastTimestamp =
                         Timestamp(lastTime / 1000, (lastTime % 1000 * 1000000).toInt())
-                    fireStore.collection(COL_POSTS)
-                        .limit(size)
+                    fireStore.collection(COL_POSTS).limit(size)
                         .whereLessThan("timeStamp", lastTimestamp)
                         .orderBy("timeStamp", Query.Direction.DESCENDING)
                 }
@@ -130,7 +127,7 @@ class PostRepositoryImpl @Inject constructor(
 
             // 이미지 업로드 후 storage에서 다운로드 url 획득
             val downloadUrls = if (postModel.images.isNotEmpty()) {
-                uploadImagesAndGetUrls(uid, postKey, postModel.images)
+                uploadImagesAndGetUrls(postKey, postModel.images)
             } else {
                 emptyList() // 이미지가 없으면 빈 리스트 반환
             }
@@ -198,30 +195,35 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val storageRef = storage.reference.child(STORAGE_POST_IMAGES).child(postModel.writerUid)
                 .child(postModel.postKey)
-            val items = storageRef.listAll().await().items
 
-            val existingImages = items.map { it.downloadUrl.await().toString() }
+            val existingImages = storageRef.listAll().await().items
 
-            // 삭제할 이미지 필터링 및 삭제
-            items.filter { it.downloadUrl.await().toString() !in postModel.images }.map {
-                it.delete().await()
+            val imagesToDelete = mutableListOf<StorageReference>()
+
+            existingImages.forEach {
+                if (it.downloadUrl.await().toString() !in postModel.images) {
+                    imagesToDelete.add(it)
+                }
             }
 
-            // 새롭게 추가된 이미지 필터링 및 업로드
-            postModel.images.filter { it !in existingImages }.map {
-                val uri = it.toUri()
-                val newImageRef = storageRef.child(uri.lastPathSegment ?: "new_image.jpg")
-                newImageRef.putFile(uri).await()
-            }
+            imagesToDelete.map { it.delete().await() }
+
+            existingImages.removeAll(imagesToDelete)
+
+            val newExistingImages = existingImages.map { it.downloadUrl.await().toString() }
+
+            val newImages = postModel.images.filter { it !in newExistingImages }
+
+            val uploadImageUrl = uploadImagesAndGetUrls(postModel.postKey, newImages)
 
             val postRef = fireStore.collection(COL_POSTS).document(postModel.postKey)
 
             postRef.update(
-                mapOf("title" to postModel.title,
+                mapOf(
+                    "title" to postModel.title,
                     "content" to postModel.content,
-                    "images" to storageRef.listAll().await().items.map {
-                        it.downloadUrl.await().toString()
-                    })
+                    "images" to newExistingImages + uploadImageUrl
+                )
             ).addOnSuccessListener {
                 trySend(ResultState.Success(Unit))
             }.addOnFailureListener {
@@ -262,15 +264,20 @@ class PostRepositoryImpl @Inject constructor(
 
 
     private suspend fun uploadImagesAndGetUrls(
-        uid: String, postKey: String, imageUris: List<String>
+        postKey: String, imageUris: List<String>
     ): List<String> = withContext(Dispatchers.IO) {
-        imageUris.map {
-            val uri = Uri.parse(it)
+        imageUris.mapIndexed { index, s ->
+            val imageUri = Uri.parse(s)
+            val fileName = UUID.randomUUID().toString()
             async {
-                storage.reference.child("$STORAGE_POST_IMAGES/$uid/$postKey/${uri.lastPathSegment}")
-                    .putFile(uri).await().storage.downloadUrl.await().toString()
+                val resizeBitmap = fileUtil.optimizedBitmap(imageUri, 400, 400)
+                val resizeBitmapToFile = fileUtil.saveBitmapAsFile(resizeBitmap, "$fileName")
+                resizeBitmap.recycle()
+                storage.reference.child("$STORAGE_POST_IMAGES/${auth.uid.toString()}/$postKey/$fileName")
+                    .putFile(resizeBitmapToFile.toUri()).await().storage.downloadUrl.await()
+                    .toString()
+
             }
         }.awaitAll()
     }
-
 }
