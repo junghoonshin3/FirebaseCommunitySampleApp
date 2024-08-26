@@ -53,17 +53,15 @@ fun LoginRoute(
 
     val loginUiState by viewModel.loginUiState.collectAsStateWithLifecycle()
 
-    LoginScreen(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black),
+    LoginScreen(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black),
         loginUiState = loginUiState,
         navigateToMain = navigateToMain,
         navigateToLoginDetail = navigateToLoginDetail,
         onLogin = {
             viewModel.signIn(activity)
-        }
-    )
+        })
 }
 
 @Composable
@@ -74,9 +72,6 @@ private fun LoginScreen(
     navigateToLoginDetail: () -> Unit,
     onLogin: () -> Unit,
 ) {
-    if (loginUiState.isLoading) {
-        LoadingDialog()
-    }
 
     LaunchedEffect(key1 = loginUiState) {
         if (loginUiState.destination == "loginToDetail") {
@@ -111,6 +106,10 @@ private fun LoginScreen(
                 .border(1.dp, Color.LightGray)
                 .background(Color.White), onClick = onLogin
         )
+    }
+
+    if (loginUiState.isLoading) {
+        LoadingDialog()
     }
 }
 
