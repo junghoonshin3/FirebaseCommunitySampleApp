@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,6 +31,7 @@ import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.BoardPicture
 import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.backgroundColor
+import kr.sjh.presentation.utill.addFocusCleaner
 
 @Composable
 fun BoardEditRoute(
@@ -71,6 +73,7 @@ private fun BoardEditScreen(
     val scrollState = rememberScrollState()
     val snackBarState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(key1 = editUiState.isComplete, block = {
         if (editUiState.isComplete) {
@@ -82,7 +85,9 @@ private fun BoardEditScreen(
         LoadingDialog()
     }
 
-    Box(modifier = modifier.background(backgroundColor)) {
+    Box(modifier = modifier
+        .background(backgroundColor)
+        .addFocusCleaner(focusManager)) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -107,6 +112,7 @@ private fun BoardEditScreen(
                 updateContent = updateContent,
                 updateTitle = updateTitle,
                 scrollState = scrollState,
+                focusManager = focusManager,
                 onDelete = onDelete
             )
             BoardPicture(

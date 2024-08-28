@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.AnnotatedString
@@ -52,6 +53,7 @@ import kr.sjh.presentation.ui.common.ContentTextField
 import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.addFocusCleaner
 
 @Composable
 fun BoardWriteRoute(
@@ -107,6 +109,8 @@ fun BoardWriteScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
+    val focusManager = LocalFocusManager.current
+
 
     if (writeUiState.loading) {
         LoadingDialog()
@@ -120,7 +124,9 @@ fun BoardWriteScreen(
 
 
     Box(
-        modifier = modifier.background(backgroundColor),
+        modifier = modifier
+            .background(backgroundColor)
+            .addFocusCleaner(focusManager),
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -147,6 +153,7 @@ fun BoardWriteScreen(
                 updateContent = updateContent,
                 updateTitle = updateTitle,
                 scrollState = scrollState,
+                focusManager = focusManager,
                 onDelete = onDelete
             )
 
@@ -188,13 +195,13 @@ fun BoardWriteBody(
     modifier: Modifier = Modifier,
     selectedImages: List<String>,
     title: String,
+    focusManager: FocusManager,
     updateTitle: (String) -> Unit,
     content: String,
     updateContent: (String) -> Unit,
     onDelete: (String) -> Unit,
     scrollState: ScrollState
 ) {
-    val focusManager = LocalFocusManager.current
 
     Column(
         modifier = modifier.verticalScroll(state = scrollState),

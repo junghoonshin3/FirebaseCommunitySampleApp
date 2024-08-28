@@ -1,6 +1,5 @@
 package kr.sjh.presentation.ui.board
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,18 +27,15 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,7 +45,6 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.SubcomposeAsyncImage
-import kotlinx.coroutines.launch
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.common.InfinityLazyColumn
 import kr.sjh.presentation.ui.common.LoadingDialog
@@ -97,13 +91,7 @@ fun BoardScreen(
 ) {
 
     val lazyListState = rememberLazyListState()
-
-    val scrollIndex by remember {
-        derivedStateOf {
-            lazyListState.firstVisibleItemIndex
-        }
-    }
-
+    
     val pullToRefreshState =
         rememberPullToRefreshState(positionalThreshold = 30.dp, enabled = { true })
 
@@ -117,7 +105,6 @@ fun BoardScreen(
             pullToRefreshState.startRefresh()
         } else {
             pullToRefreshState.endRefresh()
-            lazyListState.animateScrollToItem(scrollIndex)
         }
     }
 
