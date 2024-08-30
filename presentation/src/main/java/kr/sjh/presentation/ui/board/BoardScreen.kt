@@ -58,6 +58,7 @@ import kr.sjh.presentation.ui.common.RefreshingType
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.calculationTime
+import kr.sjh.presentation.utill.clickableSingle
 
 @Composable
 fun BoardRoute(
@@ -154,7 +155,7 @@ fun BoardScreen(
             itemsIndexed(boardUiState.posts, key = { _, post -> post.postKey }) { index, post ->
                 PostItem(modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
+                    .clickableSingle {
                         navigateToBoardDetail(post.postKey)
                     }
                     .padding(10.dp),

@@ -160,7 +160,10 @@ class ChatDetailViewModel @Inject constructor(
                             onSuccess()
                         }
 
-                        else -> {}
+                        is ResultState.Failure -> {
+                            result.throwable.printStackTrace()
+                        }
+                        ResultState.Loading -> {}
                     }
                 }
             }

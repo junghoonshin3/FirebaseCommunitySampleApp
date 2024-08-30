@@ -1,5 +1,6 @@
 package kr.sjh.presentation.ui.chat
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -72,7 +74,7 @@ fun ChatRoute(
 ) {
     val chatRoomUiState by chatViewModel.chatRooms.collectAsStateWithLifecycle()
 
-    val isRefreshing by chatViewModel.isRefreshing.collectAsStateWithLifecycle(RefreshingType.NONE)
+    val isRefreshing by chatViewModel.isRefreshing.collectAsStateWithLifecycle(initialValue = RefreshingType.NONE)
 
     Scaffold(bottomBar = bottomBar) {
         ChatScreen(
@@ -163,7 +165,7 @@ fun ChatRoomList(
                 .fillMaxSize()
                 .offset(y = pullToRefreshState.verticalOffset.dp),
             loadMore = { }) {
-            itemsIndexed(chatRooms, key = { _, room -> room.roomId }) { index, room ->
+            itemsIndexed(chatRooms, key = { _, room -> room.hashCode() }) { index, room ->
                 val you = room.you
                 val nickname = you.nickName
                 val profileUrl = you.profileImageUrl
@@ -201,7 +203,6 @@ fun ChatRoomList(
         )
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -275,10 +276,9 @@ fun ChatRoom(
                 BadgeCount(
                     Modifier
                         .padding(end = 5.dp)
-                        .size(30.dp)
+                        .sizeIn(30.dp, 30.dp)
                         .clip(CircleShape)
-                        .background(carrot),
-                    unReadCount
+                        .background(carrot), unReadCount
                 )
             }
         }

@@ -77,6 +77,7 @@ import kr.sjh.presentation.ui.common.shimmer.shimmerLoadingAnimation
 import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.clickableSingle
 import kr.sjh.presentation.utill.getActivity
 import kr.sjh.presentation.utill.jumpingDotTransition
 
@@ -543,7 +544,7 @@ fun DetailRequestChat(modifier: Modifier = Modifier, onChat: () -> Unit) {
             .padding(10.dp), horizontalArrangement = Arrangement.Start
     ) {
         Box(
-            modifier = modifier.clickable { onChat() }, contentAlignment = Alignment.Center
+            modifier = modifier.clickableSingle { onChat() }, contentAlignment = Alignment.Center
         ) {
             Text(fontSize = 15.sp, color = Color.White, text = "채팅하기")
         }

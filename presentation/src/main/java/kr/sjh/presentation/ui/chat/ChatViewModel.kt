@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.time.delay
@@ -54,49 +55,58 @@ class ChatViewModel @Inject constructor(
 
     private fun getChatRooms() {
         viewModelScope.launch {
-            chatRoomsUseCase().collect { result ->
-                when (result) {
-                    is ResultState.Failure -> {}
-                    ResultState.Loading -> {
-                        _chatRooms.update {
-                            it.copy(isLoading = true)
+            chatRoomsUseCase()
+                .collect { result ->
+                    when (result) {
+                        is ResultState.Failure -> {
+                            Log.d("sjh", "ResultState.Failure")
+                            _chatRooms.update {
+                                it.copy(isLoading = false, throwable = result.throwable)
+                            }
                         }
-                    }
 
-                    is ResultState.Success -> {
-                        _chatRooms.update {
-                            it.copy(
-                                isLoading = false, uid = uid, rooms = result.data
-                            )
+                        ResultState.Loading -> {
+                            Log.d("sjh", "ResultState.Loading")
+                            _chatRooms.update {
+                                it.copy(isLoading = true)
+                            }
+                        }
+
+                        is ResultState.Success -> {
+                            Log.d("sjh", "ResultState.Success")
+                            _chatRooms.update {
+                                it.copy(isLoading = false, uid = uid, rooms = result.data)
+                            }
                         }
                     }
                 }
-            }
         }
     }
 
     fun refreshChatRooms() {
         viewModelScope.launch {
-            chatRoomsUseCase().collect { result ->
-                when (result) {
-                    is ResultState.Failure -> {
-                        _isRefreshing.emit(RefreshingType.END)
-                    }
+            chatRoomsUseCase()
+                .onStart { _isRefreshing.emit(RefreshingType.START) }
+                .collect { result ->
+                    when (result) {
+                        is ResultState.Failure -> {
+                            _isRefreshing.emit(RefreshingType.END)
+                        }
 
-                    ResultState.Loading -> {
-                        _isRefreshing.emit(RefreshingType.START)
-                    }
+                        ResultState.Loading -> {
+                            _isRefreshing.emit(RefreshingType.START)
+                        }
 
-                    is ResultState.Success -> {
-                        _isRefreshing.emit(RefreshingType.END)
-                        _chatRooms.update {
-                            it.copy(
-                                rooms = result.data
-                            )
+                        is ResultState.Success -> {
+                            _isRefreshing.emit(RefreshingType.END)
+                            _chatRooms.update {
+                                ChatRoomUiState(
+                                    uid = uid, rooms = result.data
+                                )
+                            }
                         }
                     }
                 }
-            }
         }
     }
 

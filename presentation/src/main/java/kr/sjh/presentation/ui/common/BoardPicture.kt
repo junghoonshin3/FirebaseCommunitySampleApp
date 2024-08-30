@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toFile
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.backgroundColor
+import kr.sjh.presentation.utill.clickableSingle
 
 @Composable
 fun BoardPicture(modifier: Modifier, onPhoto: (List<String>) -> Unit) {
@@ -37,7 +38,7 @@ fun BoardPicture(modifier: Modifier, onPhoto: (List<String>) -> Unit) {
             modifier = Modifier
                 .wrapContentSize()
                 .background(backgroundColor, RoundedCornerShape(10.dp))
-                .clickable {
+                .clickableSingle {
                     multiplePhotoPickerLauncher.launch(
                         PickVisualMediaRequest(
                             ActivityResultContracts.PickVisualMedia.ImageOnly,

@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.clickableSingle
 import kr.sjh.presentation.utill.optimizedBitmap
 
 @Composable
@@ -57,7 +58,7 @@ private fun Picture(imageUri: String, onDelete: (String) -> Unit) {
             modifier = Modifier
                 .size(25.dp)
                 .align(Alignment.TopEnd)
-                .clickable {
+                .clickableSingle {
                     onDelete(imageUri)
                 },
             imageVector = ImageVector.vectorResource(id = R.drawable.baseline_cancel_24),

@@ -4,7 +4,6 @@ import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -14,8 +13,10 @@ import com.google.firebase.firestore.snapshots
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.tasks.await
 import kr.sjh.data.mapper.toChatMessageModel
 import kr.sjh.data.mapper.toChatRoomModel
@@ -23,7 +24,6 @@ import kr.sjh.data.model.ChatMessageEntity
 import kr.sjh.data.model.ChatRoomEntity
 import kr.sjh.data.model.ChatRoomUserEntity
 import kr.sjh.data.model.UserEntity
-import kr.sjh.data.utils.Constants
 import kr.sjh.data.utils.Constants.COL_CHAT_MESSAGES
 import kr.sjh.data.utils.Constants.COL_CHAT_ROOMS
 import kr.sjh.data.utils.Constants.COL_MY_CHAT_ROOMS
@@ -96,7 +96,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun sendMessage(
         message: ChatMessageModel
-    ): Flow<ResultState<Unit>> = flow {
+    ): Flow<ResultState<Unit>> = flow<ResultState<Unit>> {
         emit(ResultState.Loading)
 
         val roomId = generateUniqueChatKey(message.senderUid, message.receiverUid)
@@ -166,38 +166,29 @@ class ChatRepositoryImpl @Inject constructor(
             }
             transaction.set(youChatRoomDoc, youChatRoomUpdates, SetOptions.merge())
         }.await()
+    }.catch { error ->
+        ResultState.Failure(error)
     }
 
 
-    override fun getChatRooms(): Flow<ResultState<List<ChatRoomModel>>> = callbackFlow {
-        trySend(ResultState.Loading)
+    override fun getChatRooms(): Flow<ResultState<List<ChatRoomModel>>> {
         val uid = auth.currentUser?.uid.toString()
         val messageCol =
             firebase.collection(COL_CHAT_ROOMS).document(uid).collection(COL_MY_CHAT_ROOMS)
-        val listener = messageCol.addSnapshotListener { value, error ->
-            Log.d("getChatRooms", "getChatRooms>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            if (error != null) {
-                trySend(ResultState.Failure(error))
-                return@addSnapshotListener
-            }
-
-            if (value != null && !value.isEmpty) {
-                val chatRooms = value.documents.mapNotNull { dc ->
-                    Log.d("sjh", "${dc.metadata}")
+        return messageCol.snapshots().map { snapshot ->
+            if (snapshot.documents.isEmpty()) {
+                ResultState.Success(emptyList())
+            } else {
+                val chatRooms = snapshot.documents.mapNotNull { dc ->
                     dc.toObject(ChatRoomEntity::class.java)?.toChatRoomModel()
                 }
-                trySend(ResultState.Success(chatRooms))
-            } else {
-                trySend(ResultState.Success(emptyList()))
+                ResultState.Success(chatRooms)
             }
-        }
-
-        awaitClose {
-            Log.d("getChatRooms", "getChatRooms close")
-            listener.remove()
-            close()
+        }.catch { error ->
+            ResultState.Failure(error)
         }
     }
+
 
     private suspend fun createChat(
         roomId: String,
@@ -216,7 +207,6 @@ class ChatRepositoryImpl @Inject constructor(
         firebase.runTransaction { transaction ->
             val meInfo = transaction.get(myInfo).toObject(UserEntity::class.java)
             val youInfo = transaction.get(youInfo).toObject(UserEntity::class.java)
-            val meChatRoomExist = transaction.get(meChatRoom).exists()
             val youChatRoomExist = transaction.get(youChatRoom).exists()
             transaction.set(
                 meChatRoom, ChatRoomEntity(
@@ -234,21 +224,14 @@ class ChatRepositoryImpl @Inject constructor(
                     )
                 )
             )
-            if (!meChatRoomExist) {
-                transaction.set(
-                    myMessageCountCol, mapOf(
-                        "totalUnReadMessageCount" to 0L
-                    ), SetOptions.merge()
-                )
-            }
-            if (!youChatRoomExist) {
-                transaction.set(
-                    yourMessageCountCol, mapOf(
-                        "totalUnReadMessageCount" to 0L
-                    ), SetOptions.merge()
-                )
-            }
 
+//            if (!youChatRoomExist) {
+//                transaction.set(
+//                    yourMessageCountCol, mapOf(
+//                        "totalUnReadMessageCount" to 0L
+//                    ), SetOptions.merge()
+//                )
+//            }
 
         }.await()
     }

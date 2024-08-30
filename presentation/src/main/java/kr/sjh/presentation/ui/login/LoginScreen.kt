@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.filter
 import kr.sjh.presentation.R
 import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.theme.Roboto_Medium
+import kr.sjh.presentation.utill.clickableSingle
 
 
 @Composable
@@ -130,7 +131,7 @@ fun Logo(modifier: Modifier = Modifier) {
 @Composable
 fun LoginButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(modifier = modifier
-        .clickable {
+        .clickableSingle {
             onClick()
         }
         .padding(8.dp), verticalAlignment = Alignment.CenterVertically) {

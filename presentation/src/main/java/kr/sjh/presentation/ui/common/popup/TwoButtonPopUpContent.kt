@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.clickableSingle
 
 @Composable
 fun TwoButtonPopUpContent(
@@ -63,7 +64,7 @@ fun TwoButtonPopUpContent(
                         .height(50.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color.LightGray)
-                        .clickable {
+                        .clickableSingle {
                             onCancel()
                         }, contentAlignment = Alignment.Center
                 ) {
@@ -76,7 +77,7 @@ fun TwoButtonPopUpContent(
                         .height(50.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(carrot)
-                        .clickable {
+                        .clickableSingle {
                             onConfirm()
                         }, contentAlignment = Alignment.Center
                 ) {

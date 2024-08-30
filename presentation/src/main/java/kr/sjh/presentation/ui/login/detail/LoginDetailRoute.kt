@@ -37,6 +37,7 @@ import kr.sjh.presentation.ui.common.AppTopBar
 import kr.sjh.presentation.ui.common.ContentTextField
 import kr.sjh.presentation.ui.common.LoadingDialog
 import kr.sjh.presentation.ui.common.ProfileImage
+import kr.sjh.presentation.utill.clickableSingle
 
 @Composable
 fun LoginDetailRoute(
@@ -119,7 +120,7 @@ fun LoginDetailScreen(
                 ProfileImage(
                     modifier = Modifier
                         .size(150.dp)
-                        .clickable {
+                        .clickableSingle {
                             multiplePhotoPickerLauncher.launch(
                                 PickVisualMediaRequest(
                                     ActivityResultContracts.PickVisualMedia.ImageOnly

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.PersistentList
+import kr.sjh.presentation.utill.clickableSingle
 
 @Composable
 fun BottomSheetMoreMenu(
@@ -51,7 +52,7 @@ fun BottomSheetMenu(
         modifier = Modifier
             .fillMaxWidth()
             .height(70.dp)
-            .clickable {
+            .clickableSingle {
                 onClick(bottomSheetItem)
             }, contentAlignment = Alignment.Center
     ) {

@@ -86,7 +86,7 @@ fun AppTopBar(
                 .align(Alignment.CenterEnd)
                 .size(45.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .clickable(enabled = buttonTitle != null) {
+                .clickableSingle(enabled = buttonTitle != null) {
                     onClick?.invoke()
                 }, contentAlignment = Alignment.Center
         ) {

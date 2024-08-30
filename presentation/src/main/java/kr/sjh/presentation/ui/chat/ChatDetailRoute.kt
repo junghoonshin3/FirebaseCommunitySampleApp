@@ -66,6 +66,7 @@ import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.PurpleGrey80
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.addFocusCleaner
+import kr.sjh.presentation.utill.clickableSingle
 import kr.sjh.presentation.utill.getActivity
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -125,7 +126,6 @@ fun ChatDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .addFocusCleaner(focusManager)
     ) {
         AppTopBar(
             modifier = Modifier
@@ -139,7 +139,8 @@ fun ChatDetailScreen(
         )
         Conversation(modifier = Modifier
             .fillMaxWidth()
-            .weight(1f),
+            .weight(1f)
+            .addFocusCleaner(focusManager),
             messages = messageUiState.messages,
             currentUid = currentUser.uid,
             lazyListState = lazyListState,
@@ -278,7 +279,7 @@ fun InputMessage(
         Box(
             modifier = Modifier
                 .size(30.dp)
-                .clickable {
+                .clickableSingle {
                     sendMessage()
                 }, contentAlignment = Alignment.Center
         ) {
