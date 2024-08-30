@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -23,6 +24,11 @@ import kr.sjh.data.model.ChatRoomEntity
 import kr.sjh.data.model.ChatRoomUserEntity
 import kr.sjh.data.model.UserEntity
 import kr.sjh.data.utils.Constants
+import kr.sjh.data.utils.Constants.COL_CHAT_MESSAGES
+import kr.sjh.data.utils.Constants.COL_CHAT_ROOMS
+import kr.sjh.data.utils.Constants.COL_MY_CHAT_ROOMS
+import kr.sjh.data.utils.Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT
+import kr.sjh.data.utils.Constants.COL_USERS
 import kr.sjh.domain.ResultState
 import kr.sjh.domain.model.ChatMessageModel
 import kr.sjh.domain.model.ChatRoomModel
@@ -39,7 +45,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): Flow<ResultState<List<ChatMessageModel>>> = callbackFlow {
         Log.d("getInitialMessages", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         var listener: ListenerRegistration? =
-            firebase.collection(Constants.COL_CHAT_MESSAGES).document(roomId).collection("contents")
+            firebase.collection(COL_CHAT_MESSAGES).document(roomId).collection("contents")
                 .orderBy("timeStamp", Query.Direction.DESCENDING).limit(size)
                 .addSnapshotListener { snapshots, error ->
                     if (error != null) {
@@ -68,7 +74,7 @@ class ChatRepositoryImpl @Inject constructor(
         // fromTime을 Timestamp 객체로 변환
         val timestamp = Timestamp(fromTime / 1000, (fromTime % 1000 * 1000000).toInt())
         Log.d("sjh", "${timestamp.toDate()}")
-        firebase.collection(Constants.COL_CHAT_MESSAGES).document(roomId).collection("contents")
+        firebase.collection(COL_CHAT_MESSAGES).document(roomId).collection("contents")
             .whereLessThan("timeStamp", timestamp).orderBy("timeStamp", Query.Direction.DESCENDING)
             .limit(size).get().addOnSuccessListener { snapshot ->
                 if (!snapshot.isEmpty) {
@@ -95,27 +101,24 @@ class ChatRepositoryImpl @Inject constructor(
 
         val roomId = generateUniqueChatKey(message.senderUid, message.receiverUid)
 
-        val meChatRoomDoc =
-            firebase.collection(Constants.COL_CHAT_ROOMS).document(message.senderUid)
-                .collection("my_chat_room").document(roomId)
+        val meChatRoomDoc = firebase.collection(COL_CHAT_ROOMS).document(message.senderUid)
+            .collection(COL_MY_CHAT_ROOMS).document(roomId)
 
-        val youChatRoomDoc =
-            firebase.collection(Constants.COL_CHAT_ROOMS).document(message.receiverUid)
-                .collection("my_chat_room").document(roomId)
+        val youChatRoomDoc = firebase.collection(COL_CHAT_ROOMS).document(message.receiverUid)
+            .collection(COL_MY_CHAT_ROOMS).document(roomId)
 
         val youTotalUnReadMessageCountDoc =
-            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT)
-                .document(message.receiverUid)
+            firebase.collection(COL_TOTAL_UNREAD_MESSAGE_COUNT).document(message.receiverUid)
 
         val messageDoc =
-            firebase.collection(Constants.COL_CHAT_MESSAGES).document(roomId).collection("contents")
+            firebase.collection(COL_CHAT_MESSAGES).document(roomId).collection("contents")
                 .document()
 
         val meChatRoomExist = meChatRoomDoc.get().await().exists()
 
         val youChatRoomExist = youChatRoomDoc.get().await().exists()
 
-        if (!meChatRoomExist && !youChatRoomExist) {
+        if (!meChatRoomExist || !youChatRoomExist) {
             createChat(
                 roomId, message.senderUid, message.receiverUid, meChatRoomDoc, youChatRoomDoc
             )
@@ -161,7 +164,6 @@ class ChatRepositoryImpl @Inject constructor(
                     ), SetOptions.merge()
                 )
             }
-
             transaction.set(youChatRoomDoc, youChatRoomUpdates, SetOptions.merge())
         }.await()
     }
@@ -171,7 +173,7 @@ class ChatRepositoryImpl @Inject constructor(
         trySend(ResultState.Loading)
         val uid = auth.currentUser?.uid.toString()
         val messageCol =
-            firebase.collection(Constants.COL_CHAT_ROOMS).document(uid).collection("my_chat_room")
+            firebase.collection(COL_CHAT_ROOMS).document(uid).collection(COL_MY_CHAT_ROOMS)
         val listener = messageCol.addSnapshotListener { value, error ->
             Log.d("getChatRooms", "getChatRooms>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             if (error != null) {
@@ -205,16 +207,17 @@ class ChatRepositoryImpl @Inject constructor(
         youChatRoom: DocumentReference
     ) {
 
-        val myInfo = firebase.collection(Constants.COL_USERS).document(meUid)
-        val youInfo = firebase.collection(Constants.COL_USERS).document(youUid)
-        val myMessageCountCol =
-            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT).document(meUid)
+        val myInfo = firebase.collection(COL_USERS).document(meUid)
+        val youInfo = firebase.collection(COL_USERS).document(youUid)
+        val myMessageCountCol = firebase.collection(COL_TOTAL_UNREAD_MESSAGE_COUNT).document(meUid)
         val yourMessageCountCol =
-            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT).document(youUid)
+            firebase.collection(COL_TOTAL_UNREAD_MESSAGE_COUNT).document(youUid)
 
         firebase.runTransaction { transaction ->
             val meInfo = transaction.get(myInfo).toObject(UserEntity::class.java)
             val youInfo = transaction.get(youInfo).toObject(UserEntity::class.java)
+            val meChatRoomExist = transaction.get(meChatRoom).exists()
+            val youChatRoomExist = transaction.get(youChatRoom).exists()
             transaction.set(
                 meChatRoom, ChatRoomEntity(
                     roomId = roomId, you = ChatRoomUserEntity(
@@ -231,16 +234,22 @@ class ChatRepositoryImpl @Inject constructor(
                     )
                 )
             )
-            transaction.set(
-                myMessageCountCol, mapOf(
-                    "totalUnReadMessageCount" to 0L
+            if (!meChatRoomExist) {
+                transaction.set(
+                    myMessageCountCol, mapOf(
+                        "totalUnReadMessageCount" to 0L
+                    ), SetOptions.merge()
                 )
-            )
-            transaction.set(
-                yourMessageCountCol, mapOf(
-                    "totalUnReadMessageCount" to 0L
+            }
+            if (!youChatRoomExist) {
+                transaction.set(
+                    yourMessageCountCol, mapOf(
+                        "totalUnReadMessageCount" to 0L
+                    ), SetOptions.merge()
                 )
-            )
+            }
+
+
         }.await()
     }
 
@@ -249,9 +258,9 @@ class ChatRepositoryImpl @Inject constructor(
         Log.d("updateLastVisitedTimeStamp", "updateLastVisitedTimeStamp")
         val uid = auth.currentUser?.uid.toString()
         val myTotalUnReadMessageCountDoc =
-            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT).document(uid)
+            firebase.collection(COL_TOTAL_UNREAD_MESSAGE_COUNT).document(uid)
         val myChatRoomDoc =
-            firebase.collection(Constants.COL_CHAT_ROOMS).document(uid).collection("my_chat_room")
+            firebase.collection(COL_CHAT_ROOMS).document(uid).collection(COL_MY_CHAT_ROOMS)
                 .document(roomId)
 
         val nowTime = FieldValue.serverTimestamp()
@@ -281,13 +290,42 @@ class ChatRepositoryImpl @Inject constructor(
 
     override fun getTotalMessageCount(): Flow<ResultState<Long>> {
         val uid = auth.currentUser?.uid.toString()
-        val myMessageCountCol =
-            firebase.collection(Constants.COL_TOTAL_UNREAD_MESSAGE_COUNT).document(uid)
+        val myMessageCountCol = firebase.collection(COL_TOTAL_UNREAD_MESSAGE_COUNT).document(uid)
         return myMessageCountCol.snapshots().map { snapshot ->
             Log.d("getTotalMessageCount", "getTotalMessageCount>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             snapshot.getLong("totalUnReadMessageCount") ?: 0L
         }.map {
             ResultState.Success(it)
+        }
+    }
+
+    override fun removeChatRoom(chatRoom: ChatRoomModel) = callbackFlow {
+        trySend(ResultState.Loading)
+        val uid = auth.currentUser?.uid.toString()
+        val myChatRooms =
+            firebase.collection(COL_CHAT_ROOMS).document(uid).collection(COL_MY_CHAT_ROOMS)
+                .document(chatRoom.roomId)
+        val myChatMessages = firebase.collection(COL_CHAT_MESSAGES).document(chatRoom.roomId)
+        val totalUnReadCount = firebase.collection(COL_TOTAL_UNREAD_MESSAGE_COUNT).document(uid)
+        firebase.runTransaction {
+            val unReadCount = it.get(myChatRooms).getLong("unReadMessageCount") ?: 0L
+            it.delete(myChatRooms)
+            it.delete(myChatMessages)
+            it.delete(
+                myChatMessages.collection("contents").document()
+            )
+
+            it.update(
+                totalUnReadCount, "totalUnReadMessageCount", FieldValue.increment(-unReadCount)
+            )
+        }.addOnSuccessListener {
+            trySend(ResultState.Success(Unit))
+        }.addOnFailureListener {
+            it.printStackTrace()
+            trySend(ResultState.Failure(it))
+        }
+        awaitClose {
+            close()
         }
     }
 }

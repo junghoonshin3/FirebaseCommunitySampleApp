@@ -44,6 +44,7 @@ fun PostEntity.toPostModel(): PostModel {
 fun UserModel.toUserEntity(): UserEntity {
     return UserEntity(
         uid = uid,
+        email = email,
         nickName = nickName,
         profileImageUrl = profileImageUrl,
         likePosts = likePosts,
@@ -55,6 +56,7 @@ fun UserModel.toUserEntity(): UserEntity {
 fun UserEntity.toUserModel(): UserModel {
     return UserModel(
         uid = uid,
+        email = email,
         nickName = nickName,
         profileImageUrl = profileImageUrl,
         likePosts = likePosts,
@@ -96,7 +98,6 @@ fun ChatRoomEntity.toChatRoomModel() = ChatRoomModel(
 )
 
 fun ChatRoomUserEntity.toChatRoomUserModel() = ChatRoomUserModel(
-    profileImageUrl = profileImageUrl,
-    nickName = nickName
+    profileImageUrl = profileImageUrl, nickName = nickName
 )
 

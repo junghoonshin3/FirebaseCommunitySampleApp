@@ -121,14 +121,13 @@ fun Modifier.clickableSingle(
     role: Role? = null,
     indication: @Composable () -> Indication? = { LocalIndication.current },
     onClick: () -> Unit
-) = then(composed(inspectorInfo = debugInspectorInfo {
+) = composed(inspectorInfo = debugInspectorInfo {
     name = "clickable"
     properties["enabled"] = enabled
     properties["onClickLabel"] = onClickLabel
     properties["role"] = role
     properties["onClick"] = onClick
 }) {
-
     var duplicated by remember { mutableStateOf(false) }
 
     val timer = rememberCoroutineScope()
@@ -148,7 +147,7 @@ fun Modifier.clickableSingle(
             duplicated = false
         }
     }
-})
+}
 
 fun String.toEncodingURL(): String {
     return URLEncoder.encode(this, StandardCharsets.UTF_8.toString())

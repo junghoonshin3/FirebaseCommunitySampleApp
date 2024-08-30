@@ -18,4 +18,5 @@ interface ChatRepository {
     fun getChatRooms(): Flow<ResultState<List<ChatRoomModel>>>
     suspend fun updateLastVisitedTimeStamp(roomId: String)
     fun getTotalMessageCount(): Flow<ResultState<Long>>
+    fun removeChatRoom(chatRoom: ChatRoomModel): Flow<ResultState<Unit>>
 }

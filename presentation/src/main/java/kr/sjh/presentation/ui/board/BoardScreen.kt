@@ -1,13 +1,16 @@
 package kr.sjh.presentation.ui.board
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,17 +22,18 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,9 +49,12 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.SubcomposeAsyncImage
+import kotlinx.coroutines.delay
 import kr.sjh.presentation.R
+import kr.sjh.presentation.ui.common.CenterPullToRefreshContainer
 import kr.sjh.presentation.ui.common.InfinityLazyColumn
 import kr.sjh.presentation.ui.common.LoadingDialog
+import kr.sjh.presentation.ui.common.RefreshingType
 import kr.sjh.presentation.ui.theme.backgroundColor
 import kr.sjh.presentation.ui.theme.carrot
 import kr.sjh.presentation.utill.calculationTime
@@ -61,22 +68,24 @@ fun BoardRoute(
 ) {
     val boardUiState by boardViewModel.postUiState.collectAsStateWithLifecycle()
 
+    val isRefreshing by boardViewModel.isRefreshing.collectAsStateWithLifecycle(initialValue = RefreshingType.NONE)
+
     Scaffold(bottomBar = bottomBar) {
         BoardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(it),
             boardUiState = boardUiState,
-            navigateToBoardDetail = {
-                boardViewModel.updatePostCount(it)
-                navigateToBoardDetail(it)
+            isRefreshing = isRefreshing,
+            navigateToBoardDetail = { postKey ->
+                boardViewModel.updatePostCount(postKey)
+                navigateToBoardDetail(postKey)
             },
             onRefresh = boardViewModel::refreshPosts,
             nextPosts = boardViewModel::nextPosts,
             navigateToBoardWrite = navigateToBoardWrite
         )
     }
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,6 +93,7 @@ fun BoardRoute(
 fun BoardScreen(
     modifier: Modifier = Modifier,
     boardUiState: BoardUiState,
+    isRefreshing: RefreshingType,
     onRefresh: () -> Unit,
     nextPosts: () -> Unit,
     navigateToBoardDetail: (String) -> Unit,
@@ -91,20 +101,20 @@ fun BoardScreen(
 ) {
 
     val lazyListState = rememberLazyListState()
-    
-    val pullToRefreshState =
-        rememberPullToRefreshState(positionalThreshold = 30.dp, enabled = { true })
 
-    if (pullToRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
-            onRefresh.invoke()
-        }
-    }
-    LaunchedEffect(boardUiState.isRefreshing) {
-        if (boardUiState.isRefreshing) {
-            pullToRefreshState.startRefresh()
-        } else {
-            pullToRefreshState.endRefresh()
+    val pullToRefreshState = rememberPullToRefreshState(positionalThreshold = 50.dp, enabled = {
+        true
+    })
+
+    LaunchedEffect(isRefreshing) {
+        when (isRefreshing) {
+            RefreshingType.NONE -> {}
+            RefreshingType.START -> {}
+            RefreshingType.END -> {
+                delay(500)
+                pullToRefreshState.endRefresh()
+                lazyListState.animateScrollToItem(0)
+            }
         }
     }
 
@@ -124,39 +134,36 @@ fun BoardScreen(
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier
+                    .offset(
+                        y = pullToRefreshState.verticalOffset.dp
+                    )
+                    .align(Alignment.Center)
             )
         }
 
         InfinityLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp)
                 .offset(y = pullToRefreshState.verticalOffset.dp),
             lazyListState = lazyListState,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp),
             loadMore = nextPosts
         ) {
             itemsIndexed(boardUiState.posts, key = { _, post -> post.postKey }) { index, post ->
-                PostItem(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            navigateToBoardDetail(post.postKey)
-                        },
+                PostItem(modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        navigateToBoardDetail(post.postKey)
+                    }
+                    .padding(10.dp),
                     title = post.title,
                     nickname = post.nickName,
                     createAt = post.timeStamp.time,
                     readCount = post.readCount,
                     likeCount = post.likeCount,
-                    images = post.images
-                )
-                if (index < boardUiState.posts.lastIndex) HorizontalDivider(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp, bottom = 10.dp),
-                    thickness = 1.dp,
-                    color = Color.LightGray
-                )
+                    images = post.images)
             }
         }
 
@@ -181,26 +188,13 @@ fun BoardScreen(
             },
             onClick = navigateToBoardWrite
         )
-        PullToRefreshContainer(
-            state = pullToRefreshState,
+
+        CenterPullToRefreshContainer(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 10.dp, bottom = 10.dp),
-            indicator = { state ->
-                if (!state.isRefreshing) {
-                    CircularProgressIndicator(
-                        strokeWidth = 5.dp,
-                        color = carrot,
-                        progress = { state.progress })
-                } else {
-                    CircularProgressIndicator(
-                        strokeWidth = 5.dp,
-                        color = carrot,
-                    )
-                }
-            },
-            containerColor = backgroundColor,
-            contentColor = backgroundColor
+                .fillMaxWidth()
+                .height(100.dp),
+            pullToRefreshState = pullToRefreshState,
+            onRefresh = onRefresh
         )
     }
 }

@@ -4,7 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -14,10 +16,10 @@ import kr.sjh.domain.usecase.board.GetPostsUseCase
 import kr.sjh.domain.usecase.board.UpdatePostCountUseCase
 import kr.sjh.presentation.constants.LOAD_ITEM_COUNT
 import kr.sjh.presentation.constants.VISIBLE_ITEM_COUNT
+import kr.sjh.presentation.ui.common.RefreshingType
 import javax.inject.Inject
 
 data class BoardUiState(
-    val isRefreshing: Boolean = false,
     val isLoading: Boolean = false,
     val isLoadMore: Boolean = false,
     val posts: List<PostModel> = emptyList(),
@@ -33,6 +35,9 @@ class BoardViewModel @Inject constructor(
     private val _postUiState = MutableStateFlow(BoardUiState())
     val postUiState = _postUiState.asStateFlow()
 
+    private val _isRefreshing = MutableSharedFlow<RefreshingType>()
+    val isRefreshing = _isRefreshing.asSharedFlow()
+
     init {
         initPosts()
     }
@@ -42,23 +47,26 @@ class BoardViewModel @Inject constructor(
             postsUseCase(VISIBLE_ITEM_COUNT, null).collect { result ->
                 when (result) {
                     is ResultState.Failure -> {
+                        _isRefreshing.emit(RefreshingType.END)
                         _postUiState.update {
                             it.copy(
-                                isRefreshing = false, error = result.throwable
+                                error = result.throwable
                             )
                         }
                     }
 
                     ResultState.Loading -> {
+                        _isRefreshing.emit(RefreshingType.START)
                         _postUiState.update {
-                            it.copy(isRefreshing = true, error = null)
+                            it.copy(error = null)
                         }
                     }
 
                     is ResultState.Success -> {
+                        _isRefreshing.emit(RefreshingType.END)
                         _postUiState.update {
                             it.copy(
-                                isRefreshing = false, posts = result.data, error = null
+                                posts = result.data, error = null
                             )
                         }
                     }

@@ -9,6 +9,7 @@ import kr.sjh.domain.usecase.chat.GetChatRoomsUseCase
 import kr.sjh.domain.usecase.chat.GetInitialMessagesUseCase
 import kr.sjh.domain.usecase.chat.GetNextMessagesUseCase
 import kr.sjh.domain.usecase.chat.GetTotalMessageCountUseCase
+import kr.sjh.domain.usecase.chat.RemoveChatRoomUseCase
 import kr.sjh.domain.usecase.chat.SendMessageUseCase
 import kr.sjh.domain.usecase.chat.UpdateLastVisitedTimeStampUseCase
 import javax.inject.Singleton
@@ -50,5 +51,11 @@ object ChatUseCaseModule {
     @Singleton
     fun provideGetTotalMessageCountUseCase(chatRepository: ChatRepository): GetTotalMessageCountUseCase {
         return GetTotalMessageCountUseCase(chatRepository::getTotalMessageCount)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRemoveChatRoomUseCase(chatRepository: ChatRepository): RemoveChatRoomUseCase {
+        return RemoveChatRoomUseCase(chatRepository::removeChatRoom)
     }
 }

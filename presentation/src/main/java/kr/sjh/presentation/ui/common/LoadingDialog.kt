@@ -24,7 +24,12 @@ fun LoadingDialog() {
             usePlatformDefaultWidth = false
         )
     ) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
             CircularProgressIndicator(
                 modifier = Modifier.size(50.dp), color = carrot, strokeWidth = 5.dp
             )

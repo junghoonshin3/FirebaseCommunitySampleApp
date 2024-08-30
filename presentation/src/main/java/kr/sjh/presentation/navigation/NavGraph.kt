@@ -131,7 +131,12 @@ fun MainNavGraph(
                 content = {
                     navItems.forEach { item ->
                         BottomNavigationItem(
-                            modifier = Modifier.sizeIn(minWidth = 65.dp, minHeight = 65.dp, maxHeight = 65.dp, maxWidth = 65.dp),
+                            modifier = Modifier.sizeIn(
+                                minWidth = 65.dp,
+                                minHeight = 65.dp,
+                                maxHeight = 65.dp,
+                                maxWidth = 65.dp
+                            ),
                             screen = item.screen,
                             selected = currentSelectedScreen == item.screen,
                             title = item.title,
@@ -183,7 +188,7 @@ fun MainNavGraph(
                 route = LeafScreen.BoardWrite.route
             ) {
                 BoardWriteRoute(modifier = Modifier.fillMaxSize(), onBack = {
-                    navController.popBackStack(LeafScreen.Board.route, false, saveState = true)
+                    navController.popBackStack(LeafScreen.Board.route, false)
                 }, navigateToDetail = { postKey ->
                     navController.navigate("${LeafScreen.BoardDetail.route}?postKey=${postKey}")
                 })
@@ -192,10 +197,6 @@ fun MainNavGraph(
                 route = "${LeafScreen.BoardDetail.route}?postKey={postKey}"
             ) {
                 BoardDetailRoute(modifier = Modifier.fillMaxSize(), onBack = {
-                    Log.d(
-                        "sjh",
-                        "previousBackStackEntry : ${navController.previousBackStackEntry?.destination?.route}"
-                    )
                     val previous = navController.previousBackStackEntry?.destination?.route
                     when {
                         previous?.contains(LeafScreen.BoardDetail.route) == true -> navController.popBackStack(
@@ -211,7 +212,6 @@ fun MainNavGraph(
                         )
 
                         else -> navController.navigateUp()
-
                     }
                 }, onChat = { roomId, nickName, profileImageUrl ->
                     navController.navigate("${LeafScreen.ChatDetail.route}?roomId=$roomId&nickName=$nickName&profileImageUrl=${profileImageUrl.toEncodingURL()}") {

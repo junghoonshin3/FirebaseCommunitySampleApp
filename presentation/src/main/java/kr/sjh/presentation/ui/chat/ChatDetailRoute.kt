@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,9 +38,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -62,6 +65,7 @@ import kr.sjh.presentation.ui.common.InfinityLazyColumn
 import kr.sjh.presentation.ui.main.MainViewModel
 import kr.sjh.presentation.ui.theme.PurpleGrey80
 import kr.sjh.presentation.ui.theme.carrot
+import kr.sjh.presentation.utill.addFocusCleaner
 import kr.sjh.presentation.utill.getActivity
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -105,6 +109,8 @@ fun ChatDetailScreen(
 
     val lazyListState = rememberLazyListState()
 
+    val focusManager = LocalFocusManager.current
+
     LaunchedEffect(key1 = messageUiState.messages) {
         if (messageUiState.messages.size <= VISIBLE_ITEM_COUNT) {
             lazyListState.animateScrollToItem(0)
@@ -117,7 +123,9 @@ fun ChatDetailScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .addFocusCleaner(focusManager)
     ) {
         AppTopBar(
             modifier = Modifier
@@ -145,6 +153,7 @@ fun ChatDetailScreen(
             .padding(5.dp),
             text = text,
             onTextChanged = onTextChanged,
+            focusManager = focusManager,
             sendMessage = {
                 sendMessage {
                     coroutineScope.launch {
@@ -247,6 +256,7 @@ fun MessageBubbleWithTime(
 @Composable
 fun InputMessage(
     modifier: Modifier = Modifier,
+    focusManager: FocusManager,
     text: () -> String,
     onTextChanged: (String) -> Unit,
     sendMessage: () -> Unit
@@ -259,6 +269,9 @@ fun InputMessage(
             .clip(RoundedCornerShape(20.dp))
             .background(Color.LightGray)
             .weight(1f),
+            keyboardActions = KeyboardActions(onDone = {
+                focusManager.clearFocus()
+            }),
             text = text,
             onTextChanged = onTextChanged,
             placeholder = { Text(text = "메세지 보내기", color = Color.White) })
