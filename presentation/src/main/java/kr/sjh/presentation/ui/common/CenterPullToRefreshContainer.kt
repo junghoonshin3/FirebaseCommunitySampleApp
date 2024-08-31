@@ -2,27 +2,17 @@ package kr.sjh.presentation.ui.common
 
 import android.util.Log
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateSize
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -38,13 +28,14 @@ fun CenterPullToRefreshContainer(
 ) {
 
     val scaleTransition = updateTransition(
-        targetState = pullToRefreshState.progress,  // 이 상태값이 변하면 transition 작동
+        targetState = pullToRefreshState.verticalOffset.div(100),  // 이 상태값이 변하면 transition 작동
         label = "scaleTransition"
     )
 
     val scale by scaleTransition.animateFloat(label = "scale") { state ->
         state.coerceIn(0f, 1f)
     }
+
     if (pullToRefreshState.isRefreshing) {
         LaunchedEffect(true) {
             onRefresh()

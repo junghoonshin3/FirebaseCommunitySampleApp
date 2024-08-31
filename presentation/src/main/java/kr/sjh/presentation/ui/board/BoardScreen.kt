@@ -43,6 +43,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -136,9 +137,9 @@ fun BoardScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 modifier = Modifier
-                    .offset(
-                        y = pullToRefreshState.verticalOffset.dp
-                    )
+                    .offset {
+                        IntOffset(0, pullToRefreshState.verticalOffset.dp.roundToPx())
+                    }
                     .align(Alignment.Center)
             )
         }
@@ -146,10 +147,13 @@ fun BoardScreen(
         InfinityLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .offset(y = pullToRefreshState.verticalOffset.dp),
+                .offset {
+                    IntOffset(0, pullToRefreshState.verticalOffset.dp.roundToPx())
+                },
             lazyListState = lazyListState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(5.dp),
+            userScrollEnabled = isRefreshing != RefreshingType.START,
             loadMore = nextPosts
         ) {
             itemsIndexed(boardUiState.posts, key = { _, post -> post.postKey }) { index, post ->

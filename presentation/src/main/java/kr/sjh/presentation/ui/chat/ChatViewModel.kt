@@ -75,7 +75,12 @@ class ChatViewModel @Inject constructor(
                         is ResultState.Success -> {
                             Log.d("sjh", "ResultState.Success")
                             _chatRooms.update {
-                                it.copy(isLoading = false, uid = uid, rooms = result.data)
+                                it.copy(
+                                    isLoading = false,
+                                    uid = uid,
+                                    rooms = result.data,
+                                    throwable = null
+                                )
                             }
                         }
                     }
@@ -100,8 +105,11 @@ class ChatViewModel @Inject constructor(
                         is ResultState.Success -> {
                             _isRefreshing.emit(RefreshingType.END)
                             _chatRooms.update {
-                                ChatRoomUiState(
-                                    uid = uid, rooms = result.data
+                                it.copy(
+                                    isLoading = false,
+                                    uid = uid,
+                                    rooms = result.data,
+                                    throwable = null
                                 )
                             }
                         }

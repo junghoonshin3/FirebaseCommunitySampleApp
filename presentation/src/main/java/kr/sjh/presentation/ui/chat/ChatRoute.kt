@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -150,21 +151,21 @@ fun ChatRoomList(
         modifier = modifier.nestedScroll(pullToRefreshState.nestedScrollConnection)
     ) {
         if (chatRooms.isEmpty()) {
-            Text(
-                modifier = Modifier
-                    .offset(y = pullToRefreshState.verticalOffset.dp)
-                    .align(Alignment.Center),
+            Text(modifier = Modifier
+                .offset {
+                    IntOffset(0, pullToRefreshState.verticalOffset.dp.roundToPx())
+                }
+                .align(Alignment.Center),
                 text = "채팅방이 비어있어요",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+                color = Color.White)
         }
-        InfinityLazyColumn(lazyListState = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .offset(y = pullToRefreshState.verticalOffset.dp),
-            loadMore = { }) {
+        InfinityLazyColumn(lazyListState = lazyListState, modifier = Modifier
+            .fillMaxSize()
+            .offset {
+                IntOffset(0, pullToRefreshState.verticalOffset.dp.roundToPx())
+            }, userScrollEnabled = isRefreshing != RefreshingType.START, loadMore = { }) {
             itemsIndexed(chatRooms, key = { _, room -> room.hashCode() }) { index, room ->
                 val you = room.you
                 val nickname = you.nickName
