@@ -5,11 +5,22 @@
 ## 핵심 기능
 1. 게시판 기능 ( 게시글 + 사진 업로드)
    
- <img src="https://private-user-images.githubusercontent.com/42196666/383507344-6facf461-d036-459e-819e-768d30c0564d.gif?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzA4ODgwODIsIm5iZiI6MTczMDg4Nzc4MiwicGF0aCI6Ii80MjE5NjY2Ni8zODM1MDczNDQtNmZhY2Y0NjEtZDAzNi00NTllLTgxOWUtNzY4ZDMwYzA1NjRkLmdpZj9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDExMDYlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQxMTA2VDEwMDk0MlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTNkZGZjYTYxNzVmYmNlZWRlMzhiNTYyZmIzNWFhZWE0OTc4MmE2MzE0OWY2NzhjYmNjOWExNGM3ZmVkMjFiZWUmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.ElBYfNZ4ASbQ2PNrIeDSdPTHjRk17f1qf5LP-YcFol4"  width="200" height="400"/>
-    
+
+
+
+
+<img src="[[[이미지주소.png]()](https://github.com/user-attachments/assets/478bda3c-08ca-4e08-b965-2f7d18eb393c)](https://github.com/user-attachments/assets/a7940687-af93-4dfd-947a-65fcfa27a7d8)" width="200" height="400"/>
+
+
 2. 실시간 채팅기능 (1:1)
-<img src="https://private-user-images.githubusercontent.com/42196666/383507344-6facf461-d036-459e-819e-768d30c0564d.gif?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzA4ODgwODIsIm5iZiI6MTczMDg4Nzc4MiwicGF0aCI6Ii80MjE5NjY2Ni8zODM1MDczNDQtNmZhY2Y0NjEtZDAzNi00NTllLTgxOWUtNzY4ZDMwYzA1NjRkLmdpZj9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDExMDYlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQxMTA2VDEwMDk0MlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTNkZGZjYTYxNzVmYmNlZWRlMzhiNTYyZmIzNWFhZWE0OTc4MmE2MzE0OWY2NzhjYmNjOWExNGM3ZmVkMjFiZWUmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.ElBYfNZ4ASbQ2PNrIeDSdPTHjRk17f1qf5LP-YcFol4"  width="200" height="400"/>
-    
+
+<img src="[[[이미지주소.png]()](https://github.com/user-attachments/assets/478bda3c-08ca-4e08-b965-2f7d18eb393c)](https://github.com/user-attachments/assets/f8329d80-cb2c-4b6c-b59f-20001c3b5170)" width="200" height="400"/>
+
+
+
+
+
+<img src="[[[이미지주소.png]()](https://github.com/user-attachments/assets/478bda3c-08ca-4e08-b965-2f7d18eb393c)](https://github.com/user-attachments/assets/61ed2b32-583f-4279-8993-8f5a1540c469)" width="200" height="400"/>
 
 ## Used Git Conventions
 
