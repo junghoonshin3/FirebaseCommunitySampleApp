@@ -4,12 +4,13 @@
 
 ## 핵심 기능
 1. 게시판 기능 ( 게시글 + 사진 업로드)
-    ![Screen_recording_20241106_185507.gif](..%2F..%2FDownloads%2FScreen_recording_20241106_185507.gif)
+   
+![Screen_recording_20241106_185507](https://github.com/user-attachments/assets/6facf461-d036-459e-819e-768d30c0564d)
 
 2. 실시간 채팅기능 (1:1)
 
-    ![Screen_recording_20241106_185424.gif](..%2F..%2FDownloads%2FScreen_recording_20241106_185424.gif)
-    
+![Screen_recording_20241106_185424](https://github.com/user-attachments/assets/943aa06e-a095-4803-8462-9e5c0817b8d0)
+
 
 ## Used Git Conventions
 
