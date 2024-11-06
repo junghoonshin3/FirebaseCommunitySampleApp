@@ -2,6 +2,15 @@
 
 배달 음식 픽업
 
+## 핵심 기능
+1. 게시판 기능 ( 게시글 + 사진 업로드)
+    ![Screen_recording_20241106_185507.gif](..%2F..%2FDownloads%2FScreen_recording_20241106_185507.gif)
+
+2. 실시간 채팅기능 (1:1)
+
+    ![Screen_recording_20241106_185424.gif](..%2F..%2FDownloads%2FScreen_recording_20241106_185424.gif)
+    
+
 ## Used Git Conventions
 
 - Feat : 새 기능 (new feature)
