@@ -4,23 +4,25 @@
 
 ## 핵심 기능
 1. 게시판 기능 ( 게시글 + 사진 업로드)
-   
 
 
 
+https://github.com/user-attachments/assets/1e6c2cef-ec32-494e-bc47-3d756b51232b
 
-<img src="[[[이미지주소.png]()](https://github.com/user-attachments/assets/478bda3c-08ca-4e08-b965-2f7d18eb393c)](https://github.com/user-attachments/assets/a7940687-af93-4dfd-947a-65fcfa27a7d8)" width="200" height="400"/>
+
 
 
 2. 실시간 채팅기능 (1:1)
 
-<img src="[[[이미지주소.png]()](https://github.com/user-attachments/assets/478bda3c-08ca-4e08-b965-2f7d18eb393c)](https://github.com/user-attachments/assets/f8329d80-cb2c-4b6c-b59f-20001c3b5170)" width="200" height="400"/>
+
+
+https://github.com/user-attachments/assets/b4dfb457-2e86-433f-b598-9f2a9ddc1db9
 
 
 
+https://github.com/user-attachments/assets/d8a56363-e247-4e22-96da-1e07b3e37765
 
 
-<img src="[[[이미지주소.png]()](https://github.com/user-attachments/assets/478bda3c-08ca-4e08-b965-2f7d18eb393c)](https://github.com/user-attachments/assets/61ed2b32-583f-4279-8993-8f5a1540c469)" width="200" height="400"/>
 
 ## Used Git Conventions
 
